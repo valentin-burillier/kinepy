@@ -15,7 +15,7 @@
 >>> 
 >>> l0, k = 0.2, 0.07
 >>> F = lambda : -(G.value - l0)*k # le couple peut dependre de parametres géométrique pas encore simuler
->>> G.applie_force(F) # applique une force selon l'axe de glissement de sol2 sur sol1
+>>> G.apply_force(F) # applique une force selon l'axe de glissement de sol2 sur sol1
 ```
 
 # apres une simulation
