@@ -1,6 +1,8 @@
 from geometry import *
 
 
+#  ---------------------------------------------------- P P P ----------------------------------------------------------
+
 def P_P_P(system, cycle, P1, P2, P3):
     sgn = system.sgns[cycle]
     (s13, p13), (s11, p11) = P1
@@ -30,6 +32,8 @@ def P_P_P(system, cycle, P1, P2, P3):
     return sum((system.eqs[s] for s in (s11, s22, s33)), ())
     
 
+#  ---------------------------------------------------- G P P ----------------------------------------------------------
+
 def G_P_P(system, cycle, G, P2, P3):
     sgn = system.sgns[cycle]
     
@@ -38,11 +42,11 @@ def G_P_P(system, cycle, G, P2, P3):
     (s32, p32), (s33, p33) = P3
     
     gamma = system.getRef(s1) + alpha1 - system.getRef(s1p) - alpha1p
-    changeRef2(system, s1p, R(gamma), system.getPoint(s33, p33))
+    changeRef2(system, s1p, gamma, R(gamma), system.getPoint(s33, p33))
     
-    v = system.getPoint(s21, p21) - system.getOrigin(s1) - (d1 - d1p) * U(system.getRef(s1) + alpha1) + system.getOrigin(s1p) # v1 + R(...) . v3
+    v = system.getPoint(s21, p21) - system.getOrigin(s1) - (d1 - d1p) * U(system.getRef(s1) + alpha1) + system.getOrigin(s1p)  # v1 + R(...) . v3
     v2 = system.getPoint(s22, p22) - system.getPoint(s32, p32)
-    matMulR(R(-  system.getRef(s1) - alpha1), v) # v <- (X0; Y)
+    matMulR(R(-system.getRef(s1) - alpha1), v)  # v <- (X0; Y)
     
     sq_Z = sqMag(v2)
     inv_Z = sq_Z ** -.5
@@ -63,6 +67,9 @@ def G_P_P(system, cycle, G, P2, P3):
     
     return sum((system.eqs[s] for s in (s1, s22, s33)), ())
 
+
+#  ---------------------------------------------------- P P G ----------------------------------------------------------
+
 def P_P_G(system, cycle, P1, P2, G):
     sgn = system.sgns[cycle]
     
@@ -72,12 +79,12 @@ def P_P_G(system, cycle, P1, P2, G):
     
     v1 = system.getPoint(s21, p21) - system.getPoint(s11, p11)
     v2 = system.getPoint(s22, p22) - system.getOrigin(s1) + (d1p - d1) * U(np.pi * .5 + system.getRef(s1) + alpha1 - system.getRef(s1p) - alpha1p)
-    v = system.getOrigin(s1p) - system.getPoint(s13, p13) # = v3
+    v = system.getOrigin(s1p) - system.getPoint(s13, p13)  # = v3
     
     matMulR(R(system.getRef(s1) + alpha1 - system.getRef(s1p) - alpha1p), v)
     v += v2
     
-    matMulR(R(-system.getRef(s1) - alpha1), v) # v <- (X0; Y)
+    matMulR(R(-system.getRef(s1) - alpha1), v)  # v <- (X0; Y)
     sq_Z= sqMag(v1)
     inv_Z = sq_Z ** -.5
     dX = sgn * (sq_Z - v[1, 0, :] ** 2) ** .5 * (2 * (s1 == system.links[cycle[2]].sol1) - 1)
@@ -97,7 +104,9 @@ def P_P_G(system, cycle, P1, P2, G):
     G.delta = (v[0, 0, :] + dX) * (2 * (s1 == G.sol1) - 1)
     
     return sum((system.eqs[s] for s in (s11, s22, s1p)), ())
-    
+
+
+#  ---------------------------------------------------- P G G ----------------------------------------------------------
     
 def P_G_G(system, cycle, P, G1, G2):
     (s13, p13), (s11, p11) = P
@@ -127,6 +136,8 @@ def P_G_G(system, cycle, P, G1, G2):
     
     return sum((system.eqs[s] for s in (s11, s1p, s2p)), ())
 
+
+#  ---------------------------------------------------- G G P ----------------------------------------------------------
 
 def G_G_P(system, cycle, G1, G2, P):
     (s1p, alpha1p, d1p), (s1, alpha1, d1) = G1
@@ -158,6 +169,8 @@ def G_G_P(system, cycle, G1, G2, P):
     
     return sum((system.eqs[s] for s in (s1, s1p, s2p)), ())
    
+
+#  ------------------------------------------------ SP G ---------------------------------------------------------------
 
 def SP_G_1(system, cycle, SP, G):
     (s12, p12), (s, alpha, d) = SP
@@ -206,9 +219,12 @@ def SP_G_2(system, cycle, SP, G):
     
     return system.eqs[s] + system.eqs[s1]
 
+
 def SP_G(system, cycle, SP, G):
     return (SP_G_1 if len(SP[0]) == 2 else SP_G_2)(system, cycle, SP, G)
 
+
+#  ---------------------------------------------------- T P ------------------------------------------------------------
 
 def T_P(system, cycle, T, P):
     (s2, _), (s1, alpha) = T
@@ -227,7 +243,9 @@ def T_P(system, cycle, T, P):
     
     return system.eqs[s1] + system.eqs[s2]
     
-    
+
+#  -------------------------------------------------- SP P -------------------------------------------------------------
+
 def SP_P_1(system, cycle, SP, P):
     sgn = system.sgns[cycle]
     
@@ -236,7 +254,7 @@ def SP_P_1(system, cycle, SP, P):
     
     v1 = system.getPoint(s21, p21) - system.getPoint(s11, p11)
     v2 = system.getPoint(s22, p22) - system.getOrigin(s) - d * U(alpha + system.getRef(s) + np.pi * .5)
-    matMulR(R(-alpha - system.getRef(s)), v2) # v2 <- (X0; Y)    
+    matMulR(R(-alpha - system.getRef(s)), v2)   # v2 <- (X0; Y)
     
     sq_Z = sqMag(v1)
     inv_Z = sq_Z ** -.5
@@ -266,7 +284,7 @@ def SP_P_2(system, cycle, SP, P):
     v1 = system.getPoint(s21, p21) - system.getOrigin(s) - d * U(np.pi * .5 + alpha + system.getRef(s))
     v2 = system.getPoint(s22, p22) - system.getPoint(s12, p12)
     
-    matMulR(R(-alpha -system.getRef(s)), v1) # v1 <- (X0; Y)
+    matMulR(R(-alpha - system.getRef(s)), v1)  # v1 <- (X0; Y)
     sq_Z = sqMag(v2)
     inv_Z = sq_Z ** - .5
     
@@ -284,4 +302,7 @@ def SP_P_2(system, cycle, SP, P):
     P.angle = system.getRef(P.sol2) - system.getRef(P.sol1)
     
     return system.eqs[s] + system.eqs[s22]
-    
+
+
+def SP_P(system, cycle, SP, P):
+    return (SP_P_1 if len(SP[0]) == 3 else SP_P_2)(system, cycle, SP, P)

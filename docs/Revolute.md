@@ -1,15 +1,18 @@
 # Pivot
 
-# Paramétrage d'une pivot
+## Parameters
 
 ![image](https://user-images.githubusercontent.com/93446869/171271518-9edfab6c-9135-4c7b-82ce-f299bb226b7d.png)
 
+## Initialisation
 
-```python
->>> # creation d'une pivot au point (1, 1) dans le solide d'index 0 et au point (0, 0.5) dans le solide d'index 1
->>> P = m.Pivot(sol1=0, p1=(1, 1), sol2=1, p2=(0, 0.5))
+```pycon
+>>> P = S.add_revolute(sol1=0, p1=(1, 1), sol2=1, p2=(0, 0.5))
 >>> P
-'Pivot 1/0'
+'Rev(1/0)'
+
+
+# ça, c'est la sauce pour le moment
 >>> P.p1 = (1, 0.5) # modification du point 1
 >>> P.p2
 (0, 0.5)
@@ -19,7 +22,7 @@
 ```
 
 
-# apres une simulation
+## apres une simulation
 
 ```python
 >>> # apres une simulation

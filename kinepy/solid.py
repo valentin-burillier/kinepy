@@ -3,11 +3,9 @@ import numpy as np
 
 class Solid:
     nb = 0
-    def __new__(cls, *args, **kwargs):
-        cls.nb += 1
-        return object.__new__(cls, *args, **args)
     
     def __init__(self, points=(), named_points=None, name=''):
+        self.__class__.nb += 1
         self.points = points
         self._points = None
         self.name = name if name else f'Solid{Solid.nb}'
@@ -34,7 +32,7 @@ class Solid:
     
     def reset(self, n):
         points = np.swapaxes(np.array([(0., 0.)] + self.points), 0, 1)
-        m = points.shape(1)
+        m = points.shape[1]
         self._points = np.reshape(points, (2, m, n), 'F')
         self.angle = np.zeros((n,), float)
 
@@ -44,5 +42,3 @@ class Solid:
     @classmethod
     def _load(cls, data):
         return cls(**data)
-
-            

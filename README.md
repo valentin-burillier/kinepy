@@ -18,7 +18,6 @@ applications stylées déjà réalisées
 - debuger PPP,… cinématique
 - tester cinématique
 - coder les cas statique
-
 - coder engrenages/RSG
 - coder les cas SPP, SPG
 
