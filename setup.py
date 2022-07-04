@@ -9,5 +9,5 @@ setup(
     author_email='',
     url='https://github.com/valentin-burillier/kinepy',
     keywords=[],
-    requires=['numpy'],
+    requires=['numpy', 'matplotlib'],
 )

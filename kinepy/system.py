@@ -118,12 +118,9 @@ class System:
             sol.reset(n)
         for joint in self.joints:
             joint.reset(n)
-    
-    def get_point(self, sol, index):  # -> (2, 1, n)
-        return self.sols[sol]._points[:, index+1:index+2, :]
-    
+
     def get_origin(self, sol):
-        return self.sols[sol]._points[:, :1, :]
+        return self.sols[sol].origin
     
     def get_ref(self, sol):
         return self.sols[sol].angle

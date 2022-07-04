@@ -6,11 +6,10 @@ class Solid:
     
     def __init__(self, points=(), named_points=None, name=''):
         self.__class__.nb += 1
-        self.points = points
-        self._points = None
+        self.points = list(points)
         self.name = name if name else f'Solid{Solid.nb}'
         self.named_points = named_points if named_points else dict()
-        self.angle = None
+        self.angle = self._points = self.origin = None
     
     def __setitem__(self, item, value):
         if isinstance(item, int):
@@ -31,9 +30,7 @@ class Solid:
             return self.points[self.named_points[item]]
     
     def reset(self, n):
-        points = np.swapaxes(np.array([(0., 0.)] + self.points), 0, 1)
-        m = points.shape[1]
-        self._points = np.reshape(points, (2, m, n), 'F')
+        self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
 
     def _save(self):

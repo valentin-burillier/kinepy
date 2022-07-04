@@ -9,26 +9,36 @@ def p_p_p(system: System, cycle, rev1, rev2, rev3):
     (s13, p13), (s11, p11) = rev1
     (s21, p21), (s22, p22) = rev2
     (s32, p32), (s33, p33) = rev3
-    
-    v12 = system.get_point(s21, p21) - system.get_point(s11, p11)
-    v32 = system.get_point(s22, p22) - system.get_point(s32, p32)
-    v13 = system.get_point(s33, p33) - system.get_point(s13, p13)
+
+    p11 = get_point(system, s11, p11)
+    p13 = get_point(system, s13, p13)
+    p21 = get_point(system, s21, p21)
+    p22 = get_point(system, s22, p22)
+    p32 = get_point(system, s32, p32)
+    p33 = get_point(system, s33, p33)
+
+    v12 = p21 - p11
+    v32 = p22 - p32
+    v13 = p33 - p13
     
     sq_a, sq_b, sq_c = sq_mag(v12), sq_mag(v13), sq_mag(v32)
     inv_a, inv_b, inv_c = sq_a ** -.5, sq_b ** -.5, sq_c ** -.5
     alpha = sgn * np.arccos(0.5 * (sq_a + sq_b - sq_c) * inv_a * inv_b)
-    
-    gamma = get_angle2(v12, inv_a) - get_angle2(v13, inv_b) + alpha
+
+    theta = get_angle2(v12, inv_a) + alpha
+    gamma = theta - get_angle2(v13, inv_b)
     mat = rot(gamma)
-    change_ref(system, s13, gamma, mat, system.get_point(s13, p13), system.get_point(s11, p11))
-    
-    gamma = get_angle(system.get_point(s21, p21) - system.get_point(s33, p33)) - get_angle2(v32, inv_c)
+    change_ref(system, s13, gamma, mat, p13, p11)
+
+    p33 = p11 + unit(theta) / inv_b
+    gamma = get_angle(p21 - p33) - get_angle2(v32, inv_c)
     mat = rot(gamma)
-    change_ref(system, s22, gamma, mat, system.get_point(s32, p32), system.get_point(s33, p33))
+    change_ref(system, s22, gamma, mat, p32, p33)
     
     for p in cycle:
         p = system.joints[p]
         p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+        make_continuous(p.angle)
     
     return sum((system.eqs[s] for s in (s11, s22, s33)), ())
     
@@ -43,29 +53,32 @@ def g_p_p(system: System, cycle, pri, rev2, rev3):
     (s32, p32), (s33, p33) = rev3
     
     gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
-    change_ref2(system, s1p, gamma, rot(gamma), system.get_point(s33, p33))
-    
-    v = system.get_point(s21, p21) - system.get_origin(s1) - (d1 - d1p) * unit(system.get_ref(s1) + alpha1) + \
-        system.get_origin(s1p)  # v1 + rot(...) . v3
-    v2 = system.get_point(s22, p22) - system.get_point(s32, p32)
+    change_ref2(system, s1p, gamma, rot(gamma), get_point(system, s33, p33))
+
+    p21, p22 = get_point(system, s21, p21), get_point(system, s22, p22)
+    v = p21 - system.get_origin(s1) - (d1 - d1p) * cross_z(unit(system.get_ref(s1) + alpha1)) + system.get_origin(s1p)
+    # v1 + rot(...) . v3
+
+    v2 = p22 - get_point(system, s32, p32)
     mat_mul_r(rot(-system.get_ref(s1) - alpha1), v)  # v <- (X0; Y)
     
     sq_z = sq_mag(v2)
     inv_z = sq_z ** -.5
-    dx = sgn * (sq_z - v[1, 0, :] ** 2) ** .5 * (2 * (s1 == system.joints[cycle[0]].sol1) - 1)
+    dx = sgn * (sq_z - v[1] ** 2) ** .5 * (2 * (s1 == system.joints[cycle[0]].sol1) - 1)
     
-    theta2 = np.arrcos(- dx * inv_z)
+    theta2 = np.arccos(- dx * inv_z) * (2 * (v[1] >= 0) - 1)
     theta3 = get_angle2(v2, inv_z)
     
     gamma = theta2 + alpha1 + system.get_ref(s1) - theta3
-    change_ref(system, s21, gamma, rot(gamma), system.get_point(s22, p22), system.get_point(s21, p21))
-    trans(system, s1p, system.get_point(s32, p32))
+    change_ref(system, s22, gamma, rot(gamma), p22, p21)
+    trans(system, s1p, get_point(system, s32, p32))
 
     for p in cycle[1:]:
         p = system.joints[p]
         p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+        make_continuous(p.angle)
     pri = system.joints[cycle[0]]
-    pri.delta = (v[0, 0, :] + dx) * (2 * (s1 == pri.sol1) - 1)
+    pri.delta = (v[0, :] + dx) * (2 * (s1 == pri.sol1) - 1)
     
     return sum((system.eqs[s] for s in (s1, s22, s33)), ())
 

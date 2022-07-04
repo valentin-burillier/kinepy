@@ -77,17 +77,21 @@ def make_continuous(L):
             l0 = L[i]
     return L
 
-distance = lambda point1, point2 : np.sqrt(np.sum((point2 - point1)**2, axis=0))
+
+distance = lambda point1, point2: np.sqrt(np.sum((point2 - point1)**2, axis=0))
+
 
 def get_speed(L, t):
     if len(L.shape) == 1:    
         return (L[1:] - L[:-1])/(t/(len(L) - 1))
     return (L[:, 1:] - L[:, :-1])/(t/(L.shape[1] - 1))
 
+
 def get_speed_precis(L, t):
     if len(L.shape) == 1:    
         return (L[2:] - L[:-2])/(2*t/(len(L) - 1))
     return (L[:, 2:] - L[:, :-2])/(2*t/(L.shape[1] - 1))
+
 
 def get_acceleration(L, t):
     if len(L.shape) == 1:    
