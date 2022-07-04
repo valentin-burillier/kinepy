@@ -92,10 +92,10 @@ def p_p_g(system: System, cycle, rev1, rev2, pri):
     (s21, p21), (s22, p22) = rev2
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
-    v1 = system.get_point(s21, p21) - system.get_point(s11, p11)
-    v2 = system.get_point(s22, p22) - system.get_origin(s1) + \
+    v1 = get_point(system, s21, p21) - get_point(system, s11, p11)
+    v2 = get_point(system, s22, p22) - system.get_origin(s1) + \
         (d1p - d1) * unit(np.pi * .5 + system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p)
-    v = system.get_origin(s1p) - system.get_point(s13, p13)  # = v3
+    v = system.get_origin(s1p) - get_point(system, s13, p13)  # = v3
     
     mat_mul_r(rot(system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p), v)
     v += v2
@@ -109,9 +109,9 @@ def p_p_g(system: System, cycle, rev1, rev2, pri):
     theta3 = get_angle2(v1, inv_z)
     
     gamma = theta3 - theta2 - system.get_ref(s1) - alpha1
-    change_ref(system, s22, gamma, rot(gamma), system.get_point(s22, p22), system.get_point(s21, p21))
+    change_ref(system, s22, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     gamma = theta3 - theta2 - system.get_ref(s1p) - alpha1p
-    change_ref(system, s13, gamma, rot(gamma), system.get_point(s13, p13), system.get_point(s11, p11))
+    change_ref(system, s13, gamma, rot(gamma), get_point(system, s13, p13), get_point(system, s11, p11))
     
     for p in cycle[:2]:
         p = system.joints[p]
@@ -133,12 +133,12 @@ def p_g_g(system: System, cycle, rev, pri1, pri2):
         system.get_ref(s2) + alpha2 - system.get_ref(s2p) - alpha2p
     
     change_ref2(system, s1, gamma1, rot(gamma1), system.get_origin(s1p))
-    change_ref(system, s13, gamma2, rot(gamma2), system.get_point(s13, p13), system.get_point(s11, p11))
+    change_ref(system, s13, gamma2, rot(gamma2), get_point(system, s13, p13), get_point(system, s11, p11))
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
-    v1 = system.get_point(s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(ux)
+    v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(ux)
     v2 = system.get_origin(s1p) - system.get_origin(s1p) - (d2 - d2p) * cross_z(uy)
-    v3 = system.get_origin(s2p) - system.get_point(s13, p13)
+    v3 = system.get_origin(s2p) - get_point(system, s13, p13)
     
     ((X,), (Y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2 + v3)
     
@@ -166,19 +166,19 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
         system.get_ref(s2) + alpha2 - system.get_ref(s2p) - alpha2p
     )
     
-    change_ref2(system, s2p, gamma2, rot(gamma2), system.get_point(s12, p12))
+    change_ref2(system, s2p, gamma2, rot(gamma2), get_point(system, s12, p12))
     change_ref2(system, s1p, gamma1, rot(gamma1), system.get_ref(s1p))
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
     
     v1 = system.get_origin(s2) + (d2 - d2p) * cross_z(uy) - system.get_origin(s1) - (d1 * d1p) * cross_z(ux)
-    v2 = system.get_point(s12, p12) - system.get_origin(s2p)
-    v3 = system.get_origin(s1p) - system.get_point(s13, p13)
+    v2 = get_point(system, s12, p12) - system.get_origin(s2p)
+    v3 = system.get_origin(s1p) - get_point(system, s13, p13)
     
     ((X,), (Y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2 + v3)
     
     trans(system, s1p, system.get_origin(s1) + (d1 * d1p) * cross_z(ux) + X * ux)
-    trans(system, s2p, system.get_point(s13, p13))
+    trans(system, s2p, get_point(system, s13, p13))
     
     g1 = system.joints[cycle[0]]
     g1.delta = X * (2 * (s1 == g1.sol1) - 1)
@@ -202,7 +202,7 @@ def sp_g_1(system: System, cycle, sli, pri):
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
     v1 = system.get_origin(s) + d * cross_z(ux) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
-    v2 = system.get_point(s12, p12)
+    v2 = get_point(system, s12, p12)
     
     ((X,), (Y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2)
     trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + Y * uy)
@@ -225,7 +225,7 @@ def sp_g_2(system: System, cycle, sli, pri):
     
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
-    v1 = system.get_point(s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
+    v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
     v2 = -system.get_origin(s) - d * ux
     
     ((X,), (Y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2)
@@ -251,7 +251,7 @@ def t_p(system: System, cycle, d_pri, rev):
     (s11, p11), (s12, p12) = rev
     
     gamma = system.get_ref(s1) + alpha - system.get_ref(s2)
-    change_ref(system, s12, gamma, rot(gamma), system.get_point(s12, p12), system.get_point(s11, p11))
+    change_ref(system, s12, gamma, rot(gamma), get_point(system, s12, p12), get_point(system, s11, p11))
     
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
@@ -272,8 +272,8 @@ def sp_p_1(system: System, cycle, sli, rev):
     (s, alpha, d), (s11, p11) = sli
     (s21, p21), (s22, p22) = rev
     
-    v1 = system.get_point(s21, p21) - system.get_point(s11, p11)
-    v2 = system.get_point(s22, p22) - system.get_origin(s) - d * unit(alpha + system.get_ref(s) + np.pi * .5)
+    v1 = get_point(system, s21, p21) - get_point(system, s11, p11)
+    v2 = get_point(system, s22, p22) - system.get_origin(s) - d * unit(alpha + system.get_ref(s) + np.pi * .5)
     mat_mul_r(rot(-alpha - system.get_ref(s)), v2)   # v2 <- (X0; Y)
     
     sq_z = sq_mag(v1)
@@ -284,7 +284,7 @@ def sp_p_1(system: System, cycle, sli, rev):
     theta1 = get_angle2(v1, inv_z)
     
     gamma = theta1 - theta2 - alpha - system.get_ref(s)
-    change_ref(system, s, gamma, rot(gamma), system.get_point(s22, p22), system.get_point(s21, p21))
+    change_ref(system, s, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
     sli = system.joints[cycle[0]]
     sli.delta = v2[0, 0, :] + dx
@@ -301,8 +301,8 @@ def sp_p_2(system: System, cycle, sli, rev):
     (s12, p12), (s, alpha, d) = sli
     (s21, p21), (s22, p22) = rev
     
-    v1 = system.get_point(s21, p21) - system.get_origin(s) - d * unit(np.pi * .5 + alpha + system.get_ref(s))
-    v2 = system.get_point(s22, p22) - system.get_point(s12, p12)
+    v1 = get_point(system, s21, p21) - system.get_origin(s) - d * unit(np.pi * .5 + alpha + system.get_ref(s))
+    v2 = get_point(system, s22, p22) - get_point(system, s12, p12)
     
     mat_mul_r(rot(-alpha - system.get_ref(s)), v1)  # v1 <- (X0; Y)
     sq_z = sq_mag(v2)
@@ -313,7 +313,7 @@ def sp_p_2(system: System, cycle, sli, rev):
     theta1 = get_angle2(v1, inv_z)
     
     gamma = theta2 + alpha + system.get_ref(s) - theta1
-    change_ref(system, s12, gamma, rot(gamma), system.get_point(s22, p22), system.get_point(s21, p21))
+    change_ref(system, s12, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
     sli = system.joints[cycle[0]]
     sli.delta = v1[0, 0, :] + dx
