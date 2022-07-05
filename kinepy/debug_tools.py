@@ -55,11 +55,11 @@ def debug_ppp(n):
 
 
 def debug_gpp(n):
-    # piston
+    # piston 1 (stationary)
     sy = System((Solid(), Solid(), Solid(), Solid()))
     p0 = sy.add_revolute(1, 2, (2, 0))
     p1 = sy.add_revolute(2, 3, (6, 0))
-    g2 = sy.add_prismatic(0, 3, d1=2, d2=0)
+    g2 = sy.add_prismatic(0, 3, d1=0, d2=0)
 
     s0, s1, s2, s3 = sy.sols
 
@@ -99,4 +99,81 @@ def debug_gpp(n):
     plt.show()
 
 
-debug_gpp(1001)
+def debug_ppg(n):
+    # piston 2 (mobil)
+    sy = System((Solid(), Solid(), Solid(), Solid()))
+    p0 = sy.add_revolute(1, 2, p1=(1, 0))
+    g1 = sy.add_prismatic(2, 3)
+    p2 = sy.add_revolute(0, 3, p1=(4, 0))
+
+    s0, s1, s2, s3 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+    print(s3.points)
+
+    sy.signs[0, 2, 1] = 1
+
+    sy.reset(n)
+    s1.angle = np.linspace(0, 2 * np.pi, n)
+    sy.eqs = [(0, 1), (0, 1), (2,), (3,)]
+
+    p_p_g(sy, (0, 2, 1), p0.identifier[::-1], p2.identifier, g1.identifier[::-1])
+
+    # a compléter
+
+
+def debug_pgg(n):
+    # "Polar to cartesian" system
+    sy = System((Solid(), Solid(), Solid(), Solid()))
+    p0 = sy.add_revolute(1, 2, p1=(5, 0))
+    g1 = sy.add_prismatic(2, 3)
+    g2 = sy.add_prismatic(0, 3, alpha1=np.pi/2, alpha2=np.pi/2)
+
+    s0, s1, s2, s3 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+    print(s3.points)
+
+    sy.reset(n)
+    s1.angle = np.linspace(0., 4 * np.pi, n)  # i.e pilotage
+    sy.eqs = [(0, 1), (0, 1), (2,), (3,)]
+
+    p_g_g(sy, (0, 2, 1), p0.identifier[::-1], g2.identifier, g1.identifier[::-1])
+
+    # a completer
+
+
+def debug_ggp(n):
+    # Oldham joint
+    sy = System((Solid(), Solid(), Solid(), Solid(), Solid()))
+    g0 = sy.add_prismatic(1, 2)
+    p1 = sy.add_revolute(2, 3)
+    g2 = sy.add_prismatic(3, 4, alpha2=np.pi/2)
+
+    s0, s1, s2, s3, s4 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+    print(s3.points)
+    print(s4.points)
+
+    sy.reset(n)
+    s1.angle = s4.angle = np.linspace(0., 4 * np.pi, n)
+    sy.eqs = [(0, 1, 4), (0, 1, 4), (2,), (3,), (0, 1, 4)]
+
+    g_g_p(sy, (0, 2, 1), g0.identifier[::-1], g2.identifier[::-1], p1.identifier[::-1])
+
+    # a completer
+
+
+def debug_spp(n):
+    pass
+
+
+def debug_spg(n):
+    pass
