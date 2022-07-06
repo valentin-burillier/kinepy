@@ -203,7 +203,7 @@ def sp_g_1(system: System, cycle, sli, pri):
     v1 = system.get_origin(s) + d * cross_z(ux) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
     v2 = get_point(system, s12, p12)
     
-    ((x,), (y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2)
+    x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
     trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + y * uy)
     
     sp = system.joints[cycle[0]]
@@ -227,7 +227,7 @@ def sp_g_2(system: System, cycle, sli, pri):
     v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
     v2 = -system.get_origin(s) - d * ux
     
-    ((x,), (y,)) = mat_mul_n(inv_mat(ux, uy), v1 + v2)
+    x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
     trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + y * uy)
     
     sp = system.joints[cycle[0]]
@@ -278,15 +278,15 @@ def sp_p_1(system: System, cycle, sli, rev):
     sq_z = sq_mag(v1)
     inv_z = sq_z ** -.5
     
-    dx = sgn * (sq_z - v2[1, 0, :] ** 2) ** .5
-    theta2 = (2 * (v2[1, 0, :] > 0) - 1) * np.arrcos(-dx * inv_z)
+    dx = sgn * (sq_z - v2[1] ** 2) ** .5
+    theta2 = (2 * (v2[1] > 0) - 1) * np.arccos(-dx * inv_z)
     theta1 = get_angle2(v1, inv_z)
     
     gamma = theta1 - theta2 - alpha - system.get_ref(s)
     change_ref(system, s, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
     sli = system.joints[cycle[0]]
-    sli.delta = v2[0, 0, :] + dx
+    sli.delta = v2[0] + dx
     sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
@@ -307,15 +307,15 @@ def sp_p_2(system: System, cycle, sli, rev):
     sq_z = sq_mag(v2)
     inv_z = sq_z ** - .5
     
-    dx = sgn * (sq_z - v1[1, 0, :] ** 2) ** .5
-    theta2 = (2 * (v1[1, 0, :] > 0) - 1) * np.arrcos(-dx * inv_z)
+    dx = sgn * (sq_z - v1[1] ** 2) ** .5
+    theta2 = (2 * (v1[1] > 0) - 1) * np.arccos(-dx * inv_z)
     theta1 = get_angle2(v1, inv_z)
     
     gamma = theta2 + alpha + system.get_ref(s) - theta1
     change_ref(system, s12, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
     sli = system.joints[cycle[0]]
-    sli.delta = v1[0, 0, :] + dx
+    sli.delta = v1[0] + dx
     sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)

@@ -171,9 +171,84 @@ def debug_ggp(n):
     # a completer
 
 
-def debug_spp(n):
-    pass
+def debug_spp1(n):
+    # piston 2
+    sy = System((Solid(), Solid(), Solid()))
+    p0 = sy.add_revolute(1, 2, p1=(2, 0))
+    sp1 = sy.add_slide_curve(0, 2, (5, 0))
+
+    s0, s1, s2 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+
+    sy.signs[(1, 0)] = 1
+
+    sy.reset(n)
+    s1.angle = np.linspace(0., 4 * np.pi, n)
+    sy.eqs = [(0, 1), (0, 1), (2,)]
+
+    sp_p_1(sy, (1, 0), sp1.identifier[::-1], p0.identifier)
 
 
-def debug_spg(n):
-    pass
+def debug_spp2(n):
+    # piston 1
+    sy = System((Solid(), Solid(), Solid()))
+    p0 = sy.add_revolute(1, 2, p1=(2, 0))
+    sp1 = sy.add_slide_curve(2, 0, (5, 0))
+
+    s0, s1, s2 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+
+    sy.signs[(1, 0)] = 1
+
+    sy.reset(n)
+    s1.angle = np.linspace(0., 4 * np.pi, n)
+    sy.eqs = [(0, 1), (0, 1), (2,)]
+
+    sp_p_2(sy, (1, 0), sp1.identifier, p0.identifier)
+
+
+def debug_spg2(n):
+    # Polair -> cartesien
+    sy = System((Solid(), Solid(), Solid()))
+    sp0 = sy.add_slide_curve(1, 2, p=(2, 0))
+    g1 = sy.add_prismatic(0, 2, alpha1=np.pi/2, alpha2=np.pi/2)
+
+    s0, s1, s2 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+
+    sy.reset(n)
+    s1.angle = np.linspace(0., 4 * np.pi, n)
+    sy.eqs = [(0, 1), (0, 1), (2,)]
+
+    sp_g_2(sy, (0, 1), sp0.identifier[::-1], g1.identifier)
+
+
+def debug_spg1(n):
+    # Oldham joint
+
+    sy = System((Solid(), Solid(), Solid(), Solid()))
+    sp0 = sy.add_slide_curve(2, 1)
+    g1 = sy.add_prismatic(2, 3, alpha1=np.pi/2, alpha2=np.pi/2)
+
+    s0, s1, s2, s3 = sy.sols
+
+    print(s0.points)
+    print(s1.points)
+    print(s2.points)
+    print(s3.points)
+
+    sy.reset(n)
+    s1.angle = s3.angle = np.linspace(0., 4 * np.pi, n)
+    sy.eqs = [(0, 1, 3), (0, 1, 3), (2,), (0, 1, 3)]
+
+    sp_g_1(sy, (0, 1), sp0.identifier, g1.identifier[::-1])
+

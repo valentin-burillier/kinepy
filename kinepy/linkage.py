@@ -97,6 +97,10 @@ class SlideCurveJoint(Joint):
             'alpha': self.alpha,
             'd': self.d
         }
+
+    def reset(self, n):
+        self.delta = np.zeros((n,))
+        self.angle = np.zeros((n,))
         
     
 class DoublePrismaticJoint(Joint):
