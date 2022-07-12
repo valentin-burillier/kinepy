@@ -131,7 +131,7 @@ def p_g_g(system: System, cycle, rev, pri1, pri2):
     gamma2 = (gamma1 := system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p) + \
         system.get_ref(s2) + alpha2 - system.get_ref(s2p) - alpha2p
     
-    change_ref2(system, s1, gamma1, rot(gamma1), system.get_origin(s1p))
+    change_ref2(system, s1p, gamma1, rot(gamma1), system.get_origin(s1p))
     change_ref(system, s13, gamma2, rot(gamma2), get_point(system, s13, p13), get_point(system, s11, p11))
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
