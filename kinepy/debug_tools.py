@@ -99,6 +99,9 @@ def debug_gpp(n):
     plt.show()
 
 
+debug_gpp(101)
+
+
 def debug_ppg(n):
     # piston 2 (mobil)
     sy = System((Solid(), Solid(), Solid(), Solid()))
@@ -251,4 +254,3 @@ def debug_spg1(n):
     sy.eqs = [(0, 1, 3), (0, 1, 3), (2,), (0, 1, 3)]
 
     sp_g_1(sy, (0, 1), sp0.identifier, g1.identifier[::-1])
-

@@ -288,8 +288,10 @@ def sp_p_1(system: System, cycle, sli, rev):
     sli = system.joints[cycle[0]]
     sli.delta = v2[0] + dx
     sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
+    make_continuous(sli.angle)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    make_continuous(p.angle)
     
     return system.eqs[s] + system.eqs[s21]
 
@@ -309,7 +311,7 @@ def sp_p_2(system: System, cycle, sli, rev):
     
     dx = sgn * (sq_z - v1[1] ** 2) ** .5
     theta2 = (2 * (v1[1] > 0) - 1) * np.arccos(-dx * inv_z)
-    theta1 = get_angle2(v1, inv_z)
+    theta1 = get_angle2(v2, inv_z)
     
     gamma = theta2 + alpha + system.get_ref(s) - theta1
     change_ref(system, s12, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
@@ -317,9 +319,11 @@ def sp_p_2(system: System, cycle, sli, rev):
     sli = system.joints[cycle[0]]
     sli.delta = v1[0] + dx
     sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
+    make_continuous(sli.angle)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
-    
+    make_continuous(p.angle)
+
     return system.eqs[s] + system.eqs[s22]
 
 
