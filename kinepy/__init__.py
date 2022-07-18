@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import tools as t
+import kinepy.tools as t
 
 __version__ = "2.1.3"
 

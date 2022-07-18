@@ -1,5 +1,5 @@
-from geometry import *
-from system import System
+from kinepy.geometry import *
+from kinepy.system import System
 
 
 #  ---------------------------------------------------- P P P ----------------------------------------------------------
@@ -46,11 +46,11 @@ def p_p_p(system: System, cycle, rev1, rev2, rev3):
 #  ---------------------------------------------------- G P P ----------------------------------------------------------
 
 def g_p_p(system: System, cycle, pri, rev2, rev3):
-    sgn = system.signs[cycle]
-    
     (s1p, alpha1p, d1p), (s1, alpha1, d1) = pri
     (s21, p21), (s22, p22) = rev2
     (s32, p32), (s33, p33) = rev3
+
+    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[0]].sol1) - 1)
     
     gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
     change_ref2(system, s1p, gamma, rot(gamma), get_point(system, s33, p33))
@@ -64,9 +64,9 @@ def g_p_p(system: System, cycle, pri, rev2, rev3):
     
     sq_z = sq_mag(v2)
     inv_z = sq_z ** -.5
-    dx = sgn * (sq_z - v[1] ** 2) ** .5 * (2 * (s1 == system.joints[cycle[0]].sol1) - 1)
+    dx = sgn * (sq_z - v[1] ** 2) ** .5
     
-    theta2 = np.arccos(- dx * inv_z) * (2 * (v[1] >= 0) - 1)
+    theta2 = np.arccos(-sgn * (1 - (v[1] * inv_z) ** 2) ** .5) * (2 * (v[1] >= 0) - 1)
     theta3 = get_angle2(v2, inv_z)
     
     gamma = theta2 + alpha1 + system.get_ref(s1) - theta3
@@ -86,11 +86,11 @@ def g_p_p(system: System, cycle, pri, rev2, rev3):
 #  ---------------------------------------------------- P P G ----------------------------------------------------------
 
 def p_p_g(system: System, cycle, rev1, rev2, pri):
-    sgn = system.signs[cycle]
-    
     (s13, p13), (s11, p11) = rev1
     (s21, p21), (s22, p22) = rev2
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
+
+    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[2]].sol1) - 1)
     
     v1 = get_point(system, s21, p21) - get_point(system, s11, p11)
     v2 = get_point(system, s22, p22) - system.get_origin(s1) + \
@@ -103,8 +103,8 @@ def p_p_g(system: System, cycle, rev1, rev2, pri):
     mat_mul_r(rot(-system.get_ref(s1) - alpha1), v)  # v <- (X0; y)
     sq_z = sq_mag(v1)
     inv_z = sq_z ** -.5
-    dx = sgn * (sq_z - v[1] ** 2) ** .5 * (2 * (s1 == system.joints[cycle[2]].sol1) - 1)
-    theta2 = (2 * (v[1] > 0) - 1) * np.arccos(-dx * inv_z)
+    dx = sgn * (sq_z - v[1] ** 2) ** .5
+    theta2 = (2 * (v[1] > 0) - 1) * np.arccos(-sgn * (1 - (v[1] * inv_z) ** 2) ** .5)
     theta3 = get_angle2(v1, inv_z)
     
     gamma = theta3 - theta2 - system.get_ref(s1) - alpha1
@@ -282,7 +282,7 @@ def sp_p_1(system: System, cycle, sli, rev):
     inv_z = sq_z ** -.5
     
     dx = sgn * (sq_z - v2[1] ** 2) ** .5
-    theta2 = (2 * (v2[1] > 0) - 1) * np.arccos(-dx * inv_z)
+    theta2 = (2 * (v2[1] > 0) - 1) * np.arccos(-sgn * (1 - (v2[1] * inv_z) ** 2) ** .5)
     theta1 = get_angle2(v1, inv_z)
     
     gamma = theta1 - theta2 - alpha - system.get_ref(s)
@@ -313,7 +313,7 @@ def sp_p_2(system: System, cycle, sli, rev):
     inv_z = sq_z ** - .5
     
     dx = sgn * (sq_z - v1[1] ** 2) ** .5
-    theta2 = (2 * (v1[1] > 0) - 1) * np.arccos(-dx * inv_z)
+    theta2 = (2 * (v1[1] > 0) - 1) * np.arccos(-sgn * (1 - (v1[1] * inv_z) ** 2) ** .5)
     theta1 = get_angle2(v2, inv_z)
     
     gamma = theta2 + alpha + system.get_ref(s) - theta1

@@ -1,9 +1,8 @@
-from system import *
-from kinematic import *
+from kinepy.system import *
+from kinepy.kinematic import *
 import matplotlib.pyplot as plt
-import tools as to
+import kinepy.tools as to
 
-#%%
 
 n = 1000
 
@@ -40,6 +39,7 @@ plt.plot(s1.angle, to.make_continuous(sp1.angle), label='sp1a')
 plt.plot(s1.angle, sp1.delta, label='sp1d')
 plt.axis('equal')
 plt.legend()
+plt.show()
 
 """
 # ---------------

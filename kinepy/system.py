@@ -1,5 +1,5 @@
-from linkage import *
-from solid import *
+from kinepy.linkage import *
+from kinepy.solid import *
 
 
 class System:
