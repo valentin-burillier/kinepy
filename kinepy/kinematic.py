@@ -170,13 +170,13 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
     
-    v1 = system.get_origin(s2) + (d2 - d2p) * cross_z(uy) - system.get_origin(s1) - (d1 * d1p) * cross_z(ux)
-    v2 = get_point(system, s12, p12) - system.get_origin(s2p)
-    v3 = system.get_origin(s1p) - get_point(system, s13, p13)
+    v1 = system.get_origin(s2) + (d2 - d2p) * cross_z(uy) - system.get_origin(s1) - (d1 - d1p) * cross_z(ux)
+    v2 = -system.get_origin(s2p)
+    v3 = -get_point(system, s13, p13)
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2 + v3)
     
-    trans(system, s1p, system.get_origin(s1) + (d1 * d1p) * cross_z(ux) + x * ux)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(ux) + x * ux)
     trans(system, s2p, get_point(system, s13, p13))
     
     g1 = system.joints[cycle[0]]
@@ -185,6 +185,7 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
     g2.delta = y * (2 * (s2 == g2.sol2) - 1)
     p = system.joints[cycle[2]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    make_continuous(p.angle)
     
     return sum((system.eqs[s] for s in (s1, s1p, s2p)), ())
    
