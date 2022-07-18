@@ -196,13 +196,13 @@ def sp_g_1(system: System, cycle, sli, pri):
     (s12, p12), (s, alpha, d) = sli
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
-    gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1
+    gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
     change_ref2(system, s1p, gamma, rot(gamma), system.get_origin(s1p))
     
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
     v1 = system.get_origin(s) + d * cross_z(ux) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
-    v2 = get_point(system, s12, p12)
+    v2 = -get_point(system, s12, p12)
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
     trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + y * uy)
@@ -210,6 +210,7 @@ def sp_g_1(system: System, cycle, sli, pri):
     sp = system.joints[cycle[0]]
     sp.delta = -x
     sp.angle = system.get_ref(sp.sol2) - system.get_ref(sp.sol1)
+    make_continuous(sp.angle)
     g = system.joints[cycle[1]]
     g.delta = y * (2 * (s1 == g.sol1) - 1)
     
@@ -220,22 +221,23 @@ def sp_g_2(system: System, cycle, sli, pri):
     (s, alpha, d), (s11, p11) = sli
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
-    gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1
+    gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
     change_ref2(system, s1p, gamma, rot(gamma), system.get_origin(s1p))
     
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
-    v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
-    v2 = -system.get_origin(s) - d * ux
+    v1 = system.get_origin(s1) + (d1 - d1p) * cross_z(uy) - get_point(system, s11, p11)
+    v2 = system.get_origin(s) + d * ux
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
-    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + y * uy)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) - y * uy)
     
     sp = system.joints[cycle[0]]
     sp.delta = -x
     sp.angle = system.get_ref(sp.sol2) - system.get_ref(sp.sol1)
+    make_continuous(sp.angle)
     g = system.joints[cycle[1]]
-    g.delta = y * (2 * (s1 == g.sol1) - 1)
+    g.delta = y * (-2 * (s1 == g.sol1) + 1)
     
     return system.eqs[s] + system.eqs[s1]
 
