@@ -53,14 +53,14 @@ class RevoluteJoint(Joint):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s1].points[self._p1]} (index: {self._p1}) "
-              f"in Solid {self.system.sols[self.s1]} (index: {self.s1})")
+              f"in Solid {self.system.sols[self.s1].name} (index: {self.s1})")
 
     @p1.setter
     def p1(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int):
-            self._p2 = value
+        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s1].points):
+            self._p1 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s1].points[self._p1] = tuple(value)
 
@@ -69,13 +69,13 @@ class RevoluteJoint(Joint):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
-              f"in Solid {self.system.sols[self.s2]} (index: {self.s2})")
+              f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
 
     @p2.setter
     def p2(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int):
+        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
             self._p2 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
@@ -140,13 +140,13 @@ class SlideCurveJoint(Joint):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
-              f"in Solid {self.system.sols[self.s2]} (index: {self.s2})")
+              f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
 
     @p2.setter
     def p2(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int):
+        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
             self._p2 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
