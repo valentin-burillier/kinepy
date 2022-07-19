@@ -77,9 +77,9 @@ class PrismaticJoint(Joint):
 
 
 class SlideCurveJoint(Joint):
-    def __init__(self, sol1, sol2, p, alpha, d):
+    def __init__(self, sol1, sol2, alpha1, d1, p2):
         Joint.__init__(self, sol1, sol2, f'Sli({sol2}/{sol1})')
-        self.p, self.alpha, self.d = p, alpha, d
+        self.p2, self.alpha1, self.d1 = p2, alpha1, d1
         self. delta = self.angle = None
     
     def input_mode(self):
@@ -87,15 +87,15 @@ class SlideCurveJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.sol1, self.p), (self.sol2, self.alpha, self.d)
+        return (self.sol1, self.p2), (self.sol2, self.alpha1, self.d1)
 
     def get_data(self):
         return {
             'sol1': self.sol1,
-            'p': self.p,
+            'p2': self.p2,
             'sol2': self.sol2,
-            'alpha': self.alpha,
-            'd': self.d
+            'alpha1': self.alpha1,
+            'd1': self.d1
         }
 
     def reset(self, n):
