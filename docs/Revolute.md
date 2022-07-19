@@ -1,3 +1,9 @@
+```python
+import kinepy.linkage
+
+kinepy.linkage.RevoluteJoint(sol1, sol2, p1=(0., 0.), p2=(0., 0.))
+```
+
 # Parameters
 
 <p align="center" width="100%">

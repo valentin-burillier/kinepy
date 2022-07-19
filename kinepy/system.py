@@ -10,6 +10,8 @@ class System:
         self.named_joints = {s.name: i for i, s in enumerate(joints)}
         self.tot = 0
         self.indices = {}
+        for l_ in self.joints:
+            l_.system = self
         for l_ in piloted:
             pil = []
             for _ in self.joints[l_].inputMode():
@@ -41,6 +43,7 @@ class System:
         print(f'Added linkage {p}')
         self.named_joints[p.name] = len(self.joints)
         self.joints.append(p)
+        p.system = self
         return p
 
     def add_prismatic(self, s1, s2, alpha1=0., d1=0., alpha2=0., d2=0.):
@@ -53,6 +56,7 @@ class System:
         print(f'Added linkage {g}')
         self.named_joints[g.name] = len(self.joints)
         self.joints.append(g)
+        g.system = self
         return g
     
     def add_slide_curve(self, s1, s2, alpha1=0., d1=0., p2=(0., 0.)):
@@ -61,14 +65,15 @@ class System:
         if isinstance(s2, str):
             s2 = self.named_sols[s2]
         
-        if isinstance(p, (tuple, list)):
-            self.sols[s1].points.append(tuple(p))
-            p = len(self.sols[s1].points) - 1
+        if isinstance(p2, (tuple, list)):
+            self.sols[s1].points.append(tuple(p2))
+            p2 = len(self.sols[s1].points) - 1
             
         sp = SlideCurveJoint(s1, s2, alpha1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
         self.joints.append(sp)
+        sp.system = self
         return sp
     
     def add_double_prismatic(self, s1, s2, angle=0., base=(0., np.pi/2)):
@@ -81,6 +86,7 @@ class System:
         print(f'Added linkage {t}')
         self.named_joints[t.name] = len(self.joints)
         self.joints.append(t)
+        t.system = self
         return t
     
     def pilot(self, joint):
