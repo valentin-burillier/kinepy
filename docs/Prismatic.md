@@ -1,7 +1,3 @@
-```python
-kinepy.Prismatic(s1, s2, a1=0., d1=0., a2=0., d2=0.)
-```
-
 # Parameters
 
 <p align="center" width="100%">
