@@ -61,10 +61,11 @@ class RevoluteJoint(Joint):
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s1].points):
             self._p1 = value
+            self.system.sols[self.s1].named_points[self.name] = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s1].points[self._p1] = tuple(value)
         elif isinstance(value, str):
-            self._p1 = self.system.sols[self.s1].named_points[value]
+            self.system.sols[self.s1].named_points[self.name] = self._p1 = self.system.sols[self.s1].named_points[value]
 
     @property
     def p2(self):
@@ -79,10 +80,11 @@ class RevoluteJoint(Joint):
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
             self._p2 = value
+            self.system.sols[self.s2].named_points[self.name] = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
         elif isinstance(value, str):
-            self._p1 = self.system.sols[self.s1].named_points[value]
+            self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
 
 class PrismaticJoint(Joint):
@@ -152,10 +154,11 @@ class SlideCurveJoint(Joint):
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
             self._p2 = value
+            self.system.sols[self.s2].named_points[self.name] = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
         elif isinstance(value, str):
-            self._p2 = self.system.sols[self.s2].named_points[value]
+            self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
 
 class DoublePrismaticJoint(Joint):
