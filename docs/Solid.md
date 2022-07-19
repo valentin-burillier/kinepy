@@ -1,8 +1,22 @@
-# Solid
+# Parameters
 
-## Parameters
+- `origin`, 2darray :
+- `name`, str :
+- `angle`, 1darray :
+- `index`, int :
+- `named_point`, dict :
+- `m`, float :
+- `I`, float :
+- `G`, tuple :
 
-## Initialisation
+
+- `add_physical_params(G=(0., 0.), m=0, I=0)` :
+- `__setitem__(name)`, str :
+- `__getitem__(name)`, str :
+- `get_point` :
+
+- `apply_external_force(F, p=(0., 0.))` :
+- `apply_external_couple(C)` :
 
 ```pycon
 >>> s1 = S.add_solid(name='Arm')
@@ -31,8 +45,6 @@
 >>> F = lambda : np.array([[0.]*101, [-s1.m*g]*101])
 >>> s1.applie_external_force(F, (0., 1.)) # application d'une force sur le solide s1
 ```
-
-## Après une simulation
 
 ```python
 >>> # apres une simulation
