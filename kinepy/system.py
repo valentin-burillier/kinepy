@@ -42,6 +42,8 @@ class System:
         p = RevoluteJoint(s1, s2, p1, p2)
         print(f'Added linkage {p}')
         self.named_joints[p.name] = len(self.joints)
+        self.sols[s1].named_points[p.name] = p1
+        self.sols[s2].named_points[p.name] = p2
         self.joints.append(p)
         p.system = self
         return p
@@ -72,6 +74,7 @@ class System:
         sp = SlideCurveJoint(s1, s2, alpha1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
+        self.sols[s2].named_points[sp.name] = p2
         self.joints.append(sp)
         sp.system = self
         return sp
@@ -88,6 +91,11 @@ class System:
         self.joints.append(t)
         t.system = self
         return t
+
+    def add_joint(self, joint):
+        self.named_joints[joint.name] = len(self.joints)
+        self.joints.append(joint)
+        joint.system = self
     
     def pilot(self, joint):
         if isinstance(joint, (tuple, list)):

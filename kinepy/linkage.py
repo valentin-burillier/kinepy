@@ -63,6 +63,8 @@ class RevoluteJoint(Joint):
             self._p1 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s1].points[self._p1] = tuple(value)
+        elif isinstance(value, str):
+            self._p1 = self.system.sols[self.s1].named_points[value]
 
     @property
     def p2(self):
@@ -79,6 +81,8 @@ class RevoluteJoint(Joint):
             self._p2 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
+        elif isinstance(value, str):
+            self._p1 = self.system.sols[self.s1].named_points[value]
 
 
 class PrismaticJoint(Joint):
@@ -150,8 +154,10 @@ class SlideCurveJoint(Joint):
             self._p2 = value
         elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
             self.system.sols[self.s2].points[self._p2] = tuple(value)
-        
-    
+        elif isinstance(value, str):
+            self._p2 = self.system.sols[self.s2].named_points[value]
+
+
 class DoublePrismaticJoint(Joint):
     def __init__(self, s1, s2, angle, base):
         Joint.__init__(self, s1, s2, f'2-Pri({s2}/{s1})')
