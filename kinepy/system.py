@@ -24,60 +24,60 @@ class System:
         self.sols.append(s)
         return s
     
-    def add_revolute(self, sol1, sol2, p1=(0., 0.), p2=(0., 0.)):
-        if isinstance(sol1, str):
-            sol1 = self.named_sols[sol1]
+    def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+        if isinstance(s1, str):
+            s1 = self.named_sols[s1]
         if isinstance(p1, (tuple, list)):
-            self.sols[sol1].points.append(tuple(p1))
-            p1 = len(self.sols[sol1].points) - 1
+            self.sols[s1].points.append(tuple(p1))
+            p1 = len(self.sols[s1].points) - 1
     
-        if isinstance(sol2, str):
-            sol2 = self.named_sols[sol2]
+        if isinstance(s2, str):
+            s2 = self.named_sols[s2]
         if isinstance(p2, (tuple, list)):
-            self.sols[sol2].points.append(tuple(p2))
-            p2 = len(self.sols[sol2].points) - 1
+            self.sols[s2].points.append(tuple(p2))
+            p2 = len(self.sols[s2].points) - 1
         
-        p = RevoluteJoint(sol1, sol2, p1, p2)
+        p = RevoluteJoint(s1, s2, p1, p2)
         print(f'Added linkage {p}')
         self.named_joints[p.name] = len(self.joints)
         self.joints.append(p)
         return p
 
-    def add_prismatic(self, sol1, sol2, alpha1=0., d1=0., alpha2=0., d2=0.):
-        if isinstance(sol1, str):
-            sol1 = self.named_sols[sol1]
-        if isinstance(sol2, str):
-            sol2 = self.named_sols[sol2]
+    def add_prismatic(self, s1, s2, alpha1=0., d1=0., alpha2=0., d2=0.):
+        if isinstance(s1, str):
+            s1 = self.named_sols[s1]
+        if isinstance(s2, str):
+            s2 = self.named_sols[s2]
             
-        g = PrismaticJoint(sol1, sol2, alpha1, d1, alpha2, d2)
+        g = PrismaticJoint(s1, s2, alpha1, d1, alpha2, d2)
         print(f'Added linkage {g}')
         self.named_joints[g.name] = len(self.joints)
         self.joints.append(g)
         return g
     
-    def add_slide_curve(self, sol1, sol2, p=(0., 0.), alpha=0., d=0.):
-        if isinstance(sol1, str):
-            sol1 = self.named_sols[sol1]
-        if isinstance(sol2, str):
-            sol2 = self.named_sols[sol2]
+    def add_slide_curve(self, s1, s2, alpha1=0., d1=0., p2=(0., 0.)):
+        if isinstance(s1, str):
+            s1 = self.named_sols[s1]
+        if isinstance(s2, str):
+            s2 = self.named_sols[s2]
         
         if isinstance(p, (tuple, list)):
-            self.sols[sol1].points.append(tuple(p))
-            p = len(self.sols[sol1].points) - 1
+            self.sols[s1].points.append(tuple(p))
+            p = len(self.sols[s1].points) - 1
             
-        sp = SlideCurveJoint(sol1, sol2, p, alpha, d)
+        sp = SlideCurveJoint(s1, s2, alpha1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
         self.joints.append(sp)
         return sp
     
-    def add_double_prismatic(self, sol1, sol2, angle=0., base=(0., np.pi/2)):
-        if isinstance(sol1, str):
-            sol1 = self.named_sols[sol1]
-        if isinstance(sol2, str):
-            sol2 = self.named_sols[sol2]
+    def add_double_prismatic(self, s1, s2, angle=0., base=(0., np.pi/2)):
+        if isinstance(s1, str):
+            s1 = self.named_sols[s1]
+        if isinstance(s2, str):
+            s2 = self.named_sols[s2]
         
-        t = DoublePrismaticJoint(sol1, sol2, angle, base)
+        t = DoublePrismaticJoint(s1, s2, angle, base)
         print(f'Added linkage {t}')
         self.named_joints[t.name] = len(self.joints)
         self.joints.append(t)
