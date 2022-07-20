@@ -1,14 +1,9 @@
-```python
-import kinepy.linkage
-
-kinepy.linkage.RevoluteJoint(sol1, sol2, p1=(0., 0.), p2=(0., 0.))
-```
-
 # Parameters
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/171271518-9edfab6c-9135-4c7b-82ce-f299bb226b7d.png">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179937697-ef957a55-0fc3-4af7-ae4d-73a4e8240511.png">
 </p>
+
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
