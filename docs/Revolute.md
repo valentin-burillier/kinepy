@@ -1,7 +1,7 @@
 # Parameters
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179937697-ef957a55-0fc3-4af7-ae4d-73a4e8240511.png">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179979622-49be5de3-1cd2-4a88-828b-1120da427075.svg">
 </p>
 
 
