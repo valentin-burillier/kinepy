@@ -1,9 +1,8 @@
 # Parameters
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179945909-2fb442fa-a548-4d21-b83c-65c02e05e32f.png">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179978913-dd33a160-27e6-4ca3-9354-337dbd5a6827.svg">
 </p>
-
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
