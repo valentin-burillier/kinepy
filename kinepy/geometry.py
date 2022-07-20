@@ -37,10 +37,6 @@ def get_angle(vec):  # (2, n) -> (n,)
     return np.arccos(vec[0] * inv_mag(vec)) * (2 * (vec[1] > 0) - 1)
 
 
-def get_angle1(vec, mg):
-    return np.arccos(vec[0] / mg) * (2 * (vec[1] > 0) - 1)
-
-
 def get_angle2(vec, im):
     return np.arccos(vec[0] * im) * (2 * (vec[1] > 0) - 1)
 
@@ -78,6 +74,8 @@ def trans(system, sol, vec):
     for i in system.eqs[sol]:
         system.sols[i].origin += vec
 
+
+# ----------------------------------------------- Calculus -------------------------------------------------------------
 
 def make_continuous(angles):
     l0 = 0
