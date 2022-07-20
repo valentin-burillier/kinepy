@@ -1,10 +1,35 @@
-# System
+[mettre un exemple]
 
-## Documentation
+# Initialisation
+
+- `add_solid()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md)
+- `add_revolute()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Revolute.md)
+- `add_prismatic()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Prismatic.md)
+- `add_pin_slot()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md)
+
+# Kinematic
+
+- `pilot()` :
+- `compile_kinematic()` :
+- `solve_kinematic()` :
+
+# Static
+
+- `apply_gravity()` :
+- `block()` :
+- `compile_static()` :
+- `solve_static()` :
+
+# Dynamic
+
+- `work()` :
+- `compile_dynamic()` :
+- `solve_dynamic()` :
+
+
+
 `System(sols=(), joints=(), piloted=(), signs=None)`
 
-
-## Initialisation examples
 
 ```python
 from kinepy.system import System
@@ -41,10 +66,4 @@ JOINTS = (
 )
 
 S = System(SOLIDS, JOINTS)
-```
-
-## Kinematics
-
-```python
-# To be continued
 ```
