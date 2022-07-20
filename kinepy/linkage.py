@@ -88,9 +88,9 @@ class RevoluteJoint(Joint):
 
 
 class PrismaticJoint(Joint):
-    def __init__(self, s1, s2, alpha1, d1, alpha2, d2):
+    def __init__(self, s1, s2, a1, d1, a2, d2):
         Joint.__init__(self, s1, s2, f'Pri({s2}/{s1}')
-        self.alpha1, self.alpha2, self.d1, self.d2 = alpha1, alpha2, d1, d2
+        self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
         self.delta = None
         
     def input_mode(self):
@@ -98,14 +98,14 @@ class PrismaticJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s1, self.alpha1, self.d1), (self.s2, self.alpha2, self.d2)
+        return (self.s1, self.a1, self.d1), (self.s2, self.a2, self.d2)
 
     def get_data(self):
         return {
             's1': self.s1,
             's2': self.s2,
-            'alpha1': self.alpha1,
-            'alpha2': self.alpha2,
+            'a1': self.a1,
+            'a2': self.a2,
             'd1': self.d1,
             'd2': self.d2,
             'name': self.name
@@ -116,9 +116,9 @@ class PrismaticJoint(Joint):
 
 
 class SlideCurveJoint(Joint):
-    def __init__(self, s1, s2, alpha1, d1, p2):
+    def __init__(self, s1, s2, a1, d1, p2):
         Joint.__init__(self, s1, s2, f'Sli({s2}/{s1})')
-        self._p2, self.alpha1, self.d1 = p2, alpha1, d1
+        self._p2, self.a1, self.d1 = p2, a1, d1
         self. delta = self.angle = None
     
     def input_mode(self):
@@ -126,14 +126,14 @@ class SlideCurveJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s2, self._p2), (self.s1, self.alpha1, self.d1)
+        return (self.s2, self._p2), (self.s1, self.a1, self.d1)
 
     def get_data(self):
         return {
             's1': self.s1,
             'p2': self._p2,
             's2': self.s2,
-            'alpha1': self.alpha1,
+            'a1': self.a1,
             'd1': self.d1
         }
 

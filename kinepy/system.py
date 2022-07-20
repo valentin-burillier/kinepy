@@ -20,8 +20,8 @@ class System:
             self.indices[l_] = tuple(pil)
         self.eqs = None
         
-    def add_solid(self, points=(), named_points=None, name=''):
-        s = Solid(points, named_points, name)
+    def add_solid(self, points=(), named_points=None, j=0., m=0., g=0., name=''):
+        s = Solid(points, named_points, j, m, g, name)
         self.named_sols[s.name] = len(self.sols)
         self.sols.append(s)
         return s
