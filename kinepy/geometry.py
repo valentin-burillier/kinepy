@@ -9,8 +9,12 @@ def unit(theta):  # (n,) -> (2, n)
     return np.array([np.cos(theta), np.sin(theta)])
 
 
-def cross_z(vec):  # (2, ...) -> (2, ...), z ^ v
+def z_cross(vec):  # (2, ...) -> (2, ...), z ^ v
     return np.array((-vec[1], vec[0]))
+
+
+def det(v1, v2):
+    return v1[0] * v2[1] - v2[0] * v1[1]
 
 
 def mag(vec):  # (2, n) -> (n,)
@@ -84,3 +88,11 @@ def make_continuous(angles):
             l0 = angles[i]
         else:
             l0 = 0
+
+
+def derivative1(table, dt):
+    return .5 * (table[2:] - table[:-2]) / dt
+
+
+def derivative2(table, dt):
+    return (table[2:] + table[:-2] - 2 * table[1:-1]) / (dt * dt)

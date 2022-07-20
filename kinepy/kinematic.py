@@ -56,7 +56,7 @@ def g_p_p(system: System, cycle, pri, rev2, rev3):
     change_ref2(system, s1p, gamma, rot(gamma), get_point(system, s33, p33))
 
     p21, p22 = get_point(system, s21, p21), get_point(system, s22, p22)
-    v = p21 - system.get_origin(s1) - (d1 - d1p) * cross_z(unit(system.get_ref(s1) + alpha1)) + system.get_origin(s1p)
+    v = p21 - system.get_origin(s1) - (d1 - d1p) * z_cross(unit(system.get_ref(s1) + alpha1)) + system.get_origin(s1p)
     # v1 + rot(...) . v3
 
     v2 = p22 - get_point(system, s32, p32)
@@ -135,13 +135,13 @@ def p_g_g(system: System, cycle, rev, pri1, pri2):
     change_ref(system, s13, gamma2, rot(gamma2), get_point(system, s13, p13), get_point(system, s11, p11))
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
-    v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * cross_z(ux)
-    v2 = system.get_origin(s1p) - system.get_origin(s1p) - (d2 - d2p) * cross_z(uy)
+    v1 = get_point(system, s11, p11) - system.get_origin(s1) - (d1 - d1p) * z_cross(ux)
+    v2 = system.get_origin(s1p) - system.get_origin(s1p) - (d2 - d2p) * z_cross(uy)
     v3 = system.get_origin(s2p) - get_point(system, s13, p13)
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2 + v3)
     
-    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(ux) + x * ux)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * z_cross(ux) + x * ux)
     
     g1 = system.joints[cycle[1]]
     g1.delta = x * (2 * (s1 == g1.sol1) - 1)
@@ -170,13 +170,13 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
     
     ux, uy = unit(system.get_ref(s1) + alpha1), unit(system.get_ref(s2) + alpha2)
     
-    v1 = system.get_origin(s2) + (d2 - d2p) * cross_z(uy) - system.get_origin(s1) - (d1 - d1p) * cross_z(ux)
+    v1 = system.get_origin(s2) + (d2 - d2p) * z_cross(uy) - system.get_origin(s1) - (d1 - d1p) * z_cross(ux)
     v2 = -system.get_origin(s2p)
     v3 = -get_point(system, s13, p13)
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2 + v3)
     
-    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(ux) + x * ux)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * z_cross(ux) + x * ux)
     trans(system, s2p, get_point(system, s13, p13))
     
     g1 = system.joints[cycle[0]]
@@ -201,11 +201,11 @@ def sp_g_1(system: System, cycle, sli, pri):
     
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
-    v1 = system.get_origin(s) + d * cross_z(ux) - system.get_origin(s1) - (d1 - d1p) * cross_z(uy)
+    v1 = system.get_origin(s) + d * z_cross(ux) - system.get_origin(s1) - (d1 - d1p) * z_cross(uy)
     v2 = -get_point(system, s12, p12)
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
-    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) + y * uy)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * z_cross(uy) + y * uy)
     
     sp = system.joints[cycle[0]]
     sp.delta = -x
@@ -226,11 +226,11 @@ def sp_g_2(system: System, cycle, sli, pri):
     
     ux, uy = unit(alpha + system.get_ref(s)), unit(alpha1 + system.get_ref(s1))
     
-    v1 = system.get_origin(s1) + (d1 - d1p) * cross_z(uy) - get_point(system, s11, p11)
+    v1 = system.get_origin(s1) + (d1 - d1p) * z_cross(uy) - get_point(system, s11, p11)
     v2 = system.get_origin(s) + d * ux
     
     x, y = mat_mul_n(inv_mat(ux, uy), v1 + v2)
-    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * cross_z(uy) - y * uy)
+    trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * z_cross(uy) - y * uy)
     
     sp = system.joints[cycle[0]]
     sp.delta = -x
