@@ -1,4 +1,3 @@
-from kinepy.system import System
 from kinepy.linkage import RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint
 
 KINEMATICS, DYNAMICS, BOTH = 0, 1, 2
@@ -8,7 +7,7 @@ class CompilationError(Exception):
     pass
 
 
-def make_graph(system: System):
+def make_graph(system):
     graph: list[list[tuple[int, int]]] = [list() for _ in system.sols]
     for i, l_ in enumerate(system.joints):
         graph[l_.s1].append((l_.s2, i))
