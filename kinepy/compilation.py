@@ -74,7 +74,7 @@ def find_cycle(system, eqs, graph, d):
             if eq in nbs and (h := hash_cycle((system.joints[nbs[eq]], system.joints[l_]))) in valid_cycles:
                 return d[c], (nbs[eq], l_), (c, eq), h in signed_cycles
             if eq in nbs:
-                raise CompilationError('Invalid Hyper-static cycle encountered')
+                raise CompilationError(f'Invalid Hyper-static 2-cycle encountered: {(nbs[eq], l_)}')
             nbs[eq] = l_
         # 3-cycle
         for nb, l1 in nbs.items():
@@ -100,7 +100,8 @@ def next_step(system, eqs, graph, d, mode):
         return i1, eq1, False
     # solve the cycle
     if d2 == float('inf'):
-        raise CompilationError('Nothing found')
+        graph_text = "\n".join(str(i) for i in graph)
+        raise CompilationError(f'Nothing found in graph:\n{graph_text}\nEqs: {eqs}')
     return cycle, eq2, sgn
 
 
@@ -152,6 +153,11 @@ def compiler(system, mode=KINEMATICS):
             tag = '_'.join(system.joints[l_].tag for l_ in cycle_indices)
             kin_instr.append((tag, cycle_indices,) + cycle)
             dyn_instr.insert(0, (tag, cycle_indices,) + cycle + (eq_,))
+
+            if signed and cycle_indices not in system.signs:
+                system.signs[cycle_indices] = 1
+                print(f'Identified new signed cycle: {cycle_indices} ({tag}).\nChosen 1 as sign.')
+
         eq_union(eq, graph, eqs, _eqs)
         d = set_distances(graph, eqs)
     return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]
