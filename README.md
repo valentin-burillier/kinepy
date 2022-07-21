@@ -11,6 +11,7 @@ La bibliothèque suit les hypothèses suivantes :
 - Les liaisons sont parfaites
 - Le shéma cinématique du mécanisme est minimal
 - Le référentiel global associé au bâti est galiléen
+- Le systeme est soumis un champs de force uniforme
 
 Il est important d'aller voir ce [fichier](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md) pour savoir comment réaliser la simulation d'un mécanisme. La [documentation](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md) de la bibliothèque est aussi accessible. 
 
