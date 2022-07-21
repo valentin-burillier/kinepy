@@ -15,16 +15,17 @@ def make_graph(system):
     return graph
 
 
-def set_distances(graph):
+def set_distances(graph, eqs):
     d = [-1] * len(graph)
     d[0] = 0
     queue = [0]
     while queue:
         c = queue.pop(0)
         for s, _ in graph[c]:
-            if d[s] == -1:
-                d[s] = d[c] + 1
-                queue.append(s)
+            e = eqs[s]
+            if d[e] == -1:
+                d[e] = d[c] + 1
+                queue.append(e)
     return d
 
 
@@ -137,7 +138,7 @@ def compiler(system, mode=KINEMATICS):
     eqs, _eqs = list(range(len(system.sols))), list((i,) for i in range(len(system.sols)))
     graph = make_graph(system)
     kin_instr, dyn_instr = [], []
-    d = set_distances(graph)
+    d = set_distances(graph, eqs)
     final = [tuple(range(len(system.sols)))]
     while _eqs != final:
         cycle, eq, signed = next_step(system, eqs, graph, d, mode)
@@ -152,4 +153,5 @@ def compiler(system, mode=KINEMATICS):
             kin_instr.append((tag, cycle_indices,) + cycle)
             dyn_instr.insert(0, (tag, cycle_indices,) + cycle + (eq_,))
         eq_union(eq, graph, eqs, _eqs)
+        d = set_distances(graph, eqs)
     return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]
