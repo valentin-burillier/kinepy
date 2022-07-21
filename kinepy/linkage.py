@@ -2,10 +2,9 @@ import numpy as np
 
 
 class Joint:
-    nb = 0
+    id_ = 0
 
     def __init__(self, s1, s2, name):
-        self.__class__.nb += 1
         self.s1, self.s2, self.name = s1, s2, name
         self.system = None
 
@@ -24,6 +23,8 @@ class Joint:
 
 
 class RevoluteJoint(Joint):
+    id_ = 1
+    tag = 'P'
     
     def __init__(self, s1, s2, p1, p2):
         Joint.__init__(self, s1, s2, f'Rev({s2}/{s1})')
@@ -88,6 +89,9 @@ class RevoluteJoint(Joint):
 
 
 class PrismaticJoint(Joint):
+    id_ = 4
+    tag = 'G'
+
     def __init__(self, s1, s2, a1, d1, a2, d2):
         Joint.__init__(self, s1, s2, f'Pri({s2}/{s1}')
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
@@ -115,7 +119,10 @@ class PrismaticJoint(Joint):
         self.delta = np.zeros((n,), float)
 
 
-class SlideCurveJoint(Joint):
+class PinSlotJoint(Joint):
+    id_ = 16
+    tag = 'SP'
+
     def __init__(self, s1, s2, a1, d1, p2):
         Joint.__init__(self, s1, s2, f'Sli({s2}/{s1})')
         self._p2, self.a1, self.d1 = p2, a1, d1
@@ -161,7 +168,10 @@ class SlideCurveJoint(Joint):
             self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
 
-class DoublePrismaticJoint(Joint):
+class RectangularJoint(Joint):
+    id_ = 64
+    tag = 'T'
+
     def __init__(self, s1, s2, angle, base):
         Joint.__init__(self, s1, s2, f'2-Pri({s2}/{s1})')
         self.angle, self.base = angle, base
@@ -184,3 +194,4 @@ class DoublePrismaticJoint(Joint):
     
     def reset(self, n):
         self.delta = np.zeros((2, n), float)
+

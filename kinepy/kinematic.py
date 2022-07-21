@@ -192,8 +192,8 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
 
 #  ------------------------------------------------ SP G ---------------------------------------------------------------
 
-def sp_g_1(system: System, cycle, sli, pri):
-    (s12, p12), (s, alpha, d) = sli
+def sp_g_1(system: System, cycle, pin, pri):
+    (s12, p12), (s, alpha, d) = pin
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
     gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
@@ -217,8 +217,8 @@ def sp_g_1(system: System, cycle, sli, pri):
     return system.eqs[s] + system.eqs[s1p]
 
 
-def sp_g_2(system: System, cycle, sli, pri):
-    (s, alpha, d), (s11, p11) = sli
+def sp_g_2(system: System, cycle, pin, pri):
+    (s, alpha, d), (s11, p11) = pin
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
     gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
@@ -242,14 +242,14 @@ def sp_g_2(system: System, cycle, sli, pri):
     return system.eqs[s] + system.eqs[s1]
 
 
-def sp_g(system: System, cycle, sli, pri):
-    return (sp_g_1 if len(sli[0]) == 2 else sp_g_2)(system, cycle, sli, pri)
+def sp_g(system: System, cycle, pin, pri):
+    return (sp_g_1 if len(pin[0]) == 2 else sp_g_2)(system, cycle, pin, pri)
 
 
 #  ---------------------------------------------------- T P ------------------------------------------------------------
 
-def t_p(system: System, cycle, d_pri, rev):
-    (s2, _), (s1, alpha) = d_pri
+def t_p(system: System, cycle, rec, rev):
+    (s2, _), (s1, alpha) = rec
     (s11, p11), (s12, p12) = rev
     
     gamma = system.get_ref(s1) + alpha - system.get_ref(s2)
@@ -268,10 +268,10 @@ def t_p(system: System, cycle, d_pri, rev):
 
 #  -------------------------------------------------- SP P -------------------------------------------------------------
 
-def sp_p_1(system: System, cycle, sli, rev):
+def sp_p_1(system: System, cycle, pin, rev):
     sgn = system.signs[cycle]
     
-    (s, alpha, d), (s11, p11) = sli
+    (s, alpha, d), (s11, p11) = pin
     (s21, p21), (s22, p22) = rev
     
     v1 = get_point(system, s21, p21) - get_point(system, s11, p11)
@@ -288,10 +288,10 @@ def sp_p_1(system: System, cycle, sli, rev):
     gamma = theta1 - theta2 - alpha - system.get_ref(s)
     change_ref(system, s, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
-    sli = system.joints[cycle[0]]
-    sli.delta = v2[0] + dx
-    sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
-    make_continuous(sli.angle)
+    pin = system.joints[cycle[0]]
+    pin.delta = v2[0] + dx
+    pin.angle = system.get_ref(pin.sol2) - system.get_ref(pin.sol1)
+    make_continuous(pin.angle)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
     make_continuous(p.angle)
@@ -299,10 +299,10 @@ def sp_p_1(system: System, cycle, sli, rev):
     return system.eqs[s] + system.eqs[s21]
 
 
-def sp_p_2(system: System, cycle, sli, rev):
+def sp_p_2(system: System, cycle, pin, rev):
     sgn = system.signs[cycle]
     
-    (s12, p12), (s, alpha, d) = sli
+    (s12, p12), (s, alpha, d) = pin
     (s21, p21), (s22, p22) = rev
     
     v1 = get_point(system, s21, p21) - system.get_origin(s) - d * unit(np.pi * .5 + alpha + system.get_ref(s))
@@ -319,10 +319,10 @@ def sp_p_2(system: System, cycle, sli, rev):
     gamma = theta2 + alpha + system.get_ref(s) - theta1
     change_ref(system, s12, gamma, rot(gamma), get_point(system, s22, p22), get_point(system, s21, p21))
     
-    sli = system.joints[cycle[0]]
-    sli.delta = v1[0] + dx
-    sli.angle = system.get_ref(sli.sol2) - system.get_ref(sli.sol1)
-    make_continuous(sli.angle)
+    pin = system.joints[cycle[0]]
+    pin.delta = v1[0] + dx
+    pin.angle = system.get_ref(pin.sol2) - system.get_ref(pin.sol1)
+    make_continuous(pin.angle)
     p = system.joints[cycle[1]]
     p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
     make_continuous(p.angle)
@@ -330,5 +330,22 @@ def sp_p_2(system: System, cycle, sli, rev):
     return system.eqs[s] + system.eqs[s22]
 
 
-def sp_p(system: System, cycle, sli, rev):
-    return (sp_p_1 if len(sli[0]) == 3 else sp_p_2)(system, cycle, sli, rev)
+def sp_p(system: System, cycle, pin, rev):
+    return (sp_p_1 if len(pin[0]) == 3 else sp_p_2)(system, cycle, pin, rev)
+
+
+def pilot():
+    pass
+
+
+kin = {
+    'P_P_P': p_p_p,
+    'P_P_G': p_p_g,
+    'G_P_P': g_p_p,
+    'G_G_P': g_g_p,
+    'P_G_G': p_g_g,
+    'SP_P': sp_p,
+    'SP_G': sp_g,
+    'T_P': t_p,
+    'Pilot': pilot
+}

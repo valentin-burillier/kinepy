@@ -5,9 +5,9 @@ class Solid:
     nb = 0
     
     def __init__(self, points=(), named_points=None, j=0., m=0., g=(0., 0.), name=''):
-        self.__class__.nb += 1
         self.points = list(points)
         self.name = name if name else f'Solid{Solid.nb}'
+        self.__class__.nb += 1
         self.named_points = named_points if named_points else dict()
         self.angle = self._points = self.origin = None
         self.j, self.m, self.g = j, m, g

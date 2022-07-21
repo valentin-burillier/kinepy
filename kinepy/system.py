@@ -1,11 +1,12 @@
 from kinepy.linkage import *
 from kinepy.solid import *
+from kinepy.compilation import compiler, DYNAMICS, BOTH
 
 
 class System:
-    def __init__(self, sols=(), joints=(), piloted=(), signs=None):
+    def __init__(self, sols=(), joints=(), piloted=(), blocked=(), signs=None):
         self.sols, self.joints = list(sols) if sols else [Solid(name='Ground')], list(joints)
-        self.piloted, self.signs = list(piloted), dict() if signs is None else signs
+        self.piloted, self.blocked, self.signs = list(piloted), list(blocked), dict() if signs is None else signs
         self.named_sols = {s.name: i for i, s in enumerate(self.sols)}
         self.named_joints = {s.name: i for i, s in enumerate(joints)}
         self.tot = 0
@@ -19,6 +20,7 @@ class System:
                 self.tot += 1
             self.indices[l_] = tuple(pil)
         self.eqs = None
+        self.kin_instr, self.dyn_instr = [], []
         
     def add_solid(self, points=(), named_points=None, j=0., m=0., g=0., name=''):
         s = Solid(points, named_points, j, m, g, name)
@@ -61,7 +63,7 @@ class System:
         g.system = self
         return g
     
-    def add_slide_curve(self, s1, s2, alpha1=0., d1=0., p2=(0., 0.)):
+    def add_pin_slot(self, s1, s2, alpha1=0., d1=0., p2=(0., 0.)):
         if isinstance(s1, str):
             s1 = self.named_sols[s1]
         if isinstance(s2, str):
@@ -71,7 +73,7 @@ class System:
             self.sols[s1].points.append(tuple(p2))
             p2 = len(self.sols[s1].points) - 1
             
-        sp = SlideCurveJoint(s1, s2, alpha1, d1, p2)
+        sp = PinSlotJoint(s1, s2, alpha1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
         self.sols[s2].named_points[sp.name] = p2
@@ -79,13 +81,13 @@ class System:
         sp.system = self
         return sp
     
-    def add_double_prismatic(self, s1, s2, angle=0., base=(0., np.pi/2)):
+    def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2)):
         if isinstance(s1, str):
             s1 = self.named_sols[s1]
         if isinstance(s2, str):
             s2 = self.named_sols[s2]
         
-        t = DoublePrismaticJoint(s1, s2, angle, base)
+        t = RectangularJoint(s1, s2, angle, base)
         print(f'Added linkage {t}')
         self.named_joints[t.name] = len(self.joints)
         self.joints.append(t)
@@ -139,4 +141,8 @@ class System:
     def get_ref(self, sol):
         return self.sols[sol].angle
 
-        
+    def compile(self):
+        if not self.blocked or set(self.blocked) == set(self.piloted):
+            self.kin_instr, self.dyn_instr = compiler(self, BOTH)
+        else:
+            self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
