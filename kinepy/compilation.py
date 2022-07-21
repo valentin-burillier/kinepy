@@ -127,9 +127,11 @@ def eq_union(eq, graph, eqs, _eqs):
     for i in eq[1:]:
         for s in _eqs[i]:
             eqs[s] = eq[0]
-        if i != len(graph):
+        if i < len(graph) - 1:
             graph[i] = graph.pop()
             _eqs[i] = _eqs.pop()
+            for s in _eqs[i]:
+                eqs[s] = i
         else:
             graph.pop()
             _eqs.pop()
@@ -140,8 +142,8 @@ def compiler(system, mode=KINEMATICS):
     graph = make_graph(system)
     kin_instr, dyn_instr = [], []
     d = set_distances(graph, eqs)
-    final = [tuple(range(len(system.sols)))]
-    while _eqs != final:
+    final = [0] * len(eqs)
+    while eqs != final:
         cycle, eq, signed = next_step(system, eqs, graph, d, mode)
         if isinstance(cycle, int):
             eq_ = tuple(_eqs[i] for i in eq)
