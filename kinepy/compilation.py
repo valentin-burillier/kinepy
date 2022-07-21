@@ -124,7 +124,7 @@ def align(cycle, cycle_eqs, cycle_indices, eqs):
 def eq_union(eq, graph, eqs, _eqs):
     graph[eq[0]] = sum((tuple((s, l_) for s, l_ in graph[i] if eqs[s] not in eq) for i in eq), ())
     _eqs[eq[0]] = sum((_eqs[i] for i in eq), ())
-    for i in eq[1:]:
+    for i in sorted(eq[1:], reverse=True):
         for s in _eqs[i]:
             eqs[s] = eq[0]
         if i < len(graph) - 1:
