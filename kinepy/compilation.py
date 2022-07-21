@@ -86,7 +86,7 @@ def find_cycle(system, eqs, graph, d):
                     return d[c], (l1, nbs[e], l_), (c, e, nb), h in signed_cycles
             queue.append(nb)
         closed[c] = True
-    return float('inf'), None, ()
+    return float('inf'), None, (), False
 
 
 def next_step(system, eqs, graph, d, mode):
