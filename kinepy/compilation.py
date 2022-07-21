@@ -93,7 +93,7 @@ def next_step(system, eqs, graph, d, mode):
     if not d1:
         # pilot that joint
         return i1, eq1, False
-    d2, cycle, eq2, sgn = find_cycle(system, eq1, graph, d)
+    d2, cycle, eq2, sgn = find_cycle(system, eqs, graph, d)
     if d1 < d2:
         # pilot the joint
         return i1, eq1, False
