@@ -36,7 +36,7 @@ def p_p_p(system, cycle, rev1, rev2, rev3):
     
     for p in cycle:
         p = system.joints[p]
-        p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
         make_continuous(p.angle)
     
     return sum((system.eqs[s] for s in (s11, s22, s33)), ())
@@ -49,7 +49,7 @@ def g_p_p(system, cycle, pri, rev2, rev3):
     (s21, p21), (s22, p22) = rev2
     (s32, p32), (s33, p33) = rev3
 
-    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[0]].sol1) - 1)
+    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[0]].s1) - 1)
     
     gamma = system.get_ref(s1) + alpha1 - system.get_ref(s1p) - alpha1p
     change_ref2(system, s1p, gamma, rot(gamma), get_point(system, s33, p33))
@@ -74,10 +74,10 @@ def g_p_p(system, cycle, pri, rev2, rev3):
 
     for p in cycle[1:]:
         p = system.joints[p]
-        p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
         make_continuous(p.angle)
     pri = system.joints[cycle[0]]
-    pri.delta = (v[0, :] + dx) * (2 * (s1 == pri.sol1) - 1)
+    pri.delta = (v[0, :] + dx) * (2 * (s1 == pri.s1) - 1)
     
     return sum((system.eqs[s] for s in (s1, s22, s33)), ())
 
@@ -89,7 +89,7 @@ def p_p_g(system, cycle, rev1, rev2, pri):
     (s21, p21), (s22, p22) = rev2
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
 
-    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[2]].sol1) - 1)
+    sgn = system.signs[cycle] * (2 * (s1 == system.joints[cycle[2]].s1) - 1)
     
     v1 = get_point(system, s21, p21) - get_point(system, s11, p11)
     v2 = get_point(system, s22, p22) - system.get_origin(s1) + \
@@ -113,9 +113,9 @@ def p_p_g(system, cycle, rev1, rev2, pri):
     
     for p in cycle[:2]:
         p = system.joints[p]
-        p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     pri = system.joints[cycle[2]]
-    pri.delta = (v[0] + dx) * (2 * (s1 == pri.sol1) - 1)
+    pri.delta = (v[0] + dx) * (2 * (s1 == pri.s1) - 1)
     
     return sum((system.eqs[s] for s in (s11, s22, s1p)), ())
 
@@ -143,11 +143,11 @@ def p_g_g(system, cycle, rev, pri1, pri2):
     trans(system, s1p, system.get_origin(s1) + (d1 - d1p) * z_cross(ux) + x * ux)
     
     g1 = system.joints[cycle[1]]
-    g1.delta = x * (2 * (s1 == g1.sol1) - 1)
+    g1.delta = x * (2 * (s1 == g1.s1) - 1)
     g2 = system.joints[cycle[2]]
-    g2.delta = y * (2 * (s2 == g2.sol1) - 1)
+    g2.delta = y * (2 * (s2 == g2.s1) - 1)
     p = system.joints[cycle[0]]
-    p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     
     return sum((system.eqs[s] for s in (s11, s1p, s2p)), ())
 
@@ -179,11 +179,11 @@ def g_g_p(system, cycle, pri1, pri2, rev):
     trans(system, s2p, get_point(system, s13, p13))
     
     g1 = system.joints[cycle[0]]
-    g1.delta = x * (2 * (s1 == g1.sol1) - 1)
+    g1.delta = x * (2 * (s1 == g1.s1) - 1)
     g2 = system.joints[cycle[1]]
-    g2.delta = y * (2 * (s2 == g2.sol2) - 1)
+    g2.delta = y * (2 * (s2 == g2.s2) - 1)
     p = system.joints[cycle[2]]
-    p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     make_continuous(p.angle)
     
     return sum((system.eqs[s] for s in (s1, s1p, s2p)), ())
@@ -208,10 +208,10 @@ def sp_g_1(system, cycle, pin, pri):
     
     sp = system.joints[cycle[0]]
     sp.delta = -x
-    sp.angle = system.get_ref(sp.sol2) - system.get_ref(sp.sol1)
+    sp.angle = system.get_ref(sp.s2) - system.get_ref(sp.s1)
     make_continuous(sp.angle)
     g = system.joints[cycle[1]]
-    g.delta = y * (2 * (s1 == g.sol1) - 1)
+    g.delta = y * (2 * (s1 == g.s1) - 1)
     
     return system.eqs[s] + system.eqs[s1p]
 
@@ -233,10 +233,10 @@ def sp_g_2(system, cycle, pin, pri):
     
     sp = system.joints[cycle[0]]
     sp.delta = -x
-    sp.angle = system.get_ref(sp.sol2) - system.get_ref(sp.sol1)
+    sp.angle = system.get_ref(sp.s2) - system.get_ref(sp.s1)
     make_continuous(sp.angle)
     g = system.joints[cycle[1]]
-    g.delta = y * (-2 * (s1 == g.sol1) + 1)
+    g.delta = y * (-2 * (s1 == g.s1) + 1)
     
     return system.eqs[s] + system.eqs[s1]
 
@@ -255,9 +255,9 @@ def t_p(system, cycle, rec, rev):
     change_ref(system, s12, gamma, rot(gamma), get_point(system, s12, p12), get_point(system, s11, p11))
     
     p = system.joints[cycle[1]]
-    p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     t = system.joints[cycle[0]]
-    v, theta = system.get_origin(t.sol2) - system.get_origin(t.sol1), system.get_ref(t.sol1)
+    v, theta = system.get_origin(t.s2) - system.get_origin(t.s1), system.get_ref(t.s1)
     
     mat_mul_r(inv_mat(unit(t.base[0] + theta), unit(t.base[1] + theta)), v)
     t.delta = v[:, 0, :]
@@ -289,10 +289,10 @@ def sp_p_1(system, cycle, pin, rev):
     
     pin = system.joints[cycle[0]]
     pin.delta = v2[0] + dx
-    pin.angle = system.get_ref(pin.sol2) - system.get_ref(pin.sol1)
+    pin.angle = system.get_ref(pin.s2) - system.get_ref(pin.s1)
     make_continuous(pin.angle)
     p = system.joints[cycle[1]]
-    p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     make_continuous(p.angle)
     
     return system.eqs[s] + system.eqs[s21]
@@ -320,10 +320,10 @@ def sp_p_2(system, cycle, pin, rev):
     
     pin = system.joints[cycle[0]]
     pin.delta = v1[0] + dx
-    pin.angle = system.get_ref(pin.sol2) - system.get_ref(pin.sol1)
+    pin.angle = system.get_ref(pin.s2) - system.get_ref(pin.s1)
     make_continuous(pin.angle)
     p = system.joints[cycle[1]]
-    p.angle = system.get_ref(p.sol2) - system.get_ref(p.sol1)
+    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
     make_continuous(p.angle)
 
     return system.eqs[s] + system.eqs[s22]
