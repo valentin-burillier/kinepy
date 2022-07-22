@@ -1,4 +1,4 @@
-from geometry import *
+from kinepy.geometry import *
 
 
 class Joint:
