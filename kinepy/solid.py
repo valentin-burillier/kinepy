@@ -1,5 +1,3 @@
-import numpy as np
-
 from kinepy.geometry import *
 
 
@@ -55,6 +53,9 @@ class Solid:
         (a00, a01), (a10, a11) = rot(self.angle)
         return self.origin + np.array((point[0] * a00 + point[1] * a01, point[0] * a10, point[1] * a11))
 
+    def add_point(self, point):
+        self.points.append(point)
+
     def reset(self, n):
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
@@ -72,4 +73,3 @@ class Solid:
     @classmethod
     def _load(cls, data):
         return cls(**data)
-
