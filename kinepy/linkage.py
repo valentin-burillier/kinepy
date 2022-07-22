@@ -143,7 +143,7 @@ class PinSlotJoint(Joint):
     tag = 'SP'
 
     def __init__(self, s1, s2, a1, d1, p2):
-        Joint.__init__(self, s1, s2, f'Sli({s2}/{s1})')
+        Joint.__init__(self, s1, s2, f'Pin({s2}/{s1})')
         self._p2, self.a1, self.d1 = p2, a1, d1
         self. delta = self.angle = None
     
@@ -204,7 +204,7 @@ class RectangularJoint(Joint):
     tag = 'T'
 
     def __init__(self, s1, s2, angle, base):
-        Joint.__init__(self, s1, s2, f'2-Pri({s2}/{s1})')
+        Joint.__init__(self, s1, s2, f'Rect({s2}/{s1})')
         self.angle, self.base = angle, base
         self.delta = None
 

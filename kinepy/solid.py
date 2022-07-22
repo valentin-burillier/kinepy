@@ -21,14 +21,8 @@ class Solid:
             # Référence par le nom
             if item not in self.named_points:
                 # Nouveau point
-                if item == 'G':
-                    # 'G' est un nom dédié
-                    if not isinstance(value, tuple):
-                        raise TypeError('G is a point that is not related to others, expected tuple')
-                    self.g = value
-                else:
-                    self.named_points[item] = len(self.points)
-                    self.points.append(value)
+                self.named_points[item] = len(self.points)
+                self.points.append(value)
             else:
                 self.points[self.named_points[item]] = value
         else:
