@@ -13,7 +13,7 @@ def z_cross(vec):  # (2, ...) -> (2, ...), z ^ v
     return np.array((-vec[1], vec[0]))
 
 
-def det(v1, v2):
+def det(v1, v2):  # (2, n) x (2, n) -> (n,)
     return v1[0] * v2[1] - v2[0] * v1[1]
 
 
@@ -54,6 +54,7 @@ def get_point(system, sol, p):
 
 
 def change_ref(system, sol, angle, mat, center, vec):
+    # O' = R(angle).(O - center) + vec
     for i in system.eqs[sol]:
         s = system.sols[i]
         s.origin -= center
@@ -63,6 +64,7 @@ def change_ref(system, sol, angle, mat, center, vec):
 
 
 def change_ref2(system, sol, angle, mat, center):
+    # O' = R(angle).(O - center)
     for i in system.eqs[sol]:
         s = system.sols[i]
         s.origin -= center
@@ -71,6 +73,7 @@ def change_ref2(system, sol, angle, mat, center):
 
 
 def trans(system, sol, vec):
+    # O' = O + vec
     for i in system.eqs[sol]:
         system.sols[i].origin += vec
 
@@ -88,9 +91,9 @@ def make_continuous(angles):
             l0 = 0
 
 
-def derivative1(table, dt):
+def derivative1(table, dt):  # f', (n,) -> (n-1,)
     return .5 * (table[2:] - table[:-2]) / dt
 
 
-def derivative2(table, dt):
+def derivative2(table, dt):  # f'', (n,) -> (n-2,)
     return (table[2:] + table[:-2] - 2 * table[1:-1]) / (dt * dt)

@@ -12,14 +12,17 @@ class Solid:
         self.angle = self._points = self.origin = None
         self.j, self.m, self.g = j, m, g
         self._ma = self._ja = self._og = self.__mat = None
-        self.__cached_points = {}
 
     def __setitem__(self, item, value):
         if isinstance(item, int):
+            # Référence par l'indice
             self.points[item] = value
         elif isinstance(item, str):
+            # Référence par le nom
             if item not in self.named_points:
+                # Nouveau point
                 if item == 'G':
+                    # 'G' est un nom dédié
                     if not isinstance(value, tuple):
                         raise TypeError('G is a point that is not related to others, expected tuple')
                     self.g = value
@@ -33,18 +36,17 @@ class Solid:
     
     def __getitem__(self, item):
         if isinstance(item, int):
+            # Référence par l'indice
             return self.points[item]
         elif isinstance(item, str):
+            # Référence par le nom
             if item == 'G':
                 return self.g
             return self.points[self.named_points[item]]
     
     def reset(self, n):
-        self.__cached_points, self.__mat = {}, np.zeros((2, 2, n-2), float)
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
-        self._ma = np.zeros((2, n - 2), float)
-        self._ja = np.zeros((n - 2,), float)
 
     def _save(self):
         return {
@@ -60,29 +62,3 @@ class Solid:
     def _load(cls, data):
         return cls(**data)
 
-    def compute_ma(self, dt):
-        self._og = self.origin + mat_mul_n(rot(self.angle), self.g)
-        self._ma = self.m * np.array((derivative2(self._og[0], dt), derivative2(self._og[1], dt)))
-
-    def compute_ja(self, dt):
-        self._ja = self.j * derivative2(self.angle, dt)
-
-    def get_ja(self, point):  # BABAR
-        return self._ja + det((self._og - point)[:, 1:-1], self._ma)
-
-    def get_ma(self):
-        return self._ma
-
-    def get(self, point, cache=True):
-        if isinstance(point, str):
-            point = self.points[self.named_points[point]]
-        elif isinstance(point, int):
-            point = self.points[point]
-        if cache:
-            if point not in self.__cached_points:
-                self.__cached_points[point] = self.origin[:, 1:-1] + np.einsum('ikl, k-> il', self.__mat, point)
-            return self.__cached_points[point]
-        return self.origin[:, 1:-1] + (
-            self.__mat[0, 0] * point[0] + self.__mat[0, 1] * point[1],
-            self.__mat[1, 0] * point[0] + self.__mat[1, 1] * point[1]
-        )

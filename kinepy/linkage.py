@@ -1,4 +1,4 @@
-import numpy as np
+from geometry import *
 
 
 class Joint:
@@ -87,6 +87,13 @@ class RevoluteJoint(Joint):
         elif isinstance(value, str):
             self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
+    def pilot(self, system, index):
+        self.angle = system.input[index[0]]
+        theta = self.angle + system.get_ref(self.s1) - system.get_ref(self.s2)
+        change_ref(system, self.s2, theta, rot(theta),
+                   get_point(system, self.s2, self._p2), get_point(system, self.s1, self._p1))
+        return system.eqs[self.s1] + system.eqs[self.s2]
+
 
 class PrismaticJoint(Joint):
     id_ = 4
@@ -117,6 +124,14 @@ class PrismaticJoint(Joint):
     
     def reset(self, n):
         self.delta = np.zeros((n,), float)
+
+    def pilot(self, system, index):
+        self.delta = system.input[index[0]]
+        theta = (alpha := system.get_ref(self.s1) + self.a1) - system.get_ref(self.s2) - self.a2
+        ux = unit(alpha)
+        change_ref(system, self.s2, theta, rot(alpha), system.get_origin(self.s2),
+                   system.get_origin(self.s1) + self.delta * ux + (self.d1 - self.d2) * z_cross(ux))
+        return system.eqs[self.s1] + system.eqs[self.s2]
 
 
 class PinSlotJoint(Joint):
@@ -167,6 +182,14 @@ class PinSlotJoint(Joint):
         elif isinstance(value, str):
             self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
+    def pilot(self, system, index):
+        self.delta, self.angle = system.input[index[0]], system.input[index[1]]
+        theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
+        ux = unit(system.get_ref(self.s1) + self.a1)
+        change_ref(system, self.s2, theta, rot(theta), get_point(system, self.s2, self._p2),
+                   system.get_origin(self.s1) + self.delta * ux + self.d1 * z_cross(ux))
+        return system.eqs[self.s1] + system.eqs[self.s2]
+
 
 class RectangularJoint(Joint):
     id_ = 64
@@ -195,3 +218,10 @@ class RectangularJoint(Joint):
     def reset(self, n):
         self.delta = np.zeros((2, n), float)
 
+    def pilot(self, system, index):
+        self.delta = np.array((system.input[index[0]], system.input[index[1]]))
+        theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
+        ux, uy = unit(system.get_ref(self.s1) + self.base[0]), unit(system.get_ref(self.s1) + self.base[1])
+        change_ref(system, self.s1, theta, rot(theta), system.get_origin(self.s2),
+                   system.get_origin(self.s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), self.delta))
+        return system.eqs[self.s1] + system.eqs[self.s2]

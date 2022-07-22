@@ -1,10 +1,9 @@
 from kinepy.geometry import *
-from kinepy.system import System
 
 
 #  ---------------------------------------------------- P P P ----------------------------------------------------------
 
-def p_p_p(system: System, cycle, rev1, rev2, rev3):
+def p_p_p(system, cycle, rev1, rev2, rev3):
     sgn = system.signs[cycle]
     (s13, p13), (s11, p11) = rev1
     (s21, p21), (s22, p22) = rev2
@@ -45,7 +44,7 @@ def p_p_p(system: System, cycle, rev1, rev2, rev3):
 
 #  ---------------------------------------------------- G P P ----------------------------------------------------------
 
-def g_p_p(system: System, cycle, pri, rev2, rev3):
+def g_p_p(system, cycle, pri, rev2, rev3):
     (s1p, alpha1p, d1p), (s1, alpha1, d1) = pri
     (s21, p21), (s22, p22) = rev2
     (s32, p32), (s33, p33) = rev3
@@ -85,7 +84,7 @@ def g_p_p(system: System, cycle, pri, rev2, rev3):
 
 #  ---------------------------------------------------- P P G ----------------------------------------------------------
 
-def p_p_g(system: System, cycle, rev1, rev2, pri):
+def p_p_g(system, cycle, rev1, rev2, pri):
     (s13, p13), (s11, p11) = rev1
     (s21, p21), (s22, p22) = rev2
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
@@ -123,7 +122,7 @@ def p_p_g(system: System, cycle, rev1, rev2, pri):
 
 #  ---------------------------------------------------- P G G ----------------------------------------------------------
     
-def p_g_g(system: System, cycle, rev, pri1, pri2):
+def p_g_g(system, cycle, rev, pri1, pri2):
     (s13, p13), (s11, p11) = rev
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri1
     (s2, alpha2, d2), (s2p, alpha2p, d2p) = pri2
@@ -155,7 +154,7 @@ def p_g_g(system: System, cycle, rev, pri1, pri2):
 
 #  ---------------------------------------------------- G G P ----------------------------------------------------------
 
-def g_g_p(system: System, cycle, pri1, pri2, rev):
+def g_g_p(system, cycle, pri1, pri2, rev):
     (s1p, alpha1p, d1p), (s1, alpha1, d1) = pri1
     (s2, alpha2, d2), (s2p, alpha2p, d2p) = pri2
     (s12, p12), (s13, p13) = rev
@@ -192,7 +191,7 @@ def g_g_p(system: System, cycle, pri1, pri2, rev):
 
 #  ------------------------------------------------ SP G ---------------------------------------------------------------
 
-def sp_g_1(system: System, cycle, pin, pri):
+def sp_g_1(system, cycle, pin, pri):
     (s12, p12), (s, alpha, d) = pin
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
@@ -217,7 +216,7 @@ def sp_g_1(system: System, cycle, pin, pri):
     return system.eqs[s] + system.eqs[s1p]
 
 
-def sp_g_2(system: System, cycle, pin, pri):
+def sp_g_2(system, cycle, pin, pri):
     (s, alpha, d), (s11, p11) = pin
     (s1, alpha1, d1), (s1p, alpha1p, d1p) = pri
     
@@ -242,13 +241,13 @@ def sp_g_2(system: System, cycle, pin, pri):
     return system.eqs[s] + system.eqs[s1]
 
 
-def sp_g(system: System, cycle, pin, pri):
+def sp_g(system, cycle, pin, pri):
     return (sp_g_1 if len(pin[0]) == 2 else sp_g_2)(system, cycle, pin, pri)
 
 
 #  ---------------------------------------------------- T P ------------------------------------------------------------
 
-def t_p(system: System, cycle, rec, rev):
+def t_p(system, cycle, rec, rev):
     (s2, _), (s1, alpha) = rec
     (s11, p11), (s12, p12) = rev
     
@@ -268,7 +267,7 @@ def t_p(system: System, cycle, rec, rev):
 
 #  -------------------------------------------------- SP P -------------------------------------------------------------
 
-def sp_p_1(system: System, cycle, pin, rev):
+def sp_p_1(system, cycle, pin, rev):
     sgn = system.signs[cycle]
     
     (s, alpha, d), (s11, p11) = pin
@@ -299,7 +298,7 @@ def sp_p_1(system: System, cycle, pin, rev):
     return system.eqs[s] + system.eqs[s21]
 
 
-def sp_p_2(system: System, cycle, pin, rev):
+def sp_p_2(system, cycle, pin, rev):
     sgn = system.signs[cycle]
     
     (s12, p12), (s, alpha, d) = pin
@@ -330,12 +329,12 @@ def sp_p_2(system: System, cycle, pin, rev):
     return system.eqs[s] + system.eqs[s22]
 
 
-def sp_p(system: System, cycle, pin, rev):
+def sp_p(system, cycle, pin, rev):
     return (sp_p_1 if len(pin[0]) == 3 else sp_p_2)(system, cycle, pin, rev)
 
 
-def pilot():
-    pass
+def pilot(system, index):
+    return system.joints[index].pilot(system, system.indices[index])
 
 
 kin = {
