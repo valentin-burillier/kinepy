@@ -186,6 +186,7 @@ class System:
 
     def solve_kinematics(self, input_):
         # pour cinméatique: tout est en (n,)
+        self.reset(input_.shape[1])
         self.input = input_
         for instr in self.kin_instr:
             eq = kin[instr[0]](self, *instr[1:])
