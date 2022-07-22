@@ -49,15 +49,13 @@ class RevoluteJoint(Joint):
     def reset(self, n):
         self.angle = np.zeros((n,), float)
 
-    @property
-    def p1(self):
+    def get_p1(self):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s1].points[self._p1]} (index: {self._p1}) "
               f"in Solid {self.system.sols[self.s1].name} (index: {self.s1})")
 
-    @p1.setter
-    def p1(self, value):
+    def set_p1(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s1].points):
@@ -68,15 +66,15 @@ class RevoluteJoint(Joint):
         elif isinstance(value, str):
             self.system.sols[self.s1].named_points[self.name] = self._p1 = self.system.sols[self.s1].named_points[value]
 
-    @property
-    def p2(self):
+    p1 = property(get_p1, set_p1)
+
+    def get_p2(self):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
               f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
 
-    @p2.setter
-    def p2(self, value):
+    def set_p2(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
@@ -87,12 +85,18 @@ class RevoluteJoint(Joint):
         elif isinstance(value, str):
             self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
+    p2 = property(get_p2, set_p2)
+
     def pilot(self, system, index):
         self.angle = system.input[index[0]]
         theta = self.angle + system.get_ref(self.s1) - system.get_ref(self.s2)
         change_ref(system, self.s2, theta, rot(theta),
                    get_point(system, self.s2, self._p2), get_point(system, self.s1, self._p1))
         return system.eqs[self.s1] + system.eqs[self.s2]
+
+    @property
+    def point(self):
+        return get_point(self.system, self.s1, self._p1)
 
 
 class PrismaticJoint(Joint):
@@ -163,15 +167,13 @@ class PinSlotJoint(Joint):
         self.delta = np.zeros((n,))
         self.angle = np.zeros((n,))
 
-    @property
-    def p2(self):
+    def get_p2(self):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
               f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
 
-    @p2.setter
-    def p2(self, value):
+    def set_p2(self, value):
         if self.system is None:
             raise Exception(f"{self} doesn't belong in any system")
         if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
@@ -182,6 +184,8 @@ class PinSlotJoint(Joint):
         elif isinstance(value, str):
             self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
 
+    p2 = property(get_p2, set_p2)
+
     def pilot(self, system, index):
         self.delta, self.angle = system.input[index[0]], system.input[index[1]]
         theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
@@ -189,6 +193,10 @@ class PinSlotJoint(Joint):
         change_ref(system, self.s2, theta, rot(theta), get_point(system, self.s2, self._p2),
                    system.get_origin(self.s1) + self.delta * ux + self.d1 * z_cross(ux))
         return system.eqs[self.s1] + system.eqs[self.s2]
+
+    @property
+    def point(self):
+        return get_point(self.system, self.s2, self._p2)
 
 
 class RectangularJoint(Joint):
