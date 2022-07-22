@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.geometry import *
 
 
@@ -43,7 +45,16 @@ class Solid:
             if item == 'G':
                 return self.g
             return self.points[self.named_points[item]]
-    
+
+    def get_point(self, point):
+        if isinstance(point, (str, int)):
+            return self.origin + np.einsum('ikl,k->il', rot(self.angle), self[point])
+        point = np.array(point)
+        if point.shape[0] != 2:
+            raise ValueError('Shape must start with 2')
+        (a00, a01), (a10, a11) = rot(self.angle)
+        return np.array((point[0] * a00 + point[1] * a01, point[0] * a10, point[1] * a11))
+
     def reset(self, n):
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
