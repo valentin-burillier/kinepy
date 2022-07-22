@@ -92,8 +92,8 @@ class System:
             s2 = self.named_sols[s2]
         
         if isinstance(p2, (tuple, list)):
-            self.sols[s1].points.append(tuple(p2))
-            p2 = len(self.sols[s1].points) - 1
+            self.sols[s2].points.append(tuple(p2))
+            p2 = len(self.sols[s2].points) - 1
             
         sp = PinSlotJoint(s1, s2, alpha1, d1, p2)
         print(f'Added linkage {sp}')
