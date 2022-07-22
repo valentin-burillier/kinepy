@@ -53,7 +53,7 @@ class Solid:
         if point.shape[0] != 2:
             raise ValueError('Shape must start with 2')
         (a00, a01), (a10, a11) = rot(self.angle)
-        return np.array((point[0] * a00 + point[1] * a01, point[0] * a10, point[1] * a11))
+        return self.origin + np.array((point[0] * a00 + point[1] * a01, point[0] * a10, point[1] * a11))
 
     def reset(self, n):
         self.origin = np.zeros((2, n), float)
