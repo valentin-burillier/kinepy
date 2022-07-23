@@ -17,6 +17,10 @@ def det(v1, v2):  # (2, n) x (2, n) -> (n,)
     return v1[0] * v2[1] - v2[0] * v1[1]
 
 
+def dot(v1, v2):
+    return np.sum(v1 * v2, axis=0)
+
+
 def mag(vec):  # (2, n) -> (n,)
     return np.sum(vec * vec, axis=0) ** .5
 

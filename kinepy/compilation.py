@@ -149,13 +149,13 @@ def compiler(system, mode=KINEMATICS):
         if isinstance(cycle, int):
             eq_ = tuple(_eqs[i] for i in eq)
             kin_instr.append(('Pilot', cycle))
-            dyn_instr.insert(0, ('Block', cycle, eq_))
+            dyn_instr.insert(0, ('Block', cycle) + eq_)
         else:
             cycle, eq, cycle_indices = align(tuple(system.joints[i] for i in cycle), eq, cycle, eqs)
             eq_ = tuple(_eqs[i] for i in eq)
             tag = '_'.join(system.joints[l_].tag for l_ in cycle_indices)
             kin_instr.append((tag, cycle_indices,) + cycle)
-            dyn_instr.insert(0, (tag, cycle_indices,) + cycle + (eq_,))
+            dyn_instr.insert(0, (tag, cycle_indices,) + cycle + eq_)
 
             if signed and cycle_indices not in system.signs:
                 system.signs[cycle_indices] = 1
