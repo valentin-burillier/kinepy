@@ -54,7 +54,7 @@ class Solid:
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
 
-    def _save(self):
+    def save(self):
         return {
             'name': self.name,
             'points': self.points,
@@ -65,5 +65,5 @@ class Solid:
         }
     
     @classmethod
-    def _load(cls, data):
+    def load(cls, data):
         return cls(**data)

@@ -2,6 +2,7 @@ from kinepy.linkage import *
 from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
+import json
 
 
 class System:
@@ -21,7 +22,7 @@ class System:
         self.tot, self.indices = 0, {}
         for l_ in piloted:
             pil = []
-            for _ in self.joints[l_].inputMode():
+            for _ in self.joints[l_].input_mode():
                 pil.append(self.tot)
                 self.tot += 1
             self.indices[l_] = tuple(pil)
@@ -121,7 +122,22 @@ class System:
         t.system = self
         return t
 
-    def add_joint(self, joint):
+    def add_3dof(self, s1, s2):
+        if isinstance(s1, str):
+            # Référence par le nom
+            s1 = self.named_sols[s1]
+        if isinstance(s2, str):
+            # Référence par le nom
+            s2 = self.named_sols[s2]
+
+        _3dof = ThreeDegreesOfFreedomJoint(s1, s2)
+        print(f'Added linkage {_3dof}')
+        self.named_joints[_3dof.name] = len(self.joints)
+        self.joints.append(_3dof)
+        _3dof.system = self
+        return _3dof
+
+    def add_joint(self, joint: Joint):
         self.named_joints[joint.name] = len(self.joints)
         self.joints.append(joint)
         joint.system = self
@@ -196,3 +212,24 @@ class System:
     def solve_dynamics(self):
         # Après dynamique: tout est en (n-2,)
         pass
+
+    def get_data(self):
+        return {
+            'sols': [s.save() for s in self.sols],
+            'joints': [l_.save() for l_ in self.joints],
+            'piloted': self.piloted,
+            'blocked': self.blocked,
+            'signs': self.signs
+        }
+
+    def save(self, file):
+        with open(file, 'w') as f:
+            json.dump(self.get_data(), f)
+
+    @classmethod
+    def load(cls, file):
+        with open(file) as f:
+            data = json.load(f)
+        data['sols'] = [Solid.load(s) for s in data['sols']]
+        data['joints'] = [class_dict[name].load(d) for name, d in data['joints']]
+        return cls(**data)

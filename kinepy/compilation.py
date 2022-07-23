@@ -1,6 +1,7 @@
 from kinepy.linkage import RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint
 
 KINEMATICS, DYNAMICS, BOTH = 0, 1, 2
+MAX_CYCLE = 3
 
 
 class CompilationError(Exception):
@@ -41,7 +42,7 @@ def closest_piloted_joint(system, eqs, d, mode):
 
 
 def hash_cycle(cycle):  # maximum is 3-cycle
-    return sum(l_.id_ for l_ in cycle)
+    return sum((MAX_CYCLE+1) ** l_.id_ for l_ in cycle)
 
 
 valid_cycles = {

@@ -2,7 +2,7 @@ from kinepy.geometry import *
 
 
 class Joint:
-    id_ = 0
+    id_ = -1
 
     def __init__(self, s1, s2, name):
         self.s1, self.s2, self.name = s1, s2, name
@@ -12,18 +12,21 @@ class Joint:
         return self.name
     
     @classmethod
-    def _load(cls, data):
+    def load(cls, data):
         return cls(**data)
 
     def get_data(self):
         pass
 
-    def _save(self):
-        return {self.__class__.__name__: self.get_data()}
+    def save(self):
+        return self.__class__.__name__, self.get_data()
+
+    def input_mode(self):
+        return ()
 
 
 class RevoluteJoint(Joint):
-    id_ = 1
+    id_ = 0
     tag = 'P'
     
     def __init__(self, s1, s2, p1, p2):
@@ -32,7 +35,7 @@ class RevoluteJoint(Joint):
         self.angle = None
     
     def input_mode(self):
-        return f'{self.name}, Angle',
+        return f'{self.name}: Angle',
     
     @property
     def identifier(self):
@@ -100,7 +103,7 @@ class RevoluteJoint(Joint):
 
 
 class PrismaticJoint(Joint):
-    id_ = 4
+    id_ = 1
     tag = 'G'
 
     def __init__(self, s1, s2, a1, d1, a2, d2):
@@ -109,7 +112,7 @@ class PrismaticJoint(Joint):
         self.delta = None
         
     def input_mode(self):
-        return f'{self.name}, Length',
+        return f'{self.name}: Length',
     
     @property
     def identifier(self):
@@ -139,7 +142,7 @@ class PrismaticJoint(Joint):
 
 
 class PinSlotJoint(Joint):
-    id_ = 16
+    id_ = 2
     tag = 'SP'
 
     def __init__(self, s1, s2, a1, d1, p2):
@@ -148,7 +151,7 @@ class PinSlotJoint(Joint):
         self. delta = self.angle = None
     
     def input_mode(self):
-        return f'{self.name}, Length', f'{self.name}, Angle'
+        return f'{self.name}: Length', f'{self.name}: Angle'
     
     @property
     def identifier(self):
@@ -200,7 +203,7 @@ class PinSlotJoint(Joint):
 
 
 class RectangularJoint(Joint):
-    id_ = 64
+    id_ = 3
     tag = 'T'
 
     def __init__(self, s1, s2, angle, base):
@@ -209,7 +212,7 @@ class RectangularJoint(Joint):
         self.delta = None
 
     def input_mode(self):
-        return f'{self.name}, X', f'{self.name}, Y'
+        return f'{self.name}: X', f'{self.name}: Y'
         
     @property
     def identifier(self):
@@ -233,3 +236,36 @@ class RectangularJoint(Joint):
         change_ref(system, self.s1, theta, rot(theta), system.get_origin(self.s2),
                    system.get_origin(self.s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), self.delta))
         return system.eqs[self.s1] + system.eqs[self.s2]
+
+
+class ThreeDegreesOfFreedomJoint(Joint):
+    id_ = 4
+    tag = '3DoF'
+
+    def __init__(self, s1, s2):
+        Joint.__init__(self, s1, s2, f'3DoF({s2}/{s1})')
+        self.delta, self.angle = None, None
+
+    def get_data(self):
+        return {'s1': self.s1, 's2': self.s2, 'name': self.name}
+
+    def input_mode(self):
+        return f'{self.name}: X', f'{self.name}: Y', f'{self.name}: Angle'
+
+    @property
+    def identifier(self):  # Ne devrait pas servir...
+        return (self.s1,), (self.s2,)
+
+    def reset(self, n):
+        self.delta = np.zeros((2, n), float)
+        self.angle = np.zeros((n,), float)
+
+    def pilot(self, system, index):
+        self.delta[0], self.delta[1] = system.input[index[0]], system.input[index[1]]
+        self.angle = system.input[index[2]]
+        theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
+        change_ref(system, self.s2, theta, rot(theta), system.get_origin(self.s2), system.get_origin(self.s1))
+        return system.eqs[self.s1] + system.eqs[self.s2]
+
+
+class_dict = {cls.__name__: cls for cls in Joint.__subclasses__()}
