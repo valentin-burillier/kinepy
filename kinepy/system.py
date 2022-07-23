@@ -2,6 +2,7 @@ from kinepy.linkage import *
 from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
+from kinepy.dynamic import *
 import json
 
 
@@ -33,7 +34,10 @@ class System:
         self.signs = dict() if signs is None else signs
         self.eqs = None
         self.kin_instr, self.dyn_instr = [], []
-        
+
+        # Préparation dynamique
+        self.interactions = []
+
     def add_solid(self, points=(), named_points=None, j=0., m=0., g=0., name=''):
         s = Solid(points, named_points, j, m, g, name)
         self.named_sols[s.name] = len(self.sols)
@@ -201,7 +205,6 @@ class System:
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
 
     def solve_kinematics(self, input_):
-        # pour cinméatique: tout est en (n,)
         self.reset(input_.shape[1])
         self.input = input_
         for instr in self.kin_instr:
@@ -209,9 +212,36 @@ class System:
             for s in eq:
                 self.eqs[s] = eq
 
-    def solve_dynamics(self):
-        # Après dynamique: tout est en (n-2,)
-        pass
+    def solve_dynamics(self, dt):
+        for s in self.sols:
+            og = s.get_point(s.g)
+            s.mech_actions['Inertie'] = MechanicalAction(
+                -s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)
+            )
+        for inter in self.interactions:
+            inter.set_am(self)
+
+    def add_acceleration_field(self, g, name='Gravity'):
+        self.interactions.append(AccelerationField(g, name))
+
+    def add_spring(self, k, l0, s1, s2, p1=(0, 0), p2=(2, 0)):
+        if isinstance(s1, str):
+            # Référence par le nom
+            s1 = self.named_sols[s1]
+        if isinstance(p1, (tuple, list)):
+            # Nouveau point
+            self.sols[s1].points.append(tuple(p1))
+            p1 = len(self.sols[s1].points) - 1
+
+        if isinstance(s2, str):
+            # Référence par le nom
+            s2 = self.named_sols[s2]
+        if isinstance(p2, (tuple, list)):
+            # Nouveau point
+            self.sols[s2].points.append(tuple(p2))
+            p2 = len(self.sols[s2].points) - 1
+
+        self.interactions.append(Spring(s1, s2, p1, p2, k, l0))
 
     def get_data(self):
         return {

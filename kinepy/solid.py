@@ -11,7 +11,8 @@ class Solid:
         self.named_points = named_points if named_points else dict()
         self.angle = self._points = self.origin = None
         self.j, self.m, self.g = j, m, g
-        self._ma = self._ja = self._og = self.__mat = None
+
+        self.mech_actions = {}
 
     def __setitem__(self, item, value):
         if isinstance(item, int):
@@ -51,6 +52,7 @@ class Solid:
         self.points.append(point)
 
     def reset(self, n):
+        self.mech_actions = {}
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
 
