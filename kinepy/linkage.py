@@ -1,4 +1,5 @@
 from kinepy.geometry import *
+from kinepy.dynamic import trd, tmd, MechanicalAction
 
 
 class Joint:
@@ -97,6 +98,14 @@ class RevoluteJoint(Joint):
                    get_point(system, self.s2, self._p2), get_point(system, self.s1, self._p1))
         return system.eqs[self.s1] + system.eqs[self.s2]
 
+    def block(self, system, eq1s1, eq2s2):
+        (_, s1), (eq2, s2) = eq1s1, eq2s2
+        p = self.point
+        f = trd(system, eq2)
+        m = tmd(system, p, eq2)
+        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
     @property
     def point(self):
         return get_point(self.system, self.s1, self._p1)
@@ -139,6 +148,15 @@ class PrismaticJoint(Joint):
         change_ref(system, self.s2, theta, rot(alpha), system.get_origin(self.s2),
                    system.get_origin(self.s1) + self.delta * ux + (self.d1 - self.d2) * z_cross(ux))
         return system.eqs[self.s1] + system.eqs[self.s2]
+
+    def block(self, system, eq1s1, eq2s2):
+        (_, s1), (eq2, s2) = eq1s1, eq2s2
+        p = system.get_origin(self.s1) + (self.d1 - self.d2) * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
+        f = trd(system, eq2)
+        m = tmd(system, p, eq2)
+
+        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
 
 
 class PinSlotJoint(Joint):
@@ -201,6 +219,15 @@ class PinSlotJoint(Joint):
     def point(self):
         return get_point(self.system, self.s2, self._p2)
 
+    def block(self, system, eq1s1, eq2s2):
+        (_, s1), (eq2, s2) = eq1s1, eq2s2
+        p = self.point
+        f = trd(system, eq2)
+        m = tmd(system, p, eq2)
+
+        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
 
 class RectangularJoint(Joint):
     id_ = 3
@@ -237,6 +264,15 @@ class RectangularJoint(Joint):
                    system.get_origin(self.s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), self.delta))
         return system.eqs[self.s1] + system.eqs[self.s2]
 
+    def block(self, system, eq1s1, eq2s2):
+        (_, s1), (eq2, s2) = eq1s1, eq2s2
+        p = system.get_origin(self.s1)
+        f = trd(system, eq2)
+        m = tmd(system, p, eq2)
+
+        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
 
 class ThreeDegreesOfFreedomJoint(Joint):
     id_ = 4
@@ -266,6 +302,15 @@ class ThreeDegreesOfFreedomJoint(Joint):
         theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
         change_ref(system, self.s2, theta, rot(theta), system.get_origin(self.s2), system.get_origin(self.s1))
         return system.eqs[self.s1] + system.eqs[self.s2]
+
+    def block(self, system, eq1s1, eq2s2):
+        (_, s1), (eq2, s2) = eq1s1, eq2s2
+        p = system.get_origin(self.s1)
+        f = trd(system, eq2)
+        m = tmd(system, p, eq2)
+
+        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
 
 
 class_dict = {cls.__name__: cls for cls in Joint.__subclasses__()}

@@ -241,7 +241,7 @@ class System:
             self.sols[s2].points.append(tuple(p2))
             p2 = len(self.sols[s2].points) - 1
 
-        self.interactions.append(Spring(s1, s2, p1, p2, k, l0))
+        self.interactions.append(Spring(k, l0, s1, s2, p1, p2))
 
     def get_data(self):
         return {

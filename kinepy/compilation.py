@@ -35,7 +35,7 @@ def closest_piloted_joint(system, eqs, d, mode):
     for l_i in (system.piloted, system.blocked, system.piloted)[mode]:
         l_ = system.joints[l_i]
         if (eq1 := eqs[l_.s1]) != (eq2 := eqs[l_.s2]) and min(d[eq1], d[eq2]) < d_min:
-            d_min, index, eq_ = min(d[eq1], d[eq2]), l_i, (eq1, eq2)[::(2 * (d[eq1] < d[eq2]) - 1)]
+            d_min, index, eq_ = min(d[eq1], d[eq2]), l_i, ((eq1, l_.s1), (eq2, l_.s2))[::(2 * (d[eq1] < d[eq2]) - 1)]
             if d_min == 0:
                 return d_min, index, eq_
     return d_min, index, eq_

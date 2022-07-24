@@ -26,7 +26,7 @@ class AccelerationField(Interaction):
 
 
 class Spring(Interaction):
-    def __init__(self, s1, s2, p1, p2, l0, k):
+    def __init__(self, k, l0, s1, s2, p1, p2):
         self.s1, self.s2, self.p1, self.p2 = s1, s2, p1, p2
         self.l0, self.k = l0, k
         self.name = f'Spring({s2}/{s1})'
@@ -40,7 +40,7 @@ class Spring(Interaction):
 
 
 def tmd(system, point, eq) -> np.ndarray:
-    return sum((sum(am.babar(point) for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0., 0.)))
+    return sum((sum(am.babar(point) for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0.,)))
 
 
 def trd(system, eq) -> np.ndarray:
@@ -123,3 +123,34 @@ def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
     n3 = system.joints[cycle[2]].name
     system.sols[s22].mech_actions[n3] = MechanicalAction(-f2, p2, 0)
     system.sols[s23].mech_actions[n3] = MechanicalAction(f2, p2, 0)
+
+
+def g_g_p(system, cycle, pri1, pri2, rev, _, eq2, eq3):
+    (s1p, _, _), (s1, a1, _) = pri1
+    (s2, a2, _), (s2p, _, _) = pri2
+    (s32, _), (s33, p33) = rev
+
+    p = get_point(system, s33, p33)
+    ux, uy = unit(system.get_ref(s1) + a1 + np.pi * .5), unit(system.get_ref(s2) + a2 + np.pi * .5)
+    n13, n12 = mat_mul_n(inv_mat(ux, uy), -trd(system, eq3 + eq2))
+    n13, n12 = n13 * ux, n12 * uy
+    m31, m21 = tmd(system, p, eq3), tmd(system, p, eq2)
+    f32 = trd(system, eq3) + n13
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13 * ux, p, -m31)
+    system.sols[s1].mech_actions[n1] = MechanicalAction(-n13, p, m31)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s2].mech_actions[n2] = MechanicalAction(-n12, p, m21)
+    system.sols[s2p].mech_actions[n2] = MechanicalAction(n12, p, -m21)
+
+    n3 = system.joints[cycle[2]].name
+    system.sols[s33].mech_actions[n3] = MechanicalAction(-f32, p, 0)
+    system.sols[s32].mech_actions[n3] = MechanicalAction(f32, p, 0)
+
+
+def p_g_g(system, cycle, rev, pri1, pri2, _, eq2, eq3):
+    (s13, _), (s11, p11) = rev
+    (s1p, _, _), (s1, a1, _) = pri1
+    (s2, a2, _), (s2p, _, _) = pri2
