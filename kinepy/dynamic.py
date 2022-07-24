@@ -1,5 +1,3 @@
-import numpy as np
-
 from kinepy.geometry import *
 
 
@@ -49,7 +47,7 @@ def trd(system, eq) -> np.ndarray:
     return sum((sum(am.f for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0., 0.)))
 
 
-def p_p_p(system, cycle, rev1, rev2, rev3, eq1, eq2, eq3):
+def p_p_p(system, cycle, rev1, rev2, rev3, _, eq2, eq3):
     (s13, _), (s11, p11) = rev1
     (s21, _), (s22, p22) = rev2
     (s32, _), (s33, p33) = rev3
@@ -77,3 +75,51 @@ def p_p_p(system, cycle, rev1, rev2, rev3, eq1, eq2, eq3):
     n3 = system.joints[cycle[2]].name
     system.sols[s33].mech_actions[n3] = MechanicalAction(-f3, p1, 0.)
     system.sols[s32].mech_actions[n3] = MechanicalAction(f3, p1, 0.)
+
+
+def p_p_g(system, cycle, rev1, rev2, pri, _, eq2, eq3):
+    (s13, _), (s11, p11) = rev1
+    (s21, _), (s22, p22) = rev2
+    (s1, a1, _), (s1p, _, _) = pri
+
+    p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
+    u = unit(system.get_ref(s1) + a1)
+    n23 = z_cross(u) * (tmd(system, eq3, p1) + (t2 := tmd(system, eq2, p2))) / dot(u, p1 - p2)
+    f1 = -trd(system, eq3) - n23
+    f2 = -trd(system, eq2) + n23
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s13].mech_actions[n1] = MechanicalAction(f1, p1, 0.)
+    system.sols[s11].mech_actions[n1] = MechanicalAction(-f1, p1, 0.)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s21].mech_actions[n2] = MechanicalAction(-f2, p2, 0.)
+    system.sols[s22].mech_actions[n2] = MechanicalAction(f2, p2, 0.)
+
+    n3 = system.joints[cycle[2]].name
+    system.sols[s1].mech_actions[n3] = MechanicalAction(-n23, p2, -t2)
+    system.sols[s1p].mech_actions[n3] = MechanicalAction(n23, p2, t2)
+
+
+def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
+    (s1p, _, _), (s1, a1, _) = pri
+    (s11, p11), (s12, _) = rev1
+    (s22, p22), (s23, _) = rev2
+
+    p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
+    u = unit(system.get_ref(s1) + a1)
+    n13 = z_cross(u) * ((t3 := tmd(system, eq3, p2)) - tmd(system, eq3 + eq2, p1)) / dot(u, p2 - p1)
+    f2 = -trd(system, eq3) - n13
+    f1 = -trd(system, eq2) + f2
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13, p2, -t3)
+    system.sols[s1].mech_actions[n1] = MechanicalAction(-n13, p2, t3)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s12].mech_actions[n2] = MechanicalAction(f1, p1, 0.)
+    system.sols[s11].mech_actions[n2] = MechanicalAction(-f1, p1, 0.)
+
+    n3 = system.joints[cycle[2]].name
+    system.sols[s22].mech_actions[n3] = MechanicalAction(-f2, p2, 0)
+    system.sols[s23].mech_actions[n3] = MechanicalAction(f2, p2, 0)
