@@ -150,6 +150,8 @@ class System:
         if isinstance(joint, (tuple, list)):
             # Plusieurs liaisons en entrée
             for j in joint:
+                if isinstance(j, Joint):
+                    j = j.name
                 if isinstance(j, str):
                     # Référence par le nom
                     j = self.named_joints[j]
@@ -163,7 +165,9 @@ class System:
                 self.indices[j] = tuple(pil)
 
             return self.show_input()
-        elif isinstance(joint, str):
+        if isinstance(joint, Joint):
+            joint = joint.name
+        if isinstance(joint, str):
             # Référence par le nom
             joint = self.named_joints[joint]
 
@@ -176,7 +180,24 @@ class System:
 
         self.piloted.append(joint)
         self.show_input()
-    
+
+    def block(self, joint):
+        if isinstance(joint, (tuple, list)):
+            for j in joint:
+                if isinstance(j, Joint):
+                    j = j.name
+                if isinstance(j, str):
+                    # Référence par le nom
+                    j = self.named_joints[j]
+                self.blocked.append(j)
+        else:
+            if isinstance(joint, Joint):
+                joint = joint.name
+            if isinstance(joint, str):
+                # Référence par le nom
+                joint = self.named_joints[joint]
+            self.blocked.append(joint)
+
     def show_input(self):
         j = []
         for joint in self.piloted:

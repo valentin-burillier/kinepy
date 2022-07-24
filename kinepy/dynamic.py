@@ -138,7 +138,7 @@ def g_g_p(system, cycle, pri1, pri2, rev, _, eq2, eq3):
     f32 = trd(system, eq3) + n13
 
     n1 = system.joints[cycle[0]].name
-    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13 * ux, p, -m31)
+    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13, p, -m31)
     system.sols[s1].mech_actions[n1] = MechanicalAction(-n13, p, m31)
 
     n2 = system.joints[cycle[1]].name
@@ -152,5 +152,25 @@ def g_g_p(system, cycle, pri1, pri2, rev, _, eq2, eq3):
 
 def p_g_g(system, cycle, rev, pri1, pri2, _, eq2, eq3):
     (s13, _), (s11, p11) = rev
-    (s1p, _, _), (s1, a1, _) = pri1
+    (s1, a1, _), (s1p, _, _) = pri1
     (s2, a2, _), (s2p, _, _) = pri2
+
+    p = get_point(system, s11, p11)
+    ux, uy = unit(system.get_ref(s1) + a1 + np.pi * .5), unit(system.get_ref(s2) + a2 + np.pi * .5)
+    n21, n23 = mat_mul_n(inv_mat(ux, uy), trd(system, eq2))
+    n21, n23 = ux * n21, uy * n23
+    f31 = trd(system, eq3) + n23
+    m21 = tmd(system, p, eq2 + eq3)
+    m23 = tmd(system, p, eq2) - m21
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s11].mech_actions[n1] = MechanicalAction(f31, p, 0)
+    system.sols[s13].mech_actions[n1] = MechanicalAction(-f31, p, 0)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s1].mech_actions[n2] = MechanicalAction(n21, p, m21)
+    system.sols[s1p].mech_actions[n2] = MechanicalAction(-n21, p, -m21)
+
+    n3 = system.joints[cycle[2]].name
+    system.sols[s2].mech_actions[n3] = MechanicalAction(-n23, p, -m23)
+    system.sols[s2p].mech_actions[n3] = MechanicalAction(n23, p, m23)
