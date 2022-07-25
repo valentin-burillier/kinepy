@@ -116,7 +116,7 @@ class PrismaticJoint(Joint):
     tag = 'G'
 
     def __init__(self, s1, s2, a1, d1, a2, d2):
-        Joint.__init__(self, s1, s2, f'Pri({s2}/{s1}')
+        Joint.__init__(self, s1, s2, f'Pri({s2}/{s1})')
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
         self.delta = None
         
