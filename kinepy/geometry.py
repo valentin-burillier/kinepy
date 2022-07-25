@@ -38,11 +38,11 @@ def inv_mat(u1, u2):  # (2, n) x (2, n) -> (2, 2, n)
 
 
 def get_angle(vec):  # (2, n) -> (n,)
-    return np.arccos(vec[0] * inv_mag(vec)) * (2 * (vec[1] > 0) - 1)
+    return np.arccos(np.maximum(np.minimum(vec[0] * inv_mag(vec), 1.), -1)) * (2 * (vec[1] > 0) - 1)
 
 
 def get_angle2(vec, im):
-    return np.arccos(vec[0] * im) * (2 * (vec[1] > 0) - 1)
+    return np.arccos(np.maximum(np.minimum(vec[0] * im, 1.), -1)) * (2 * (vec[1] > 0) - 1)
 
 
 def mat_mul_n(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), New array
