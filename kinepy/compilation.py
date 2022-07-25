@@ -147,7 +147,7 @@ def compiler(system, mode=KINEMATICS):
     while eqs != final:
         cycle, eq, signed = next_step(system, eqs, graph, d, mode)
         if isinstance(cycle, int):
-            eq_ = tuple(_eqs[i] for i in eq)
+            eq_ = tuple((_eqs[i], s) for i, s in eq)
             kin_instr.append(('Pilot', cycle))
             dyn_instr.insert(0, ('Block', cycle) + eq_)
         else:

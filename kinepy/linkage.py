@@ -151,7 +151,7 @@ class PrismaticJoint(Joint):
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        p = system.get_origin(self.s1) + (self.d1 - self.d2) * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
+        p = system.get_origin(self.s1) + self.d1 * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
         f = trd(system, eq2)
         m = tmd(system, p, eq2)
 
