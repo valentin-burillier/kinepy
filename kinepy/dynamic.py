@@ -174,3 +174,58 @@ def p_g_g(system, cycle, rev, pri1, pri2, _, eq2, eq3):
     n3 = system.joints[cycle[2]].name
     system.sols[s2].mech_actions[n3] = MechanicalAction(-n23, p, -m23)
     system.sols[s2p].mech_actions[n3] = MechanicalAction(n23, p, m23)
+
+
+def sp_p_1(system, cycle, pin, rev, _, eq2):
+    (s1, a1, _), (s11, p11) = pin
+    (s21, _), (s22, p22) = rev
+
+    p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
+    u = unit(system.get_ref(s1) + a1)
+    n12 = z_cross(u) * tmd(system, p2, eq2) / dot(p2 - p1, u)
+    f12 = -trd(system, eq2) - n12
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s11].mech_actions[n1] = MechanicalAction(-n12, p1, 0)
+    system.sols[s1].mech_actions[n1] = MechanicalAction(n12, p1, 0)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s21].mech_actions[n2] = MechanicalAction(-f12, p2, 0)
+    system.sols[s22].mech_actions[n2] = MechanicalAction(f12, p2, 0)
+
+
+def sp_p_2(system, cycle, pin, rev, _, eq2):
+    (s12, p12), (s1, a1, _) = pin
+    (s21, _), (s22, p22) = rev
+
+    p1, p2 = get_point(system, s12, p12), get_point(system, s22, p22)
+    u = unit(system.get_ref(s1) + a1)
+    n12 = z_cross(u) * tmd(system, p2, eq2) / dot(p2 - p1, u)
+    f12 = -trd(system, eq2) - n12
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s12].mech_actions[n1] = MechanicalAction(n12, p1, 0)
+    system.sols[s1].mech_actions[n1] = MechanicalAction(-n12, p1, 0)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s21].mech_actions[n2] = MechanicalAction(-f12, p2, 0)
+    system.sols[s22].mech_actions[n2] = MechanicalAction(f12, p2, 0)
+
+
+def sp_p(system, cycle, pin, rev, eq1, eq2):
+    return (sp_p_1, sp_p_2)[len(pin[0]) == 2](system, cycle, pin, rev, eq1, eq2)
+
+
+def sp_g_1(system, cycle, pin, pri, _, eq2):
+    (s1, a1, _), (s11, p11) = pin
+    (s2, a2, _), (s2p, _, _) = pri
+
+
+def sp_g_2(system, cycle, pin, pri, _, eq2):
+    (s12, p12), (s1, a1, _) = pin
+    (s2, a2, _), (s2p, _, _) = pri
+
+
+def t_p(system, cycle, rec, rev, _, eq2):
+    (s1, _), (s2, _) = rec
+    (s11, p11), (s12, _) = rev
