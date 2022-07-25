@@ -147,9 +147,10 @@ def compiler(system, mode=KINEMATICS):
     while eqs != final:
         cycle, eq, signed = next_step(system, eqs, graph, d, mode)
         if isinstance(cycle, int):
-            eq_ = tuple((_eqs[i], s) for i, s in eq)
+            eq_ = tuple(_eqs[i] for i, s in eq)
+            sols = tuple(s for i, s in eq)
             kin_instr.append(('Pilot', cycle))
-            dyn_instr.insert(0, ('Block', cycle) + eq_)
+            dyn_instr.insert(0, ('Block', cycle) + tuple(zip(eq_, sols)))
         else:
             cycle, eq, cycle_indices = align(tuple(system.joints[i] for i in cycle), eq, cycle, eqs)
             eq_ = tuple(_eqs[i] for i in eq)
