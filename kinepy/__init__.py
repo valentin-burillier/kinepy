@@ -228,6 +228,10 @@ class System:
         print('signs =', self.signs)
         
     def solve_kinematics(self, input_):
+        if isinstance(input_, list):
+            input_ = np.array(input_)
+        if len(input_.shape) == 1:
+            input_ = input_[np.newaxis, :]
         self.reset(input_.shape[1])
         self.input = input_
         for instr in self.kin_instr:
