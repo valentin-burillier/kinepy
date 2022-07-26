@@ -1,61 +1,32 @@
-<p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179982184-b882aa86-4dce-4e4f-a725-7d36ef7d3933.svg">
-</p>
+# Introduction
+
+Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des diffférentes liaisons liant les solides entre eux. Ce système de coordonnée est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimés en mm et les angles en radian. 
 
 # Parameters
+## Nomenclature
 
-- `origin`, 2darray :
-- `name`, str :
-- `angle`, 1darray :
-- `index`, int :
-- `named_point`, dict :
-- `m`, float :
-- `I`, float :
-- `G`, tuple :
+- `name`, str : Nom du solide. S'il n'est pas renseigné, un nom générique lui sera attribué.
+- `rep`, int : Numéro de repèrage du solide. Celui du bâti est forcément 0. `rep` incrémente de 1 à chaque ajout de solide dans un système.
 
+## Paramètres physiques
 
-- `add_physical_params(G=(0., 0.), m=0, I=0)` :
-- `__setitem__(name)`, str :
-- `__getitem__(name)`, str :
-- `get_point` :
+- `m`, float : Masse du solide en kg. Par défaut, 0. 
+- `j`, float : L'inertie du solide en kg.m². Par défaut, 0. 
+- `g`, tuple : Coordonnées du centre d'inertie du solide confondu à celui de gravité. Par défaut, (0, 0).
 
-- `apply_external_force(F, p=(0., 0.))` :
-- `apply_external_couple(C)` :
+En dehors de l'initialisation du solide, il est constament possible de changer ces attributs.
 
-```pycon
->>> s1 = S.add_solid(name='Arm')
->>> s1
-'Arm'
->>> s1['A'] = (5., 0.5) # Adding/Setting point 'A'
->>> s1['A']
-(5., 0.5)
+# Kinematics
 
->>> s2 = S.add_solid(((0., 0.), (1., 0.), (0., 1.)), {'A': 0, 'B': 1, 'C': 2}, 'ABC-Triangle')
->>> s2
-'ABC-Triangle'
->>> s2['B']
-(1., 0.)
-```
+<p align="center" width="100%">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/181019881-8785a058-e1c5-452c-afc3-cc42e11b8e5d.svg">
+</p>
 
-```pycon
->>> s1.physical_parameters(1., 0., (1., 1.)) # ajout/modification de parametres physiques
->>> s1.I = 0.5 # modification de l'inertie
->>> s1.m, s1.I
-(1., 0.5)
->>> s1.G
-(1., 1.)
->>> 
->>> g = 10.
->>> F = lambda : np.array([[0.]*101, [-s1.m*g]*101])
->>> s1.applie_external_force(F, (0., 1.)) # application d'une force sur le solide s1
-```
+Le repère orthonormé direct est qualifié par :
 
-```python
->>> # apres une simulation
->>> s1.get_point('A')
-array([
->>> s1.angle
-array([
->>> s1.origin
-array([
-```
+- `origin`, 2darray : Coordonnées successives de l'origine du repère associé au solide.
+- `angle`, 1darray : Valeurs successives de l'angle du solide par rapport au système de coordonnée global associé au bâti.
+
+On peut également associé un point au solide pour obtenir les différentes positions de celui-ci lors d'une simulation.
+
+- `get_point(p)` : Retourne les coordonnées successives du point `p` dans le système de coordonnées global associé au bâti. `p` ayant ses coordonnées exprimées dans le repère du solide et lié à celui-ci. Il peut soit être un tuple ou un tableau de forme (2,...) représentant une multitude de points.
