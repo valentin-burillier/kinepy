@@ -1,35 +1,25 @@
 # Parameters
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179979622-49be5de3-1cd2-4a88-828b-1120da427075.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180985073-b8f29ecb-9536-444b-bb1d-f5c63a8198e6.svg">
 </p>
 
+Le paramétrage de la pivot s'effectue grâce à ces 4 attributs :
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
 - `p1`, tuple : Coordonnée du point de pivot dans le repère de `s1`
 - `p2`, tuple : Coordonnée du point de pivot dans le repère de `s2`
 
-Il est constamment possible de changer les paramètres initiaux en renseignant les attribus du même noms.
+Il est constament possible de changer les valeurs de `p1` et `p2` même après la compilation du mécanisme. 
 
-# Kinematic
+# Kinematics
 
-- `point`, 2darray : Coordonnées des points de pivot successifs exprimées dans le système de coordonnées global
+<p align="center" width="100%">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180985253-4236026d-37ac-4d80-8c5a-075d7e914bbe.svg">
+</p>
+
 - `angle`, 1darray : Valeurs successives de l'angle de `s2` par rapport à `s1`
+- `point`, 2darray : Coordonnées des points de pivot successifs exprimées dans le système de coordonnées global
 
-`s1` est la référence : c'est par rapport à lui que l'angle de pivotement est exprimé. `__repr__` permet de savoir quel solide agit sur l'autre.
-
-# Static/dynamic
-
-`s1` est la référence : c'est sur lui que les efforts sont appliqué
-
-- `force`, 2darray : Expression des efforts successifs qu'exerce `s2` sur `s1` au niveau de la liaison exprimées dans le système de coordonnées global
-
-Le couple `C` peut etre : Soit flottant/entier exprimant un couple de frottement constant durant la simulation, soit un 1darray de valeur à chaque instant de la simulation, soit une fonction retournant un 1darray de valeur à chaque instant de la simulation pouvant dépendre de valeurs géométriques pas encore calculées. Cela peut permettre de modéliser l'effort d'un ressort par exemple : 
-
-```python
-C0, k = 2.4, 0.1
-C = lambda : C0 - P.angle*k
-```
-
-- `applie_couple(C)` : applique un couple torsion `C` de `s2` sur `s1` au niveau de la liaison
+`s1` est la référence : c'est par rapport à lui que l'angle de pivotement est exprimé. Le pilotage d'une liaison pivot permet de fixer l'attribut `angle`.
