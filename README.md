@@ -22,12 +22,12 @@ pip install kinepy
 ```
 # Exemples
 
-applications stylées à réaliser
+Applications stylées à réaliser
 
 # TODO
 
-- coder engrenages/RSG
-
+- Tester la dynamique/satatique
+- Coder engrenages/RSG
 
 # Links
 
