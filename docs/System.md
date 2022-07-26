@@ -1,69 +1,29 @@
-[mettre un exemple]
+# Modélisation d'un mécanisme
+## Ajout de solide
 
-# Initialisation
+Le bâti est déjà ressencé dans le système.
 
-- `add_solid()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md)
-- `add_revolute()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Revolute.md)
-- `add_prismatic()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Prismatic.md)
-- `add_pin_slot()` : [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md)
+- `add_solid(j=0., m=0., g=0., name='')` : Ajoute un solide au système et retourne l'objet `Solid` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md).
 
-# Kinematic
+## Ajout de liaisons
 
-- `pilot()` :
-- `compile_kinematic()` :
-- `solve_kinematic()` :
+- `add_revolute(s1, s2, p1=(0., 0.), p2=(0., 0.))` : Ajoute une liaison pivot entre `s1` et `s2` et retourne l'objet `RevoluteJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Revolute.md).
+- `add_prismatic(s1, s2, a1=0., d1=0., a2=0., d2=0.)` : Ajoute une liaison glissière entre `s1` et `s2` et retourne l'objet `PrismaticJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Prismatic.md).
+- `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Ajoute une liaison sphère plan entre `s1` et `s2` et retourne l'objet `PinSlotJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md).
 
-# Static
+*On notera que `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques et dynamiques.*
 
-- `apply_gravity()` :
-- `block()` :
-- `compile_static()` :
-- `solve_static()` :
+# Entrées du système
 
-# Dynamic
+- `pilot(joint)` : Permet de spécifier quelles liaisons sont pilotés : c'est à dire les liaisons où l'on impose une cinématique particulière. L'argument `joint` peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Lors de la résolution, l'ordre des entrées doit correspondre à l'ordre de pilotage spécifié. Un message dans la console l'indiquera.
+- `show_input()` : Montre l'ordre des entrées de pilotage.
 
-- `work()` :
-- `compile_dynamic()` :
-- `solve_dynamic()` :
+# Compilation
 
+- `compile()` : Lorsque le système est modélisé et que les entrées soient définit, cette méthode va permettre de définir les stratégies de résolution cinématiques, statiques et dynamiques a élaborer. Elle permet également de détecter et de signaler si le mécanisme n'est pas résolevable. Les différents cycles trouvés peuvent dépendre d'un "signe" : c'est-à-dire que le mécanisme peut avoir 2 configurations différentes pour un même paramétrage. C'est à vous de déterminer les bons signes correspondant à votre système. Cela peut être fait en visualisant le mécanisme ou en vérifiant la cohérence de certaines sorties cinématiques. Des signes par defaut sont choisit par la méthode. On les change en renseignant l'attribut `signs` du system. Il est toujours possible de modifier le paramétrage des liaisons après cette étape. 
 
+[mettre un ex]
 
-`System(sols=(), joints=(), piloted=(), signs=None)`
+# Résolution
 
-
-```python
-from kinepy.system import System
-
-S = System() # "Ground" solid is created
-
-# Solids initialisations
-s1 = S.add_solid()
-s2 = S.add_solid()
-s3 = S.add_solid()
-
-# Joints
-P1 = S.add_revolute(sol1=0, sol2=1)
-P2 = S.add_revolute(sol1=1, sol2=2, p1=(1., 0.))
-P3 = S.add_revolute(sol1=2, sol2=3, p1=(3., 0.))
-P4 = S.add_revolute(sol1=0, sol2=3, p1=(2., 0.), p2=(3., 0.))
-```
-
-```python
-from kinepy.system import *
-
-SOLIDS = (
-    Solid([(0., 0.), (3., 0.)]),
-    Solid([(0., 0.), (1., 0.)]),
-    Solid([(0., 0.), (3., 0.)]),
-    Solid([(0., 0.), (2., 0.)])
-)
-
-JOINTS = (
-    RevoluteJoint(0, 1, 0, 0),
-    RevoluteJoint(1, 2, 1, 0),
-    RevoluteJoint(2, 3, 1, 0),
-    RevoluteJoint(0, 3, 1, 1)
-)
-
-S = System(SOLIDS, JOINTS)
-```
+- `solve_kinematic(input_)` : Réalise la résolution complète du mécanisme à partir des entrées `input_` des liaisons pilotées. Si une seule liaison est pilotée, `input_` corresspont à un 1darray de valeur de l'attribut correspondant. Si plusieurs liaisons sont piloté, `input_` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondentes. L'ordre des entrées pour la résolution étant indiqué par la méthode `show_input()` ou correspond à l'ordre à laquelle les liaisons ont était déclarés pilotées.
