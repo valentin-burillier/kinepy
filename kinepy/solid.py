@@ -1,13 +1,11 @@
 from kinepy.geometry import *
-
+from kinepy.linkage import *
 
 class Solid:
-    nb = 0
-    
-    def __init__(self, points=(), named_points=None, j=0., m=0., g=(0., 0.), name=''):
+    def __init__(self, points=(), named_points=None, j=0., m=0., g=(0., 0.), name='', rep=0):
         self.points = list(points)
-        self.name = name if name else f'Solid{Solid.nb}'
-        self.__class__.nb += 1
+        self.rep = rep
+        self.name = name if name else f'Solid {self.rep}'
         self.named_points = named_points if named_points else dict()
         self.angle = self._points = self.origin = None
         self.j, self.m, self.g = j, m, g
@@ -40,6 +38,8 @@ class Solid:
             return self.points[self.named_points[item]]
 
     def get_point(self, point):
+        if isinstance(point, (RevoluteJoint, PinSlotJoint)):
+            point = point.__repr__()
         if isinstance(point, (str, int)):
             return self.origin + np.einsum('ikl,k->il', rot(self.angle), self[point])
         point = np.array(point)
@@ -69,3 +69,6 @@ class Solid:
     @classmethod
     def load(cls, data):
         return cls(**data)
+    
+    def __repr__(self):
+        return str(self.rep) + ' | ' + self.name
