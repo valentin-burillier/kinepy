@@ -7,10 +7,11 @@ import json
 
 
 class System:
-    def __init__(self, sols=(), joints=(), piloted=(), blocked=(), signs=None):
+    def __init__(self, sols=(), joints=(), piloted=(), blocked=(), signs=None, name=''):
         self.sols, self.joints = list(sols) if sols else [Solid(name='Ground')], list(joints)
         self.piloted, self.blocked = list(piloted), list(blocked)
-
+        self.name = name if name else 'Main system'
+        
         # Dictionnaires des noms
         self.named_sols = {s.name: i for i, s in enumerate(self.sols)}
         self.named_joints = {s.name: i for i, s in enumerate(joints)}
@@ -39,7 +40,7 @@ class System:
         self.interactions = []
 
     def add_solid(self, points=(), named_points=None, j=0., m=0., g=0., name=''):
-        s = Solid(points, named_points, j, m, g, name)
+        s = Solid(points, named_points, j, m, g, name, len(self.sols))
         self.named_sols[s.name] = len(self.sols)
         self.sols.append(s)
         return s
@@ -73,7 +74,7 @@ class System:
         p.system = self
         return p
 
-    def add_prismatic(self, s1, s2, alpha1=0., d1=0., alpha2=0., d2=0.):
+    def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -81,14 +82,14 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
             
-        g = PrismaticJoint(s1, s2, alpha1, d1, alpha2, d2)
+        g = PrismaticJoint(s1, s2, a1, d1, a2, d2)
         print(f'Added linkage {g}')
         self.named_joints[g.name] = len(self.joints)
         self.joints.append(g)
         g.system = self
         return g
     
-    def add_pin_slot(self, s1, s2, alpha1=0., d1=0., p2=(0., 0.)):
+    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -100,7 +101,7 @@ class System:
             self.sols[s2].points.append(tuple(p2))
             p2 = len(self.sols[s2].points) - 1
             
-        sp = PinSlotJoint(s1, s2, alpha1, d1, p2)
+        sp = PinSlotJoint(s1, s2, a1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
 
@@ -224,7 +225,8 @@ class System:
             self.kin_instr, self.dyn_instr = compiler(self, BOTH)
         else:
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
-
+        print('signs =', self.signs)
+        
     def solve_kinematics(self, input_):
         self.reset(input_.shape[1])
         self.input = input_
@@ -284,3 +286,6 @@ class System:
         data['sols'] = [Solid.load(s) for s in data['sols']]
         data['joints'] = [class_dict[name].load(d) for name, d in data['joints']]
         return cls(**data)
+
+    def __repr__(self):
+        return self.name
