@@ -228,7 +228,7 @@ class System:
         print('signs =', self.signs)
         
     def solve_kinematics(self, input_):
-        if isinstance(input_, list):
+        if isinstance(input_, (list, tuple)):
             input_ = np.array(input_)
         if len(input_.shape) == 1:
             input_ = input_[np.newaxis, :]
