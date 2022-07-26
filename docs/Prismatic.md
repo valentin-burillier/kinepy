@@ -1,35 +1,27 @@
 # Parameters
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/179978913-dd33a160-27e6-4ca3-9354-337dbd5a6827.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998717-29c55798-3157-4605-a70c-5fc98c37d6d7.svg">
 </p>
+
+Le paramétrage de la pivot s'effectue grâce à ces 6 attributs :
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
 - `a1`, float : Angle du vecteur dirigeant la glissière exprimé dans la base de `s1`
-- `a1`, float : Angle du vecteur dirigeant la glissière exprimé dans la base de `s2`
+- `a2`, float : Angle du vecteur dirigeant la glissière exprimé dans la base de `s2`
 - `d1`, float : Distance algébrique entre l'origines de `s1` et l'axe de glissement
 - `d2`, float : Distance algébrique entre l'origines de `s2` et l'axe de glissement
 
-Il est constamment possible de changer les paramètres initiaux en renseignant les attribus du même noms.
+Il est constament possible de changer les valeurs de `a1`, `a2`, `d1` et `d2` même après la compilation du mécanisme. 
 
-# Kinematic
+# Kinematics
 
-- `value`, 1darray : Valeurs successives de la distance algébrique de l'origine de `s2` par rapport à celle de `s1` le long de l'axe de glissement
 
-`s1` est la référence : c'est par rapport à lui que la valeur de glissement est exprimée.
+<p align="center" width="100%">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998713-5b020132-4f86-447d-b9d5-7e28a1be30cd.svg">
+</p>
 
-# Static/dynamic
+- `delta`, 1darray : Valeurs successives de la distance algébrique de l'origine de `s2` par rapport à celle de `s1` le long de l'axe de glissement
 
-`s1` est la référence : c'est sur lui que les efforts sont appliqué
-
-- `force`, 1darray : Expression des efforts normaux à l'axe de glissement successifs qu'exerce `s2` sur `s1`
-
-La force `F` peut etre : Soit flottant/entier exprimant un effort de frottement constant durant la simulation, soit un 1darray de valeur à chaque instant de la simulation, soit une fonction retournant un 1darray de valeur à chaque instant de la simulation pouvant dépendre de valeurs géométriques pas encore calculées. Cela peut permettre de modéliser l'effort d'un ressort par exemple : 
-
-```python
-l0, k = 0.2, 0.07
-F = lambda : -(G.value - l0)*k
-```
-
-- `apply_force` : Applique une force `F` exercé par `s2` sur `s1` le long de l'axe de glissement
+`s1` est la référence : c'est par rapport à lui que la valeur de glissement est exprimée. Le pilotage d'une liaison glissière permet de fixer l'attribut `delta`.
