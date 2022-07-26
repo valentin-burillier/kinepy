@@ -2,6 +2,8 @@
 
 Cette librairie python est dédier à la simulation de mécanisme plan.
 
+*DISCLAMER : Cette bibliothèque est en développement la gestion des efforts n'est pas encore maîtrisés. La partie documenté est fonctionnelle.*
+
 Elle permet de simuler rapidement et précisément un mécanisme complexe constituer de plusieurs boucle cinématique. Il est facile d'évaluer ses performances que se soit du point de vu de la position, de la vitesse des différents solides ou encore des efforts que subissent les pièces au niveau des liaisons. Ainsi, cet outil peut être utilisé pour réaliser le premier dimensionnement d'un mécanisme. Il fournit des modèles couplable à des algorithmes d'optimisation afin de réaliser une conception de mécanisme. Des études plus approfondies peuvent être nécessaire au vue des hypothèses que la bibliothèque suit :
 
 - Le mecanisme est plan
