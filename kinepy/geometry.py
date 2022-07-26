@@ -54,7 +54,7 @@ def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
 
 
 def get_point(system, sol, p):
-    return system.get_origin(sol) + np.einsum('ikl,k->il', rot(system.get_ref(sol)), system.sols[sol].points[p])
+    return system.get_origin(sol) + np.einsum('ikl,k->il', rot(system.get_ref(sol)), p)
 
 
 def change_ref(system, sol, angle, mat, center, vec):

@@ -32,7 +32,7 @@ class RevoluteJoint(Joint):
     
     def __init__(self, s1, s2, p1, p2):
         Joint.__init__(self, s1, s2, f'Rev({s2}/{s1})')
-        self._p1, self._p2 = p1, p2
+        self.p1, self.p2 = p1, p2
         self.angle = None
     
     def input_mode(self):
@@ -40,62 +40,24 @@ class RevoluteJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s1, self._p1), (self.s2, self._p2)
+        return (self.s1, self.p1), (self.s2, self.p2)
 
     def get_data(self):
         return {
             's1': self.s1,
             's2': self.s2,
-            'p1': self._p1,
-            'p2': self._p2
+            'p1': self.p1,
+            'p2': self.p2
         }
     
     def reset(self, n):
         self.angle = np.zeros((n,), float)
 
-    def get_p1(self):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        print(f"{self.system.sols[self.s1].points[self._p1]} (index: {self._p1}) "
-              f"in Solid {self.system.sols[self.s1].name} (index: {self.s1})")
-
-    def set_p1(self, value):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s1].points):
-            self._p1 = value
-            self.system.sols[self.s1].named_points[self.name] = value
-        elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
-            self.system.sols[self.s1].points[self._p1] = tuple(value)
-        elif isinstance(value, str):
-            self.system.sols[self.s1].named_points[self.name] = self._p1 = self.system.sols[self.s1].named_points[value]
-
-    p1 = property(get_p1, set_p1)
-
-    def get_p2(self):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
-              f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
-
-    def set_p2(self, value):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
-            self._p2 = value
-            self.system.sols[self.s2].named_points[self.name] = value
-        elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
-            self.system.sols[self.s2].points[self._p2] = tuple(value)
-        elif isinstance(value, str):
-            self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
-
-    p2 = property(get_p2, set_p2)
-
     def pilot(self, system, index):
         self.angle = system.input[index[0]]
         theta = self.angle + system.get_ref(self.s1) - system.get_ref(self.s2)
         change_ref(system, self.s2, theta, rot(theta),
-                   get_point(system, self.s2, self._p2), get_point(system, self.s1, self._p1))
+                   get_point(system, self.s2, self.p2), get_point(system, self.s1, self.p1))
         return system.eqs[self.s1] + system.eqs[self.s2]
 
     def block(self, system, eq1s1, eq2s2):
@@ -108,7 +70,7 @@ class RevoluteJoint(Joint):
 
     @property
     def point(self):
-        return get_point(self.system, self.s1, self._p1)
+        return get_point(self.system, self.s1, self.p1)
 
 
 class PrismaticJoint(Joint):
@@ -165,7 +127,7 @@ class PinSlotJoint(Joint):
 
     def __init__(self, s1, s2, a1, d1, p2):
         Joint.__init__(self, s1, s2, f'Pin({s2}/{s1})')
-        self._p2, self.a1, self.d1 = p2, a1, d1
+        self.p2, self.a1, self.d1 = p2, a1, d1
         self. delta = self.angle = None
     
     def input_mode(self):
@@ -173,12 +135,12 @@ class PinSlotJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s2, self._p2), (self.s1, self.a1, self.d1)
+        return (self.s2, self.p2), (self.s1, self.a1, self.d1)
 
     def get_data(self):
         return {
             's1': self.s1,
-            'p2': self._p2,
+            'p2': self.p2,
             's2': self.s2,
             'a1': self.a1,
             'd1': self.d1
@@ -188,36 +150,17 @@ class PinSlotJoint(Joint):
         self.delta = np.zeros((n,))
         self.angle = np.zeros((n,))
 
-    def get_p2(self):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        print(f"{self.system.sols[self.s2].points[self._p2]} (index: {self._p2}) "
-              f"in Solid {self.system.sols[self.s2].name} (index: {self.s2})")
-
-    def set_p2(self, value):
-        if self.system is None:
-            raise Exception(f"{self} doesn't belong in any system")
-        if isinstance(value, int) and 0 <= value < len(self.system.sols[self.s2].points):
-            self._p2 = value
-            self.system.sols[self.s2].named_points[self.name] = value
-        elif isinstance(value, (tuple, list, np.ndarray)) and len(value) == 2:
-            self.system.sols[self.s2].points[self._p2] = tuple(value)
-        elif isinstance(value, str):
-            self.system.sols[self.s2].named_points[self.name] = self._p2 = self.system.sols[self.s2].named_points[value]
-
-    p2 = property(get_p2, set_p2)
-
     def pilot(self, system, index):
         self.delta, self.angle = system.input[index[0]], system.input[index[1]]
         theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
         ux = unit(system.get_ref(self.s1) + self.a1)
-        change_ref(system, self.s2, theta, rot(theta), get_point(system, self.s2, self._p2),
+        change_ref(system, self.s2, theta, rot(theta), get_point(system, self.s2, self.p2),
                    system.get_origin(self.s1) + self.delta * ux + self.d1 * z_cross(ux))
         return system.eqs[self.s1] + system.eqs[self.s2]
 
     @property
     def point(self):
-        return get_point(self.system, self.s2, self._p2)
+        return get_point(self.system, self.s2, self.p2)
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2

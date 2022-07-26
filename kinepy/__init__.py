@@ -2,7 +2,7 @@ from kinepy.linkage import *
 from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
-from kinepy.dynamic import *
+from kinepy.dynamic import Spring, AccelerationField
 import json
 
 
@@ -11,7 +11,11 @@ class System:
         self.sols, self.joints = list(sols) if sols else [Solid(name='Ground')], list(joints)
         self.piloted, self.blocked = list(piloted), list(blocked)
         self.name = name if name else 'Main system'
-        
+
+        # Renumérotation des Sols
+        for i, s in enumerate(self.sols):
+            s.rep = i
+
         # Dictionnaires des noms
         self.named_sols = {s.name: i for i, s in enumerate(self.sols)}
         self.named_joints = {s.name: i for i, s in enumerate(joints)}
@@ -39,8 +43,8 @@ class System:
         # Préparation dynamique
         self.interactions = []
 
-    def add_solid(self, points=(), named_points=None, j=0., m=0., g=0., name=''):
-        s = Solid(points, named_points, j, m, g, name, len(self.sols))
+    def add_solid(self, j=0., m=0., g=(0., 0.), name=''):
+        s = Solid(j, m, g, name, len(self.sols))
         self.named_sols[s.name] = len(self.sols)
         self.sols.append(s)
         return s
@@ -49,26 +53,14 @@ class System:
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
-        if isinstance(p1, (tuple, list)):
-            # Nouveau point
-            self.sols[s1].points.append(tuple(p1))
-            p1 = len(self.sols[s1].points) - 1
     
         if isinstance(s2, str):
             # Référence par le nom
             s2 = self.named_sols[s2]
-        if isinstance(p2, (tuple, list)):
-            # Nouveau point
-            self.sols[s2].points.append(tuple(p2))
-            p2 = len(self.sols[s2].points) - 1
         
         p = RevoluteJoint(s1, s2, p1, p2)
         print(f'Added linkage {p}')
         self.named_joints[p.name] = len(self.joints)
-
-        # Les points de la liaison portent le nom de la liaison
-        self.sols[s1].named_points[p.name] = p1
-        self.sols[s2].named_points[p.name] = p2
 
         self.joints.append(p)
         p.system = self
@@ -96,17 +88,10 @@ class System:
         if isinstance(s2, str):
             # Référence par le nom
             s2 = self.named_sols[s2]
-        
-        if isinstance(p2, (tuple, list)):
-            self.sols[s2].points.append(tuple(p2))
-            p2 = len(self.sols[s2].points) - 1
             
         sp = PinSlotJoint(s1, s2, a1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
-
-        # Le point de la liaison porte le nom de la liaison
-        self.sols[s2].named_points[sp.name] = p2
 
         self.joints.append(sp)
         sp.system = self
@@ -255,18 +240,10 @@ class System:
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
-        if isinstance(p1, (tuple, list)):
-            # Nouveau point
-            self.sols[s1].points.append(tuple(p1))
-            p1 = len(self.sols[s1].points) - 1
 
         if isinstance(s2, str):
             # Référence par le nom
             s2 = self.named_sols[s2]
-        if isinstance(p2, (tuple, list)):
-            # Nouveau point
-            self.sols[s2].points.append(tuple(p2))
-            p2 = len(self.sols[s2].points) - 1
 
         self.interactions.append(Spring(k, l0, s1, s2, p1, p2))
 
