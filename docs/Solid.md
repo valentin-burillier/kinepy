@@ -1,6 +1,7 @@
 # Introduction
 
-Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des diffférentes liaisons liant les solides entre eux. Ce système de coordonnée est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimés en mm et les angles en radian. 
+Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des diffférentes liaisons liant les solides entre eux. 
+Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimérs en mm et les angles en radian. 
 
 # Parameters
 ## Nomenclature
@@ -27,6 +28,7 @@ Le repère orthonormé direct est qualifié par :
 - `origin`, 2darray : Coordonnées successives de l'origine du repère associé au solide.
 - `angle`, 1darray : Valeurs successives de l'angle du solide par rapport au système de coordonnée global associé au bâti.
 
-On peut également associé un point au solide pour obtenir les différentes positions de celui-ci lors d'une simulation.
+On peut également associer un point au solide pour obtenir les différentes positions de celui-ci lors d'une simulation.
 
-- `get_point(p)` : Retourne les coordonnées successives du point `p` dans le système de coordonnées global associé au bâti. `p` ayant ses coordonnées exprimées dans le repère du solide et lié à celui-ci. Il peut soit être un tuple ou un tableau de forme (2,...) représentant une multitude de points.
+- `get_point(p)` : Retourne les coordonnées successives du point `p` dans le système de coordonnées global associé au bâti. `p` ayant ses coordonnées exprimées dans le repère du solide et lié à celui-ci. 
+Il peut soit être un tuple ou un tableau de forme (2,...) représentant une multitude de points.
