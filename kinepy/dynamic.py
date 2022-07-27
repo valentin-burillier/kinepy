@@ -220,12 +220,73 @@ def sp_g_1(system, cycle, pin, pri, _, eq2):
     (s1, a1, _), (s11, p11) = pin
     (s2, a2, _), (s2p, _, _) = pri
 
+    p = get_point(system, s11, p11)
+    ux, uy = unit(system.get_ref(s1) + a1 + np.pi * .5), unit(system.get_ref(s2) + a2 + np.pi * .5)
+    n21sp, n21g = mat_mul_n(inv_mat(ux, uy), trd(system, eq2))
+    n21sp, n21g = n21sp * ux, n21g * uy
+    m21 = tmd(system, p, eq2)
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s1].mech_actions[n1] = MechanicalAction(-n21sp, p, 0)
+    system.sols[s11].mech_actions[n1] = MechanicalAction(n21sp, p, 0)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s2].mech_actions[n2] = MechanicalAction(n21g, p, m21)
+    system.sols[s2p].mech_actions[n2] = MechanicalAction(-n21g, p, -m21)
+
 
 def sp_g_2(system, cycle, pin, pri, _, eq2):
     (s12, p12), (s1, a1, _) = pin
     (s2, a2, _), (s2p, _, _) = pri
 
+    p = get_point(system, s12, p12)
+    ux, uy = unit(system.get_ref(s1) + a1 + np.pi * .5), unit(system.get_ref(s2) + a2 + np.pi * .5)
+    n21sp, n21g = mat_mul_n(inv_mat(ux, uy), trd(system, eq2))
+    n21sp, n21g = n21sp * ux, n21g * uy
+    m21 = tmd(system, p, eq2)
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s12].mech_actions[n1] = MechanicalAction(-n21sp, p, 0)
+    system.sols[s1].mech_actions[n1] = MechanicalAction(n21sp, p, 0)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s2].mech_actions[n2] = MechanicalAction(n21g, p, m21)
+    system.sols[s2p].mech_actions[n2] = MechanicalAction(-n21g, p, -m21)
+
+
+def sp_g(system, cycle, pin, pri, eq1, eq2):
+    (sp_p_1, sp_p_2)[len(pin[0]) == 2](system, cycle, pin, pri, eq1, eq2)
+
 
 def t_p(system, cycle, rec, rev, _, eq2):
-    (s1, _), (s2, _) = rec
+    (s2, _), (s1, _) = rec
     (s11, p11), (s12, _) = rev
+
+    p = get_point(system, s11, p11)
+    m21 = tmd(system, p, eq2)
+    f21 = trd(system, eq2)
+
+    n1 = system.joints[cycle[0]].name
+    system.sols[s1].mech_actions[n1] = MechanicalAction(np.array((0., 0.)), p, m21)
+    system.sols[s2].mech_actions[n1] = MechanicalAction(np.array((0., 0.)), p, -m21)
+
+    n2 = system.joints[cycle[1]].name
+    system.sols[s11].mech_actions[n2] = MechanicalAction(f21, p, 0)
+    system.sols[s12].mech_actions[n2] = MechanicalAction(-f21, p, 0)
+
+
+def block(system, index, eq1s1, eq2s2):
+    system.joints[index].block(system, eq1s1, eq2s2)
+
+
+dyn = {
+    'P_P_P': p_p_p,
+    'P_P_G': p_p_g,
+    'G_P_P': g_p_p,
+    'G_G_P': g_g_p,
+    'P_G_G': p_g_g,
+    'SP_P': sp_p,
+    'SP_G': sp_g,
+    'T_P': t_p,
+    'Block': block
+}

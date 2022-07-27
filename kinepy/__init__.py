@@ -2,7 +2,7 @@ from kinepy.linkage import *
 from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
-from kinepy.dynamic import Spring, AccelerationField
+from kinepy.dynamic import Spring, AccelerationField, dyn
 import json
 
 
@@ -232,6 +232,8 @@ class System:
             )
         for inter in self.interactions:
             inter.set_am(self)
+        for instr in self.dyn_instr:
+            dyn[instr[0]](self, *instr[1:])
 
     def add_acceleration_field(self, g, name='Gravity'):
         self.interactions.append(AccelerationField(g, name))
