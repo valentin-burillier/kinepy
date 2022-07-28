@@ -7,6 +7,6 @@ setup(
     description='Python library dedicated to plane mechanism simulation',
     author='Loïc Chevalier - Valentin Burillier',
     url='https://github.com/valentin-burillier/kinepy',
-    keywords=[],
-    requires=['numpy', 'matplotlib'],
+    keywords=['robotics', 'dynamic', 'kinematics', 'static', 'inverse-kinematics', 'mechanism'],
+    requires=[],
 )
