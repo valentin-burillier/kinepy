@@ -6,7 +6,7 @@
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/180995202-8aa4efe1-f6f4-4875-af6d-c4638de9d920.svg">
 </p>
 
-Le paramétrage de la sphère-plan s'effectue grâce à ces 5 attributs :
+Le paramétrage d'une sphère-plan s'effectue grâce à ces 5 attributs :
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
