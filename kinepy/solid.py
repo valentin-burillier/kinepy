@@ -1,5 +1,7 @@
 from kinepy.geometry import *
-from kinepy.linkage import RevoluteJoint, PinSlotJoint
+
+
+FUNCTION_TYPE = type(lambda: 0)
 
 
 class Solid:
@@ -10,10 +12,9 @@ class Solid:
         self.j, self.m, self.g = j, m, g
 
         self.mech_actions = {}
+        self.external_actions = []
 
     def get_point(self, point):
-        if isinstance(point, (RevoluteJoint, PinSlotJoint)):
-            return point.point
         point = np.array(point)
         if point.shape[0] != 2:
             raise ValueError('Shape must start with 2')
@@ -39,3 +40,15 @@ class Solid:
     
     def __repr__(self):
         return str(self.rep) + ' | ' + self.name
+
+    def add_force(self, f, p):
+        if isinstance(f, (int, float, np.ndarray)):
+            self.external_actions.append(((lambda: f), (lambda: 0), p))
+        elif isinstance(f, FUNCTION_TYPE):
+            self.external_actions.append((f, (lambda: 0), p))
+
+    def add_torque(self, t):
+        if isinstance(t, (int, float, np.ndarray)):
+            self.external_actions.append(((lambda: 0), (lambda: t), self.g))
+        elif isinstance(t, FUNCTION_TYPE):
+            self.external_actions.append(((lambda: 0), t, self.g))

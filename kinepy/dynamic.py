@@ -2,7 +2,7 @@ from kinepy.geometry import *
 
 
 class MechanicalAction:
-    def __init__(self, f: np.ndarray, p: np.ndarray, m):
+    def __init__(self, f, p, m):
         self.f, self.p, self.m = f, p, m
 
     def babar(self, point):
@@ -37,6 +37,40 @@ class Spring(Interaction):
         l_ = mag(ab)
         system.sols[self.s1].mech_actions[self.name] = MechanicalAction(ab * self.k * (1 - self.l0 / l_), a, 0.)
         system.sols[self.s2].mech_actions[self.name] = MechanicalAction(ab * self.k * (self.l0 / l_ - 1), b, 0.)
+
+
+class RevoluteTorque(Interaction):
+    def __init__(self, rev, t):
+        self.rev, self.t = rev, t
+
+    def set_am(self, system):
+        t = self.t()
+        system.sols[self.rev.s1].mech_actions[f'{self.rev.name}|Torque'] = MechanicalAction(0., 0., t)
+        system.sols[self.rev.s2].mech_actions[f'{self.rev.name}|Torque'] = MechanicalAction(0., 0., -t)
+
+
+class PrismaticTangent(Interaction):
+    def __init__(self, pri, f):
+        self.pri, self.f = pri, f
+
+    def set_am(self, system):
+        u = unit(system.get_origin(self.pri.s1) + self.pri.a1)
+        f = self.f() * u
+        p = system.get_origin(self.pri.s1) + (self.pri.d1 - self.pri.d2) * z_cross(u)
+        system.sols[self.pri.s1].mech_actions[f'{self.pri.name}|Tangent'] = MechanicalAction(f, p, 0.)
+        system.sols[self.pri.s2].mech_actions[f'{self.pri.name}|Tangent'] = MechanicalAction(-f, p, 0.)
+
+
+class PinSlotTangentTorque(Interaction):
+    def __init__(self, pin, f, t):
+        self.pin, self.f, self.t = pin, f, t
+
+    def set_am(self, system):
+        u = unit(system.get_origin(self.pin.s1) + self.pin.a1)
+        f, t = self.f() * u, self.t()
+        p = self.pin.point
+        system.sols[self.pin.s1].mech_actions[f'{self.pin.name}|TangentTorque'] = MechanicalAction(f, p, t)
+        system.sols[self.pin.s2].mech_actions[f'{self.pin.name}|TangentTorque'] = MechanicalAction(-f, p, -t)
 
 
 def tmd(system, point, eq) -> np.ndarray:

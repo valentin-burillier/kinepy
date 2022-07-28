@@ -1,5 +1,8 @@
 from kinepy.geometry import *
-from kinepy.dynamic import trd, tmd, MechanicalAction
+from kinepy.dynamic import trd, tmd, MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
+
+
+FUNCTION_TYPE = type(lambda: 0)
 
 
 class Joint:
@@ -34,7 +37,8 @@ class RevoluteJoint(Joint):
         Joint.__init__(self, s1, s2, f'Rev({s2}/{s1})')
         self.p1, self.p2 = p1, p2
         self.angle = None
-    
+        self.interaction = RevoluteTorque(self, lambda: 0.)
+
     def input_mode(self):
         return f'{self.name}: Angle',
     
@@ -72,6 +76,14 @@ class RevoluteJoint(Joint):
     def point(self):
         return get_point(self.system, self.s1, self.p1)
 
+    def set_torque(self, t):
+        if isinstance(t, (int, float, np.ndarray)):
+            self.interaction.t = lambda: t
+        elif isinstance(t, FUNCTION_TYPE):
+            self.interaction.t = t
+        else:
+            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+
 
 class PrismaticJoint(Joint):
     id_ = 1
@@ -81,6 +93,7 @@ class PrismaticJoint(Joint):
         Joint.__init__(self, s1, s2, f'Pri({s2}/{s1})')
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
         self.delta = None
+        self.interaction = RevoluteTorque(self, lambda: 0.)
         
     def input_mode(self):
         return f'{self.name}: Length',
@@ -120,6 +133,14 @@ class PrismaticJoint(Joint):
         system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
 
+    def set_tangent(self, t):
+        if isinstance(t, (int, float, np.ndarray)):
+            self.interaction.f = lambda: t
+        elif isinstance(t, FUNCTION_TYPE):
+            self.interaction.f = t
+        else:
+            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+
 
 class PinSlotJoint(Joint):
     id_ = 2
@@ -129,6 +150,7 @@ class PinSlotJoint(Joint):
         Joint.__init__(self, s1, s2, f'Pin({s2}/{s1})')
         self.p2, self.a1, self.d1 = p2, a1, d1
         self. delta = self.angle = None
+        self.interaction = PinSlotTangentTorque(self, (lambda: 0), lambda: 0)
     
     def input_mode(self):
         return f'{self.name}: Length', f'{self.name}: Angle'
@@ -170,6 +192,22 @@ class PinSlotJoint(Joint):
 
         system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
+    def set_torque(self, t):
+        if isinstance(t, (int, float, np.ndarray)):
+            self.interaction.t = lambda: t
+        elif isinstance(t, FUNCTION_TYPE):
+            self.interaction.t = t
+        else:
+            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+
+    def set_tangent(self, t):
+        if isinstance(t, (int, float, np.ndarray)):
+            self.interaction.f = lambda: t
+        elif isinstance(t, FUNCTION_TYPE):
+            self.interaction.f = t
+        else:
+            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
 
 class RectangularJoint(Joint):

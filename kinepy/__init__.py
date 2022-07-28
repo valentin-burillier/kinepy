@@ -230,6 +230,13 @@ class System:
             s.mech_actions['Inertie'] = MechanicalAction(
                 -s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)
             )
+            f_tot, t_tot = np.array(0.), 0.
+            for f, t, p in s.external_actions:
+                f = f()
+                f_tot += f
+                t += t() + det(s.get_point(p) - og, f)
+            s.mech_actions['External'] = MechanicalAction(f_tot, og, t_tot)
+
         for inter in self.interactions:
             inter.set_am(self)
         for instr in self.dyn_instr:
