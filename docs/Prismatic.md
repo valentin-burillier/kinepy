@@ -4,7 +4,7 @@
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998717-29c55798-3157-4605-a70c-5fc98c37d6d7.svg">
 </p>
 
-Le paramétrage de la glissière s'effectue grâce à ces 6 attributs :
+Le paramétrage d'une glissière s'effectue grâce à ces 6 attributs :
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
