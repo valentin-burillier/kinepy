@@ -1,13 +1,13 @@
 # Introduction
 
-Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des diffférentes liaisons liant les solides entre eux. 
-Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimérs en mm et les angles en radian. 
+Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des différentes liaisons liant les solides entre eux. 
+Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimées en mm et les angles en radians. 
 
 # Parameters
 ## Nomenclature
 
 - `name`, str : Nom du solide. S'il n'est pas renseigné, un nom générique lui sera attribué.
-- `rep`, int : Numéro de repèrage du solide. Celui du bâti est forcément 0. `rep` incrémente de 1 à chaque ajout de solide dans un système.
+- `rep`, int : Numéro de repérage du solide. Celui du bâti est forcément 0. `rep` incrémente de 1 à chaque ajout de solide dans un système.
 
 ## Paramètres physiques
 
@@ -15,7 +15,7 @@ Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les
 - `j`, float : L'inertie du solide en kg.m². Par défaut, 0. 
 - `g`, tuple : Coordonnées du centre d'inertie du solide confondu à celui de gravité. Par défaut, (0, 0).
 
-En dehors de l'initialisation du solide, il est constament possible de changer ces attributs.
+En dehors de l'initialisation du solide, il est constamment possible de changer ces attributs.
 
 # Kinematics
 
@@ -26,7 +26,7 @@ En dehors de l'initialisation du solide, il est constament possible de changer c
 Le repère orthonormé direct est qualifié par :
 
 - `origin`, 2darray : Coordonnées successives de l'origine du repère associé au solide.
-- `angle`, 1darray : Valeurs successives de l'angle du solide par rapport au système de coordonnée global associé au bâti.
+- `angle`, 1darray : Valeurs successives de l'angle du solide par rapport au système de coordonnées globales associées au bâti.
 
 On peut également associer un point au solide pour obtenir les différentes positions de celui-ci lors d'une simulation.
 
