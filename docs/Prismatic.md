@@ -10,10 +10,10 @@ Le paramétrage de la glissière s'effectue grâce à ces 6 attributs :
 - `s2`, int : L'indice du deuxième solide
 - `a1`, float : Angle du vecteur dirigeant la glissière exprimé dans la base de `s1`
 - `a2`, float : Angle du vecteur dirigeant la glissière exprimé dans la base de `s2`
-- `d1`, float : Distance algébrique entre l'origines de `s1` et l'axe de glissement
-- `d2`, float : Distance algébrique entre l'origines de `s2` et l'axe de glissement
+- `d1`, float : Distance algébrique entre l'origine de `s1` et l'axe de glissement
+- `d2`, float : Distance algébrique entre l'origine de `s2` et l'axe de glissement
 
-Il est constament possible de changer les valeurs de `a1`, `a2`, `d1` et `d2` même après la compilation du mécanisme. 
+Il est constamment possible de changer les valeurs de `a1`, `a2`, `d1` et `d2` même après la compilation du mécanisme. 
 
 # Kinematics
 
