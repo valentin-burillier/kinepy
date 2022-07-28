@@ -85,6 +85,8 @@ def make_continuous(L):
 
 distance = lambda p1, p2: np.sqrt(np.sum((p2 - p1)**2, axis=0))
 
+to_cartesian = lambda r, a : (r*np.cos(a), r*np.sin(a))
+
 def get_speed(L, t):
     if len(L.shape) == 1:    
         return np.diff(L)/t*(len(L) - 1)
