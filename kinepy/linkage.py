@@ -1,5 +1,6 @@
 from kinepy.geometry import *
-from kinepy.dynamic import trd, tmd, MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
+from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
+from kinepy.dynamic import tmd, trd
 
 
 FUNCTION_TYPE = type(lambda: 0)
@@ -38,6 +39,8 @@ class RevoluteJoint(Joint):
         self.p1, self.p2 = p1, p2
         self.angle = None
         self.interaction = RevoluteTorque(self, lambda: 0.)
+        self.force, self.torque = None, None
+        self.input_torque = None
 
     def input_mode(self):
         return f'{self.name}: Angle',
@@ -55,6 +58,8 @@ class RevoluteJoint(Joint):
         }
     
     def reset(self, n):
+        self.force, self.torque = None, None
+        self.input_torque = None
         self.angle = np.zeros((n,), float)
 
     def pilot(self, system, index):
@@ -94,6 +99,8 @@ class PrismaticJoint(Joint):
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
         self.delta = None
         self.interaction = PrismaticTangent(self, lambda: 0.)
+        self.normal, self.tangent, self.torque = None, None, None
+        self.input_tangent = None
         
     def input_mode(self):
         return f'{self.name}: Length',
@@ -114,6 +121,8 @@ class PrismaticJoint(Joint):
         }
     
     def reset(self, n):
+        self.normal, self.tangent, self.torque = None, None, None
+        self.input_tangent = None
         self.delta = np.zeros((n,), float)
 
     def pilot(self, system, index):
@@ -151,7 +160,9 @@ class PinSlotJoint(Joint):
         self.p2, self.a1, self.d1 = p2, a1, d1
         self. delta = self.angle = None
         self.interaction = PinSlotTangentTorque(self, (lambda: 0), lambda: 0)
-    
+        self.normal, self.tangent, self.torque = None, None, None
+        self.input_torque, self.input_tangent = None, None
+
     def input_mode(self):
         return f'{self.name}: Length', f'{self.name}: Angle'
     
@@ -169,6 +180,8 @@ class PinSlotJoint(Joint):
         }
 
     def reset(self, n):
+        self.normal, self.tangent, self.torque = None, None, None
+        self.input_torque, self.input_tangent = None, None
         self.delta = np.zeros((n,))
         self.angle = np.zeros((n,))
 
@@ -218,6 +231,7 @@ class RectangularJoint(Joint):
         Joint.__init__(self, s1, s2, f'Rect({s2}/{s1})')
         self.angle, self.base = angle, base
         self.delta = None
+        self.interaction = None
 
     def input_mode(self):
         return f'{self.name}: X', f'{self.name}: Y'
@@ -262,6 +276,7 @@ class ThreeDegreesOfFreedomJoint(Joint):
     def __init__(self, s1, s2):
         Joint.__init__(self, s1, s2, f'3DoF({s2}/{s1})')
         self.delta, self.angle = None, None
+        self.interaction = None
 
     def get_data(self):
         return {'s1': self.s1, 's2': self.s2, 'name': self.name}

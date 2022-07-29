@@ -2,7 +2,8 @@ from kinepy.linkage import *
 from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
-from kinepy.dynamic import Spring, AccelerationField, dyn
+from kinepy.dynamic import dyn
+from kinepy.interactions import Spring, AccelerationField
 import json
 
 
@@ -232,23 +233,23 @@ class System:
     def solve_dynamics(self, dt):
         for s in self.sols:
             og = s.get_point(s.g)
-            s.mech_actions['Inertie'] = MechanicalAction(
-                -s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)
-            )
+            s.mech_actions.append(MechanicalAction(-s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)))
             f_tot, t_tot = np.array(0.), 0.
             for f, t, p in s.external_actions:
                 f = f()
                 f_tot += f
                 t += t() + det(s.get_point(p) - og, f)
-            s.mech_actions['External'] = MechanicalAction(f_tot, og, t_tot)
+            s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
 
         for inter in self.interactions:
-            inter.set_am(self)
+            inter.set_ma(self)
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
-    def add_acceleration_field(self, g, name='Gravity'):
-        self.interactions.append(AccelerationField(g, name))
+    def add_acceleration_field(self, g):
+        af = AccelerationField(g)
+        self.interactions.append(af)
+        return af
 
     def add_spring(self, k, l0, s1, s2, p1=(0, 0), p2=(2, 0)):
         if isinstance(s1, str):
@@ -258,8 +259,9 @@ class System:
         if isinstance(s2, str):
             # Référence par le nom
             s2 = self.named_sols[s2]
-
-        self.interactions.append(Spring(k, l0, s1, s2, p1, p2))
+        spr = Spring(k, l0, s1, s2, p1, p2)
+        self.interactions.append(spr)
+        return spr
 
     def get_data(self):
         return {

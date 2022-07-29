@@ -1,84 +1,13 @@
 from kinepy.geometry import *
+from kinepy.interactions import MechanicalAction
 
 
-class MechanicalAction:
-    def __init__(self, f, p, m):
-        self.f, self.p, self.m = f, p, m
-
-    def babar(self, point):
-        return self.m + det(self.p - point, self.f)
+def tmd(system, point, eq) -> np.ndarray:  # Intertie - somme(Moments connus) = Moments inconnus
+    return -sum((sum(am.babar(point) for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0.,)))
 
 
-class Interaction:
-    name: str
-
-    def set_am(self, system):
-        pass
-
-
-class AccelerationField(Interaction):
-    def __init__(self, g, name):
-        self.g, self.name = g, name
-
-    def set_am(self, system):
-        for s in system.sols:
-            s.mech_actions[self.name] = MechanicalAction(self.g * s.m, s.get_point(s.g), 0.)
-
-
-class Spring(Interaction):
-    def __init__(self, k, l0, s1, s2, p1, p2):
-        self.s1, self.s2, self.p1, self.p2 = s1, s2, p1, p2
-        self.l0, self.k = l0, k
-        self.name = f'Spring({s2}/{s1})'
-
-    def set_am(self, system):
-        a, b = get_point(system, self.s1, self.p1), get_point(system, self.s2, self.p2)
-        ab = b - a
-        l_ = mag(ab)
-        system.sols[self.s1].mech_actions[self.name] = MechanicalAction(ab * self.k * (1 - self.l0 / l_), a, 0.)
-        system.sols[self.s2].mech_actions[self.name] = MechanicalAction(ab * self.k * (self.l0 / l_ - 1), b, 0.)
-
-
-class RevoluteTorque(Interaction):
-    def __init__(self, rev, t):
-        self.rev, self.t = rev, t
-
-    def set_am(self, system):
-        t = self.t()
-        system.sols[self.rev.s1].mech_actions[f'{self.rev.name}|Torque'] = MechanicalAction(0., 0., t)
-        system.sols[self.rev.s2].mech_actions[f'{self.rev.name}|Torque'] = MechanicalAction(0., 0., -t)
-
-
-class PrismaticTangent(Interaction):
-    def __init__(self, pri, f):
-        self.pri, self.f = pri, f
-
-    def set_am(self, system):
-        u = unit(system.get_origin(self.pri.s1) + self.pri.a1)
-        f = self.f() * u
-        p = system.get_origin(self.pri.s1) + (self.pri.d1 - self.pri.d2) * z_cross(u)
-        system.sols[self.pri.s1].mech_actions[f'{self.pri.name}|Tangent'] = MechanicalAction(f, p, 0.)
-        system.sols[self.pri.s2].mech_actions[f'{self.pri.name}|Tangent'] = MechanicalAction(-f, p, 0.)
-
-
-class PinSlotTangentTorque(Interaction):
-    def __init__(self, pin, f, t):
-        self.pin, self.f, self.t = pin, f, t
-
-    def set_am(self, system):
-        u = unit(system.get_origin(self.pin.s1) + self.pin.a1)
-        f, t = self.f() * u, self.t()
-        p = self.pin.point
-        system.sols[self.pin.s1].mech_actions[f'{self.pin.name}|TangentTorque'] = MechanicalAction(f, p, t)
-        system.sols[self.pin.s2].mech_actions[f'{self.pin.name}|TangentTorque'] = MechanicalAction(-f, p, -t)
-
-
-def tmd(system, point, eq) -> np.ndarray:
-    return sum((sum(am.babar(point) for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0.,)))
-
-
-def trd(system, eq) -> np.ndarray:
-    return sum((sum(am.f for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0., 0.)))
+def trd(system, eq) -> np.ndarray:  # Intertie - somme(Forces connues) = Forces inconnues
+    return -sum((sum(am.f for am in system.sols[s].mech_actions.values()) for s in eq), np.array((0., 0.)))
 
 
 def p_p_p(system, cycle, rev1, rev2, rev3, _, eq2, eq3):
@@ -91,24 +20,28 @@ def p_p_p(system, cycle, rev1, rev2, rev3, _, eq2, eq3):
     inv_12, inv_32 = inv_mag(p1p2), inv_mag(p3p2)
     u1, u2 = p1p2 * inv_12, p3p2 * inv_32
 
-    x1, x2 = -tmd(system, p1, eq2 + eq3) * inv_12, -tmd(system, p2, eq2) * inv_32
+    #           f1/2 . (z ^ u1)                        f1/2 . (z ^ u2)
+    x1, x2 = tmd(system, p1, eq2 + eq3) * inv_12, tmd(system, p3, eq2) * inv_32
     y1 = (x2 - dot(u1, u2) * x1) / det(u1, u2)
 
-    f2 = x1 * z_cross(u1) - y1 * u1
-    f3 = -trd(system, eq2) - f2
-    f1 = -trd(system, eq3) + f3
+    f_12 = x1 * z_cross(u1) - y1 * u1
+    f_32 = trd(system, eq2) - f_12
+    f_13 = trd(system, eq3) + f_32
 
-    n1 = system.joints[cycle[0]].name
-    system.sols[s11].mech_actions[n1] = MechanicalAction(-f1, p1, 0.)
-    system.sols[s13].mech_actions[n1] = MechanicalAction(f1, p1, 0.)
+    p = system.joints[cycle[0]]
+    system.sols[s11].mech_actions.append(MechanicalAction(-f_13, p1, 0.))
+    system.sols[s13].mech_actions.append(MechanicalAction(f_13, p1, 0.))
+    p.force = f_13 if s13 == p.s1 else -f_13
 
-    n2 = system.joints[cycle[1]].name
-    system.sols[s21].mech_actions[n2] = MechanicalAction(-f2, p1, 0.)
-    system.sols[s22].mech_actions[n2] = MechanicalAction(f2, p1, 0.)
+    p = system.joints[cycle[1]]
+    system.sols[s21].mech_actions.append(MechanicalAction(-f_12, p2, 0.))
+    system.sols[s22].mech_actions.append(MechanicalAction(f_12, p2, 0.))
+    p.force = f_12 if s22 == p.s1 else -f_12
 
-    n3 = system.joints[cycle[2]].name
-    system.sols[s33].mech_actions[n3] = MechanicalAction(-f3, p1, 0.)
-    system.sols[s32].mech_actions[n3] = MechanicalAction(f3, p1, 0.)
+    p = system.joints[cycle[2]]
+    system.sols[s33].mech_actions.append(MechanicalAction(-f_32, p3, 0.))
+    system.sols[s32].mech_actions.append(MechanicalAction(f_32, p3, 0.))
+    p.force = f_32 if s32 == p.s1 else -f_32
 
 
 def p_p_g(system, cycle, rev1, rev2, pri, _, eq2, eq3):
@@ -118,21 +51,26 @@ def p_p_g(system, cycle, rev1, rev2, pri, _, eq2, eq3):
 
     p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
     u = unit(system.get_ref(s1) + a1)
-    n23 = z_cross(u) * (tmd(system, eq3, p1) + (t2 := tmd(system, eq2, p2))) / dot(u, p1 - p2)
-    f1 = -trd(system, eq3) - n23
-    f2 = -trd(system, eq2) + n23
+    n_23 = z_cross(u) * (normal := ((m_23 := tmd(system, eq3, p1)) + tmd(system, eq2, p2)) / dot(u, p1 - p2))
+    f_13 = trd(system, eq3) - n_23
+    f_12 = trd(system, eq2) + n_23
 
-    n1 = system.joints[cycle[0]].name
-    system.sols[s13].mech_actions[n1] = MechanicalAction(f1, p1, 0.)
-    system.sols[s11].mech_actions[n1] = MechanicalAction(-f1, p1, 0.)
+    p = system.joints[cycle[0]]
+    system.sols[s13].mech_actions.append(MechanicalAction(f_13, p1, 0.))
+    system.sols[s11].mech_actions.append(MechanicalAction(-f_13, p1, 0.))
+    p.force = f_13 if s13 == p.s1 else -f_13
 
-    n2 = system.joints[cycle[1]].name
-    system.sols[s21].mech_actions[n2] = MechanicalAction(-f2, p2, 0.)
-    system.sols[s22].mech_actions[n2] = MechanicalAction(f2, p2, 0.)
+    p = system.joints[cycle[1]]
+    system.sols[s21].mech_actions.append(MechanicalAction(-f_12, p2, 0.))
+    system.sols[s22].mech_actions.append(MechanicalAction(f_12, p2, 0.))
+    p.force = f_12 if s22 == p.s1 else -f_12
 
-    n3 = system.joints[cycle[2]].name
-    system.sols[s1].mech_actions[n3] = MechanicalAction(-n23, p2, -t2)
-    system.sols[s1p].mech_actions[n3] = MechanicalAction(n23, p2, t2)
+    g = system.joints[cycle[2]]
+    p = system.get_origin(g.s1) + (g.d1 - g.d1p) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    m_23 += det(p1 - p, n_23)
+    system.sols[s1].mech_actions.append(MechanicalAction(-n_23, p, -m_23))
+    system.sols[s1p].mech_actions.append(MechanicalAction(n_23, p, m_23))
+    g.normal, g.torque = (normal, m_23) if s1p == g.s1 else (-normal, -m_23)
 
 
 def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
@@ -142,21 +80,26 @@ def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
 
     p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
     u = unit(system.get_ref(s1) + a1)
-    n13 = z_cross(u) * ((t3 := tmd(system, eq3, p2)) - tmd(system, eq3 + eq2, p1)) / dot(u, p2 - p1)
-    f2 = -trd(system, eq3) - n13
-    f1 = -trd(system, eq2) + f2
+    n_13 = z_cross(u) * (normal := ((m_13 := tmd(system, eq3 + eq2, p1)) - tmd(system, eq3, p2)) / dot(u, p2 - p1))
+    f_23 = trd(system, eq3) - n_13
+    f_12 = trd(system, eq2) + f_23
 
-    n1 = system.joints[cycle[0]].name
-    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13, p2, -t3)
-    system.sols[s1].mech_actions[n1] = MechanicalAction(-n13, p2, t3)
+    g = system.joints[cycle[0]]
+    p = system.get_origin(g.s1) + (g.d1 - g.d1p) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    m_13 += det(p1 - p, n_13)
+    system.sols[s1].mech_actions.append(MechanicalAction(-n_13, p, -m_13))
+    system.sols[s1p].mech_actions.append(MechanicalAction(n_13, p, m_13))
+    g.normal, g.torque = (normal, m_13) if s1p == g.s1 else (-normal, -m_13)
 
-    n2 = system.joints[cycle[1]].name
-    system.sols[s12].mech_actions[n2] = MechanicalAction(f1, p1, 0.)
-    system.sols[s11].mech_actions[n2] = MechanicalAction(-f1, p1, 0.)
+    p = system.joints[cycle[1]]
+    system.sols[s11].mech_actions.append(MechanicalAction(-f_12, p1, 0.))
+    system.sols[s12].mech_actions.append(MechanicalAction(f_12, p1, 0.))
+    p.force = f_12 if s12 == p.s1 else -f_12
 
-    n3 = system.joints[cycle[2]].name
-    system.sols[s22].mech_actions[n3] = MechanicalAction(-f2, p2, 0)
-    system.sols[s23].mech_actions[n3] = MechanicalAction(f2, p2, 0)
+    p = system.joints[cycle[2]]
+    system.sols[s22].mech_actions.append(MechanicalAction(-f_23, p2, 0.))
+    system.sols[s23].mech_actions.append(MechanicalAction(f_23, p2, 0.))
+    p.force = f_23 if s23 == p.s1 else -f_23
 
 
 def g_g_p(system, cycle, pri1, pri2, rev, _, eq2, eq3):

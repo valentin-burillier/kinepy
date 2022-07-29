@@ -11,7 +11,7 @@ class Solid:
         self.angle = self._points = self.origin = None
         self.j, self.m, self.g = j, m, g
 
-        self.mech_actions = {}
+        self.mech_actions = []
         self.external_actions = []
 
     def get_point(self, point):
