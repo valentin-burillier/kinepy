@@ -10,7 +10,7 @@ class Joint:
 
     def __init__(self, s1, s2, name):
         self.s1, self.s2, self.name = s1, s2, name
-        self.system = None
+        self.system, self.interaction = None, None
 
     def __repr__(self):
         return self.name
@@ -93,7 +93,7 @@ class PrismaticJoint(Joint):
         Joint.__init__(self, s1, s2, f'Pri({s2}/{s1})')
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
         self.delta = None
-        self.interaction = RevoluteTorque(self, lambda: 0.)
+        self.interaction = PrismaticTangent(self, lambda: 0.)
         
     def input_mode(self):
         return f'{self.name}: Length',

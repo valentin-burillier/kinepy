@@ -64,6 +64,7 @@ class System:
 
         self.joints.append(p)
         p.system = self
+        self.interactions.append(p.interaction)
         return p
 
     def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
@@ -79,6 +80,7 @@ class System:
         self.named_joints[g.name] = len(self.joints)
         self.joints.append(g)
         g.system = self
+        self.interactions.append(g.interaction)
         return g
     
     def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
@@ -95,6 +97,7 @@ class System:
 
         self.joints.append(sp)
         sp.system = self
+        self.interactions.append(sp.interaction)
         return sp
     
     def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2)):
@@ -131,6 +134,8 @@ class System:
         self.named_joints[joint.name] = len(self.joints)
         self.joints.append(joint)
         joint.system = self
+        if joint.interaction is not None:
+            self.interactions.append(joint.interaction)
     
     def pilot(self, joint):
         if isinstance(joint, (tuple, list)):
