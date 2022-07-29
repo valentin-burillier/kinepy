@@ -72,10 +72,11 @@ class RevoluteJoint(Joint):
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         p = self.point
-        f = trd(system, eq2)
-        m = tmd(system, p, eq2)
-        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
-        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+        f_12 = trd(system, eq2)
+        m_12 = tmd(system, p, eq2)
+        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        self.force, self.torque = (f_12, m_12) if self.s1 == s2 else (-f_12, -m_12)
 
     @property
     def point(self):
@@ -135,12 +136,14 @@ class PrismaticJoint(Joint):
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        p = system.get_origin(self.s1) + self.d1 * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
-        f = trd(system, eq2)
-        m = tmd(system, p, eq2)
+        p = system.get_origin(self.s1) + (self.d1 - self.d2) * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
+        f_12 = trd(system, eq2)
+        m_12 = tmd(system, p, eq2)
 
-        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
-        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        t_12, n_12 = mat_mul_n(rot(-system.get_ref(self.s1) - self.a1), f_12)
+        self.torque, self.tangent, self.normal = (m_12, t_12, n_12) if s2 == self.s1 else (-m_12, -t_12, -n_12)
 
     def set_tangent(self, t):
         if isinstance(t, (int, float, np.ndarray)):
@@ -200,11 +203,13 @@ class PinSlotJoint(Joint):
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         p = self.point
-        f = trd(system, eq2)
-        m = tmd(system, p, eq2)
+        f_12 = trd(system, eq2)
+        m_12 = tmd(system, p, eq2)
 
-        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
-        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        t_12, n_12 = mat_mul_n(rot(-system.get_ref(self.s1) - self.a1), f_12)
+        self.normal, self.tangent, self.torque = (n_12, t_12, m_12) if s2 == self.s1 else (-n_12, -t_12, -m_12)
 
     def set_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
@@ -232,6 +237,7 @@ class RectangularJoint(Joint):
         self.angle, self.base = angle, base
         self.delta = None
         self.interaction = None
+        self.torque = None
 
     def input_mode(self):
         return f'{self.name}: X', f'{self.name}: Y'
@@ -249,6 +255,7 @@ class RectangularJoint(Joint):
         }
     
     def reset(self, n):
+        self.torque = None
         self.delta = np.zeros((2, n), float)
 
     def pilot(self, system, index):
