@@ -42,7 +42,7 @@ class Solid:
         return str(self.rep) + ' | ' + self.name
 
     def add_force(self, f, p):
-        if isinstance(f, (int, float, np.ndarray)):
+        if isinstance(f, (tuple, list, np.ndarray)) and len(f) == 2:
             self.external_actions.append(((lambda: f), (lambda: 0), p))
         elif isinstance(f, FUNCTION_TYPE):
             self.external_actions.append((f, (lambda: 0), p))
