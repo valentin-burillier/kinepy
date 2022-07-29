@@ -234,11 +234,11 @@ class System:
         for s in self.sols:
             og = s.get_point(s.g)
             s.mech_actions.append(MechanicalAction(-s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)))
-            f_tot, t_tot = np.array(0.), 0.
+            f_tot, t_tot = np.array(((0.,), (0.,))), 0.
             for f, t, p in s.external_actions:
                 f = f()
                 f_tot += f
-                t += t() + det(s.get_point(p) - og, f)
+                t_tot += t() + det(s.get_point(p) - og, f)
             s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
 
         for inter in self.interactions:

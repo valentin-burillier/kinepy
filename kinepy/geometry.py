@@ -106,8 +106,8 @@ def derivative2(table, dt):  # f'', (n,) -> (n,)
     return np.concatenate((nan, (table[2:] + table[:-2] - 2 * table[1:-1]) / (dt * dt), nan))
 
 
-nan_vec = [np.nan], [np.nan]
+nan_vec = np.array(([np.nan], [np.nan]))
 
 
 def derivative2_vec(table, dt):  # f'', (2, n) -> (2, n)
-    return np.concatenate((nan_vec, (table[:, 2:] + table[:, -2] - 2 * table[:, 1:-1]) / (dt * dt), nan_vec), axis=1)
+    return np.concatenate((nan_vec, (table[:, 2:] + table[:, :-2] - 2 * table[:, 1:-1]) / (dt * dt), nan_vec), axis=1)

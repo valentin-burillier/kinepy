@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.geometry import *
 
 
@@ -43,6 +45,9 @@ class Solid:
 
     def add_force(self, f, p):
         if isinstance(f, (tuple, list, np.ndarray)) and len(f) == 2:
+            f = np.array(f)
+            if f.shape == (2,):
+                f = f.reshape((2, 1))
             self.external_actions.append(((lambda: f), (lambda: 0), p))
         elif isinstance(f, FUNCTION_TYPE):
             self.external_actions.append((f, (lambda: 0), p))

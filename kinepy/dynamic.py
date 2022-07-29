@@ -3,11 +3,11 @@ from kinepy.interactions import MechanicalAction
 
 
 def tmd(system, point, eq) -> np.ndarray:  # Intertie - somme(Moments connus) = Moments inconnus
-    return -sum((sum(am.babar(point) for am in system.sols[s].mech_actions) for s in eq), np.array((0.,)))
+    return np.array(-sum(sum(am.babar(point) for am in system.sols[s].mech_actions) for s in eq))
 
 
 def trd(system, eq) -> np.ndarray:  # Intertie - somme(Forces connues) = Forces inconnues
-    return -sum((sum(am.f for am in system.sols[s].mech_actions) for s in eq), np.array((0., 0.)))
+    return np.array(-sum((sum(am.f for am in system.sols[s].mech_actions) for s in eq)))
 
 
 def p_p_p(system, cycle, rev1, rev2, rev3, _, eq2, eq3):
@@ -51,7 +51,7 @@ def p_p_g(system, cycle, rev1, rev2, pri, _, eq2, eq3):
 
     p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
     u = unit(system.get_ref(s1) + a1)
-    n_23 = z_cross(u) * (normal := ((m_23 := tmd(system, eq3, p1)) + tmd(system, eq2, p2)) / dot(u, p1 - p2))
+    n_23 = z_cross(u) * (normal := ((m_23 := tmd(system, p1, eq3)) + tmd(system, p2, eq2)) / dot(u, p1 - p2))
     f_13 = trd(system, eq3) - n_23
     f_12 = trd(system, eq2) + n_23
 
@@ -80,7 +80,7 @@ def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
 
     p1, p2 = get_point(system, s11, p11), get_point(system, s22, p22)
     u = unit(system.get_ref(s1) + a1)
-    n_13 = z_cross(u) * (normal := ((m_13 := tmd(system, eq3 + eq2, p1)) - tmd(system, eq3, p2)) / dot(u, p2 - p1))
+    n_13 = z_cross(u) * (normal := ((m_13 := tmd(system, p1, eq3 + eq2)) - tmd(system, p2, eq3)) / dot(u, p2 - p1))
     f_23 = trd(system, eq3) - n_13
     f_12 = trd(system, eq2) + f_23
 
