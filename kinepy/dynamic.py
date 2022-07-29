@@ -66,7 +66,7 @@ def p_p_g(system, cycle, rev1, rev2, pri, _, eq2, eq3):
     p.force = f_12 if s22 == p.s1 else -f_12
 
     g = system.joints[cycle[2]]
-    p = system.get_origin(g.s1) + (g.d1 - g.d1p) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    p = system.get_origin(g.s1) + (g.d1 - g.d2) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
     m_23 += det(p1 - p, n_23)
     system.sols[s1].mech_actions.append(MechanicalAction(-n_23, p, -m_23))
     system.sols[s1p].mech_actions.append(MechanicalAction(n_23, p, m_23))
@@ -85,7 +85,7 @@ def g_p_p(system, cycle, pri, rev1, rev2, _, eq2, eq3):
     f_12 = trd(system, eq2) + f_23
 
     g = system.joints[cycle[0]]
-    p = system.get_origin(g.s1) + (g.d1 - g.d1p) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    p = system.get_origin(g.s1) + (g.d1 - g.d2) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
     m_13 += det(p1 - p, n_13)
     system.sols[s1].mech_actions.append(MechanicalAction(-n_13, p, -m_13))
     system.sols[s1p].mech_actions.append(MechanicalAction(n_13, p, m_13))
@@ -107,24 +107,30 @@ def g_g_p(system, cycle, pri1, pri2, rev, _, eq2, eq3):
     (s2, a2, _), (s2p, _, _) = pri2
     (s32, _), (s33, p33) = rev
 
-    p = get_point(system, s33, p33)
+    p1 = get_point(system, s33, p33)
     ux, uy = unit(system.get_ref(s1) + a1 + np.pi * .5), unit(system.get_ref(s2) + a2 + np.pi * .5)
-    n13, n12 = mat_mul_n(inv_mat(ux, uy), -trd(system, eq3 + eq2))
-    n13, n12 = n13 * ux, n12 * uy
-    m31, m21 = tmd(system, p, eq3), tmd(system, p, eq2)
-    f32 = trd(system, eq3) + n13
+    normal_13, normal_12 = mat_mul_n(inv_mat(ux, uy), trd(system, eq3 + eq2))
+    n_13, n_12 = normal_13 * ux, normal_12 * uy
+    f_23 = trd(system, eq3) - n_13
 
-    n1 = system.joints[cycle[0]].name
-    system.sols[s1p].mech_actions[n1] = MechanicalAction(n13, p, -m31)
-    system.sols[s1].mech_actions[n1] = MechanicalAction(-n13, p, m31)
+    g = system.joints[cycle[0]]
+    p = system.get_origin(g.s1) + (g.d1 - g.d2) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    m_13 = tmd(system, p, eq3) - det(p1 - p, f_23)
+    system.sols[s1p].mech_actions.append(MechanicalAction(n_13, p, m_13))
+    system.sols[s1].mech_actions.append(MechanicalAction(-n_13, p, -m_13))
+    g.normal, g.torque = (normal_13, m_13) if s1p == g.s1 else (-normal_13, -m_13)
 
-    n2 = system.joints[cycle[1]].name
-    system.sols[s2].mech_actions[n2] = MechanicalAction(-n12, p, m21)
-    system.sols[s2p].mech_actions[n2] = MechanicalAction(n12, p, -m21)
+    g = system.joints[cycle[1]]
+    p = system.get_origin(g.s1) + (g.d1 - g.d2) * unit(system.get_ref(g.s1) + g.a1 + np.pi * .5)
+    m_12 = tmd(system, p, eq2) + det(p1 - p, f_23)
+    system.sols[s2p].mech_actions.append(MechanicalAction(n_12, p, m_12))
+    system.sols[s2].mech_actions.append(MechanicalAction(-n_12, p, -m_12))
+    g.normal, g.torque = (normal_12, m_12) if s2p == g.s1 else (-normal_12, -m_12)
 
-    n3 = system.joints[cycle[2]].name
-    system.sols[s33].mech_actions[n3] = MechanicalAction(-f32, p, 0)
-    system.sols[s32].mech_actions[n3] = MechanicalAction(f32, p, 0)
+    p = system.joints[cycle[2]]
+    system.sols[s32].mech_actions.append(MechanicalAction(-f_23, p1, 0.))
+    system.sols[s33].mech_actions.append(MechanicalAction(f_23, p1, 0.))
+    p.force = f_23 if s33 == p.s1 else -f_23
 
 
 def p_g_g(system, cycle, rev, pri1, pri2, _, eq2, eq3):
