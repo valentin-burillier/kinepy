@@ -229,6 +229,8 @@ class System:
             eq = kin[instr[0]](self, *instr[1:])
             for s in eq:
                 self.eqs[s] = eq
+        for s in self.sols:
+            make_continuous(s.angle)
 
     def solve_dynamics(self, dt):
         for s in self.sols:

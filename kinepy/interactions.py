@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.geometry import *
 
 
@@ -21,8 +23,9 @@ class AccelerationField(Interaction):
         self.g = g
 
     def set_ma(self, system):
+        g = np.reshape(np.array(self.g), (2, 1))
         for s in system.sols:
-            s.mech_actions.append(MechanicalAction(self.g * s.m, s.get_point(s.g), 0.))
+            s.mech_actions.append(MechanicalAction(g * s.m, s.get_point(s.g), 0.))
 
 
 class Spring(Interaction):
