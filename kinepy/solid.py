@@ -22,7 +22,7 @@ class Solid:
         return self.origin + np.array((point[0] * a00 + point[1] * a01, point[0] * a10 + point[1] * a11))
 
     def reset(self, n):
-        self.mech_actions = {}
+        self.mech_actions = []
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
 
