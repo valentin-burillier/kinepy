@@ -15,16 +15,6 @@ class Joint:
 
     def __repr__(self):
         return self.name
-    
-    @classmethod
-    def load(cls, data):
-        return cls(**data)
-
-    def get_data(self):
-        pass
-
-    def save(self):
-        return self.__class__.__name__, self.get_data()
 
     def input_mode(self):
         return ()
@@ -49,14 +39,6 @@ class RevoluteJoint(Joint):
     def identifier(self):
         return (self.s1, self.p1), (self.s2, self.p2)
 
-    def get_data(self):
-        return {
-            's1': self.s1,
-            's2': self.s2,
-            'p1': self.p1,
-            'p2': self.p2
-        }
-    
     def reset(self, n):
         self.force, self.torque = None, None
         self.input_torque = None
@@ -109,17 +91,6 @@ class PrismaticJoint(Joint):
     @property
     def identifier(self):
         return (self.s1, self.a1, self.d1), (self.s2, self.a2, self.d2)
-
-    def get_data(self):
-        return {
-            's1': self.s1,
-            's2': self.s2,
-            'a1': self.a1,
-            'a2': self.a2,
-            'd1': self.d1,
-            'd2': self.d2,
-            'name': self.name
-        }
     
     def reset(self, n):
         self.normal, self.tangent, self.torque = None, None, None
@@ -172,15 +143,6 @@ class PinSlotJoint(Joint):
     @property
     def identifier(self):
         return (self.s2, self.p2), (self.s1, self.a1, self.d1)
-
-    def get_data(self):
-        return {
-            's1': self.s1,
-            'p2': self.p2,
-            's2': self.s2,
-            'a1': self.a1,
-            'd1': self.d1
-        }
 
     def reset(self, n):
         self.normal, self.tangent, self.torque = None, None, None
@@ -245,14 +207,6 @@ class RectangularJoint(Joint):
     @property
     def identifier(self):
         return (self.s1, self.angle), (self.s2, -self.angle)
-
-    def get_data(self):
-        return {
-            's1': self.s1,
-            's2': self.s2,
-            'base': self.base,
-            'angle': self.angle
-        }
     
     def reset(self, n):
         self.torque = None
@@ -284,9 +238,6 @@ class ThreeDegreesOfFreedomJoint(Joint):
         Joint.__init__(self, s1, s2, f'3DoF({s2}/{s1})')
         self.delta, self.angle = None, None
         self.interaction = None
-
-    def get_data(self):
-        return {'s1': self.s1, 's2': self.s2, 'name': self.name}
 
     def input_mode(self):
         return f'{self.name}: X', f'{self.name}: Y', f'{self.name}: Angle'

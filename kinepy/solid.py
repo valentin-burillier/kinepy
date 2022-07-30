@@ -27,18 +27,6 @@ class Solid:
         self.mech_actions = []
         self.origin = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
-
-    def save(self):
-        return {
-            'name': self.name,
-            'j': self.j,
-            'm': self.m,
-            'g': self.g
-        }
-    
-    @classmethod
-    def load(cls, data):
-        return cls(**data)
     
     def __repr__(self):
         return str(self.rep) + ' | ' + self.name

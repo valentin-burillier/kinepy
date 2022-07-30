@@ -287,26 +287,5 @@ class System:
         self.interactions.append(spr)
         return spr
 
-    def get_data(self):
-        return {
-            'sols': [s.save() for s in self.sols],
-            'joints': [l_.save() for l_ in self.joints],
-            'piloted': self.piloted,
-            'blocked': self.blocked,
-            'signs': self.signs
-        }
-
-    def save(self, file):
-        with open(file, 'w') as f:
-            json.dump(self.get_data(), f)
-
-    @classmethod
-    def load(cls, file):
-        with open(file) as f:
-            data = json.load(f)
-        data['sols'] = [Solid.load(s) for s in data['sols']]
-        data['joints'] = [class_dict[name].load(d) for name, d in data['joints']]
-        return cls(**data)
-
     def __repr__(self):
         return self.name
