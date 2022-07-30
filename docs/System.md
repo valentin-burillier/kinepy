@@ -33,8 +33,8 @@ Le bâti est déjà recensé dans le système.
 # Résolution
 
 - `solve_kinematic(inputs)` : Réalise la résolution complète du mécanisme à partir des entrées `inputs` des liaisons pilotées. Si une seule liaison est pilotée, `inputs` correspond à un 1darray de valeur de l'attribut correspondant. Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes, l'ordre des entrées pour la résolution étant indiqué par la méthode `show_input()` ou correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
-- `solve_statics(t, compute_kine=True, inputs=None)` : 
-- `solve_dynamics(t, compute_kine=True, inputs=None)` : 
+- `solve_statics(t, inputs=None, compute_kine=True)` : 
+- `solve_dynamics(t, inputs=None, compute_kine=True)` : 
 
 # Sauvegarde et chargement d'un système
 
