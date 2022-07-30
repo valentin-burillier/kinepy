@@ -13,16 +13,16 @@ Le bâti est déjà recensé dans le système.
 
 *On notera que `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques et dynamiques.*
 
-# Entrées du système
+# Pilotage et blocage des liaisons
 
 - `pilot(joints)` : Permet de spécifier quelles liaisons sont pilotés : c'est-à-dire les liaisons où l'on impose une cinématique particulière. L'argument `joints` peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Lors de la résolution, l'ordre des entrées doit correspondre à l'ordre du pilotage spécifié. Un message dans la console l'indiquera.
 - `show_input()` : Montre l'ordre des entrées de pilotage.
-- `block(joints)` : 
+- `block(joints)` : Une liaison est dite "bloquée" lorsqu'elle transmet des efforts sur ses degrés de liberté. Par défaut, les liaisons pilotées sont aussi les liaisons bloquées. Or, dans le cadre de la cinématique inverse d'un mécanisme il est utile de pouvoir dissocié les deux. Ainsi, la méthode `block` permet de définir les liaisons transmettant un effort. L'argument `joints` peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Les valeurs des efforts transmis sont accessibles par des attributs de la liaison correspondante (voir la doc de chaque liaison pour plus d'informations).
 
-# Actions mécaniques extérieures
+# Actions mécaniques
 
-- `add_spring(k, l0, s1, s2, p1=(0, 0), p2=(2, 0))` :
-- `add_acceleration_field(g=(0, -9.81))` :
+- `add_spring(k, l0, s1, s2, p1=(0, 0), p2=(0, 0))` : Ajoute un ressort de raideur `k` et de longueur à vide `l0` fixé au point `p1` du solide `s1` et au point `p2` du solide `s2`. Par défaut, il se lie aux origines de chacun des solides.
+- `add_gravity(g=(0, -9.81))` : Ajoute un champ gravitationnel constant s'appliquant à l'ensemble des solides de valeur `g`. Par défaut, `g` correspond au champ gravitationnel terrestre.
 
 # Compilation
 
@@ -31,10 +31,17 @@ Le bâti est déjà recensé dans le système.
 [mettre un ex]
 
 # Résolution
+## Cinématique
 
 - `solve_kinematic(inputs)` : Réalise la résolution complète du mécanisme à partir des entrées `inputs` des liaisons pilotées. Si une seule liaison est pilotée, `inputs` correspond à un 1darray de valeur de l'attribut correspondant. Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes, l'ordre des entrées pour la résolution étant indiqué par la méthode `show_input()` ou correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
-- `solve_statics(t, inputs=None, compute_kine=True)` : 
+
+## Dynamique
+
 - `solve_dynamics(t, inputs=None, compute_kine=True)` : 
+
+## Quasi-statique
+
+- `solve_statics(t, inputs=None, compute_kine=True)` : 
 
 # Sauvegarde et chargement d'un système
 
