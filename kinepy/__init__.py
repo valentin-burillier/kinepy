@@ -3,7 +3,7 @@ from kinepy.solid import *
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
 from kinepy.dynamic import dyn
-from kinepy.interactions import Spring, AccelerationField
+from kinepy.interactions import Spring, Gravity
 import json
 
 
@@ -232,7 +232,7 @@ class System:
         for s in self.sols:
             make_continuous(s.angle)
             
-    def solve_statics(self, t, inputs=None, compute_kine=True):
+    def solve_statics(self, inputs=None, compute_kine=True):
         if compute_kine:
             self.solve_kinematics(inputs)
         for s in self.sols:
@@ -270,8 +270,8 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
-    def add_acceleration_field(self, g=(0, -9.81)):
-        af = AccelerationField(g)
+    def add_gravity(self, g=(0, -9.81)):
+        af = Gravity(g)
         self.interactions.append(af)
         return af
 

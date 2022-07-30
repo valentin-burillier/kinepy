@@ -18,7 +18,7 @@ class Interaction:
         pass
 
 
-class AccelerationField(Interaction):
+class Gravity(Interaction):
     def __init__(self, g):
         self.g = g
 
