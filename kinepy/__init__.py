@@ -25,7 +25,7 @@ class System:
         for l_ in self.joints:
             l_.system = self
 
-        # Pilotage, mise à jour de l'entrée pour résolution cinématiue
+        # Pilotage, mise à jour de l'entrée pour résolution cinématique
         self.tot, self.indices = 0, {}
         for l_ in piloted:
             pil = []
@@ -138,10 +138,10 @@ class System:
         if joint.interaction is not None:
             self.interactions.append(joint.interaction)
     
-    def pilot(self, joint):
-        if isinstance(joint, (tuple, list)):
+    def pilot(self, joints):
+        if isinstance(joints, (tuple, list)):
             # Plusieurs liaisons en entrée
-            for j in joint:
+            for j in joints:
                 if isinstance(j, Joint):
                     j = j.name
                 if isinstance(j, str):
@@ -157,25 +157,25 @@ class System:
                 self.indices[j] = tuple(pil)
 
             return self.show_input()
-        if isinstance(joint, Joint):
-            joint = joint.name
-        if isinstance(joint, str):
+        if isinstance(joints, Joint):
+            joints = joints.name
+        if isinstance(joints, str):
             # Référence par le nom
-            joint = self.named_joints[joint]
+            joints = self.named_joints[joints]
 
         # Mse à jour de l'entrée pour résolution cinématiue
         pil = []
-        for _ in self.joints[joint].input_mode():
+        for _ in self.joints[joints].input_mode():
             pil.append(self.tot)
             self.tot += 1
-        self.indices[joint] = tuple(pil)
+        self.indices[joints] = tuple(pil)
 
-        self.piloted.append(joint)
+        self.piloted.append(joints)
         self.show_input()
 
-    def block(self, joint):
-        if isinstance(joint, (tuple, list)):
-            for j in joint:
+    def block(self, joints):
+        if isinstance(joints, (tuple, list)):
+            for j in joints:
                 if isinstance(j, Joint):
                     j = j.name
                 if isinstance(j, str):
@@ -183,12 +183,12 @@ class System:
                     j = self.named_joints[j]
                 self.blocked.append(j)
         else:
-            if isinstance(joint, Joint):
-                joint = joint.name
-            if isinstance(joint, str):
+            if isinstance(joints, Joint):
+                joints = joints.name
+            if isinstance(joints, str):
                 # Référence par le nom
-                joint = self.named_joints[joint]
-            self.blocked.append(joint)
+                joints = self.named_joints[joints]
+            self.blocked.append(joints)
 
     def show_input(self):
         j = []
@@ -218,21 +218,42 @@ class System:
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
         print('signs =', self.signs)
         
-    def solve_kinematics(self, input_):
-        if isinstance(input_, (list, tuple)):
-            input_ = np.array(input_)
-        if len(input_.shape) == 1:
-            input_ = input_[np.newaxis, :]
-        self.reset(input_.shape[1])
-        self.input = input_
+    def solve_kinematics(self, inputs):
+        if isinstance(inputs, (list, tuple)):
+            inputs = np.array(inputs)
+        if len(inputs.shape) == 1:
+            inputs = inputs[np.newaxis, :]
+        self.reset(inputs.shape[1])
+        self.input = inputs
         for instr in self.kin_instr:
             eq = kin[instr[0]](self, *instr[1:])
             for s in eq:
                 self.eqs[s] = eq
         for s in self.sols:
             make_continuous(s.angle)
-
-    def solve_dynamics(self, dt):
+            
+    def solve_statics(self, t, inputs=None, compute_kine=True):
+        if compute_kine:
+            self.solve_kinematics(inputs)
+        dt = t/(self.input.shape[1] - 1)
+        for s in self.sols:
+            og = s.get_point(s.g)
+            f_tot, t_tot = np.array(((0.,), (0.,))), 0.
+            for f, t, p in s.external_actions:
+                f = f()
+                f_tot += f
+                t_tot += t() + det(s.get_point(p) - og, f)
+            s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
+        
+        for inter in self.interactions:
+            inter.set_ma(self)
+        for instr in self.dyn_instr:
+            dyn[instr[0]](self, *instr[1:])
+            
+    def solve_dynamics(self, t, inputs=None, compute_kine=True):
+        if compute_kine:
+            self.solve_kinematics(inputs)
+        dt = t/(self.input.shape[1] - 1)
         for s in self.sols:
             og = s.get_point(s.g)
             s.mech_actions.append(MechanicalAction(-s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)))
@@ -248,7 +269,7 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
-    def add_acceleration_field(self, g):
+    def add_acceleration_field(self, g=(0, -9.81)):
         af = AccelerationField(g)
         self.interactions.append(af)
         return af
