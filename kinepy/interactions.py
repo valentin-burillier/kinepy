@@ -1,5 +1,3 @@
-import numpy as np
-
 from kinepy.geometry import *
 
 
@@ -60,7 +58,7 @@ class PrismaticTangent(Interaction):
         self.pri, self.f = pri, f
 
     def set_am(self, system):
-        u = unit(system.get_origin(self.pri.s1) + self.pri.a1)
+        u = unit(system.get_ref(self.pri.s1) + self.pri.a1)
         f = (f_ := self.f()) * u
         p = system.get_origin(self.pri.s1) + (self.pri.d1 - self.pri.d2) * z_cross(u)
         system.sols[self.pri.s1].mech_actions.append(MechanicalAction(f, p, 0.))
@@ -73,7 +71,7 @@ class PinSlotTangentTorque(Interaction):
         self.pin, self.f, self.t = pin, f, t
 
     def set_am(self, system):
-        u = unit(system.get_origin(self.pin.s1) + self.pin.a1)
+        u = unit(system.get_ref(self.pin.s1) + self.pin.a1)
         f, t = (f_ := self.f()) * u, self.t()
         p = self.pin.point
         system.sols[self.pin.s1].mech_actions.append(MechanicalAction(f, p, t))
