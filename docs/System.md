@@ -46,8 +46,3 @@ Dans les trois modes de résolution suivants, `inputs` aux entrées de liaisons 
 ## Statique/Quasi-statique
 
 - `solve_statics(inputs=None, compute_kine=True)` : Réalise la résolution statique du mécanisme à partir des entrées `inputs` des liaisons pilotées. Par rapport à la dynamique, les effets d'inertie des solides sont négligés mais le but reste le même : déterminer les efforts transmis par les liaisons. Contrairement à la dynamique, les efforts sont bien définis tout au long de la simulation.
-
-# Sauvegarde et chargement d'un système
-
-- `save(file)` : Crée un fichier `file` en .json sauvegardant l'entièreté des informations du mécanisme : solide, paramétrage des liaisons, actions mécaniques...
-- `load(file)` : Charge le mécanisme décrit par le fichier `file`
