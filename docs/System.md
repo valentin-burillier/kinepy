@@ -15,8 +15,14 @@ Le bâti est déjà recensé dans le système.
 
 # Entrées du système
 
-- `pilot(joint)` : Permet de spécifier quelles liaisons sont pilotés : c'est-à-dire les liaisons où l'on impose une cinématique particulière. L'argument `joint` peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Lors de la résolution, l'ordre des entrées doit correspondre à l'ordre du pilotage spécifié. Un message dans la console l'indiquera.
+- `pilot(joints)` : Permet de spécifier quelles liaisons sont pilotés : c'est-à-dire les liaisons où l'on impose une cinématique particulière. L'argument `joints` peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Lors de la résolution, l'ordre des entrées doit correspondre à l'ordre du pilotage spécifié. Un message dans la console l'indiquera.
 - `show_input()` : Montre l'ordre des entrées de pilotage.
+- `block(joints)` : 
+
+# Actions mécaniques extérieures
+
+- `add_spring(k, l0, s1, s2, p1=(0, 0), p2=(2, 0))` :
+- `add_acceleration_field(g=(0, -9.81))` :
 
 # Compilation
 
@@ -26,4 +32,11 @@ Le bâti est déjà recensé dans le système.
 
 # Résolution
 
-- `solve_kinematic(input_)` : Réalise la résolution complète du mécanisme à partir des entrées `input_` des liaisons pilotées. Si une seule liaison est pilotée, `input_` correspond à un 1darray de valeur de l'attribut correspondant. Si plusieurs liaisons sont pilotées, `input_` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes, l'ordre des entrées pour la résolution étant indiqué par la méthode `show_input()` ou correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
+- `solve_kinematic(inputs)` : Réalise la résolution complète du mécanisme à partir des entrées `inputs` des liaisons pilotées. Si une seule liaison est pilotée, `inputs` correspond à un 1darray de valeur de l'attribut correspondant. Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes, l'ordre des entrées pour la résolution étant indiqué par la méthode `show_input()` ou correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
+- `solve_statics(t, inputs=None, compute_kine=True)` : 
+- `solve_dynamics(t, inputs=None, compute_kine=True)` : 
+
+# Sauvegarde et chargement d'un système
+
+- `save(file)` : 
+- `load(file)` : 
