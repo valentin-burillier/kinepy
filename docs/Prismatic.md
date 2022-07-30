@@ -32,6 +32,6 @@ Il est constamment possible de changer les valeurs de `a1`, `a2`, `d1` et `d2` m
 </p>
 
 - `set_tangent(t)` : Définis un effort tangentiel additionnel `t` exercé par `s2` sur `s1` le long de l'axe de glissement. `t` peut soit être de type int/float représentant un effort constant, soit un tableau (1darray) de valeur de la force à chaque instant de la simulation ou une fonction retournant l'un des types déjà décrits. Cette dernière a l'avantage de pouvoir dépendre de paramètres géométriques/cinématiques qui ne sont pas encore simulés. Cela peut permettre de modéliser un ressort au niveau de la glissière par exemple.
-- `normal`, 1darray : Efforts normals successifs exercés par `s2` sur `s1` au niveau de la liaison
+- `normal`, 1darray : Efforts normaux successifs exercés par `s2` sur `s1` au niveau de la liaison
 - `torque`, 1darray : Couples successifs transmis par `s2` sur `s1` au point correspondant à la projection orthogonale de l'origine de `s1` sur l'axe de glissement (voir schéma). 
 - `tangent`, 1darray : Efforts tangentiels successifs transmis par `s2` sur `s1` au niveau de la liaison lorsqu'elle est bloquée. Les valeurs prises par cet attribut ne correspondent pas à l'effort tangentiel défini par `set_tangent` : lorsque la liaison n'est pas bloquée, le couple transmis est donc toujours nul même si un effort tangent est ajouté avec `set_tangent`.
