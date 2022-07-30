@@ -235,8 +235,8 @@ class System:
     def solve_statics(self, t, inputs=None, compute_kine=True):
         if compute_kine:
             self.solve_kinematics(inputs)
-        dt = t/(self.input.shape[1] - 1)
         for s in self.sols:
+            s.mech_actions = []
             og = s.get_point(s.g)
             f_tot, t_tot = np.array(((0.,), (0.,))), 0.
             for f, t, p in s.external_actions:
@@ -255,6 +255,7 @@ class System:
             self.solve_kinematics(inputs)
         dt = t/(self.input.shape[1] - 1)
         for s in self.sols:
+            s.mech_actions = []
             og = s.get_point(s.g)
             s.mech_actions.append(MechanicalAction(-s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)))
             f_tot, t_tot = np.array(((0.,), (0.,))), 0.

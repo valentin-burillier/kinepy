@@ -1,5 +1,5 @@
 from kinepy.geometry import *
-from kinepy.interactions import MechanicalAction
+from kinepy.interactions import MechanicalAction, ZERO
 
 
 def tmd(system, point, eq) -> np.ndarray:  # Intertie - somme(Moments connus) = Moments inconnus
@@ -213,8 +213,8 @@ def t_p(system, cycle, rec, rev, _, eq2):
     f_12 = trd(system, eq2)
 
     t = system.joints[cycle[0]]
-    system.sols[s1].mech_actions.append(MechanicalAction(np.array((0., 0.)), p1, -m_12))
-    system.sols[s2].mech_actions.append(MechanicalAction(np.array((0., 0.)), p1, m_12))
+    system.sols[s1].mech_actions.append(MechanicalAction(ZERO, p1, -m_12))
+    system.sols[s2].mech_actions.append(MechanicalAction(ZERO, p1, m_12))
     t.torque = m_12 if s2 == t.s1 else -m_12
 
     p = system.joints[cycle[1]]

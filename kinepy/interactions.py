@@ -1,5 +1,7 @@
 from kinepy.geometry import *
 
+ZERO = np.array([[0.], [0.]])
+
 
 class MechanicalAction:
     def __init__(self, f, p, m):
@@ -46,10 +48,10 @@ class RevoluteTorque(Interaction):
     def __init__(self, rev, t):
         self.rev, self.t = rev, t
 
-    def set_am(self, system):
+    def set_ma(self, system):
         t = self.t()
-        system.sols[self.rev.s1].mech_actions.append(MechanicalAction(0., 0., t))
-        system.sols[self.rev.s2].mech_actions.append(MechanicalAction(0., 0., -t))
+        system.sols[self.rev.s1].mech_actions.append(MechanicalAction(ZERO, 0., t))
+        system.sols[self.rev.s2].mech_actions.append(MechanicalAction(ZERO, 0., -t))
         self.rev.input_torque = t
 
 
@@ -57,20 +59,20 @@ class PrismaticTangent(Interaction):
     def __init__(self, pri, f):
         self.pri, self.f = pri, f
 
-    def set_am(self, system):
+    def set_ma(self, system):
         u = unit(system.get_ref(self.pri.s1) + self.pri.a1)
-        f = (f_ := self.f()) * u
+        f = self.f() * u
         p = system.get_origin(self.pri.s1) + (self.pri.d1 - self.pri.d2) * z_cross(u)
         system.sols[self.pri.s1].mech_actions.append(MechanicalAction(f, p, 0.))
         system.sols[self.pri.s2].mech_actions.append(MechanicalAction(-f, p, 0.))
-        self.pri.input_tangent = f_
+        self.pri.input_tangent = dot(f, u)
 
 
 class PinSlotTangentTorque(Interaction):
     def __init__(self, pin, f, t):
         self.pin, self.f, self.t = pin, f, t
 
-    def set_am(self, system):
+    def set_ma(self, system):
         u = unit(system.get_ref(self.pin.s1) + self.pin.a1)
         f, t = (f_ := self.f()) * u, self.t()
         p = self.pin.point
