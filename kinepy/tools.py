@@ -11,7 +11,6 @@ C = mcol.LinearSegmentedColormap.from_list("", ["cyan", "r"])
 def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, vector_scale=0.1, magnitude_vector='proportionnal'):
     """
     magnitude_vector : 'proportionnal', 'log', 'unitary'
-
     """
     if isinstance(list_paths[0], np.ndarray):
         list_paths = [list_paths]
@@ -40,8 +39,13 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
         if isinstance(list_vectors[0], np.ndarray):
             list_vectors = [list_vectors]
         PAs, vecs = [], []
-        for PA, vec in list_vectors:
+        for PA_, vec_ in list_vectors:
+            PA, vec = PA_.copy(), vec_.copy()
+            nan = np.any(np.isnan(PA), axis=0)
+            PA[:, nan] = 0
             PAs.append(PA)
+            nan = np.any(np.isnan(vec), axis=0)
+            vec[:, nan] = 0
             vecs.append(vec)
         PAs = np.transpose(PAs, (2 ,1, 0))
         vecs = np.transpose(vecs, (2 ,1, 0))
@@ -56,7 +60,7 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
             vecs /= magnitudes[:, np.newaxis, :]
         
         n = PAs.shape[2]
-        lines.append(ax.quiver([1000]*n,[1000]*n, [0]*n, [0]*n, scale=1/vector_scale, scale_units='xy', cmap='plasma'))
+        lines.append(ax.quiver([10**10]*n,[10**10]*n, [0]*n, [0]*n, scale=1/vector_scale, scale_units='xy', cmap='plasma'))
         def _animate_(i):
             for lnum, line in enumerate(lines[:-1]):
                 line.set_data(M[lnum][i, 0], M[lnum][i, 1])
@@ -83,23 +87,26 @@ def make_continuous(L):
             l0 = L[i]
     return L
 
-distance = lambda p1, p2: np.sqrt(np.sum((p2 - p1)**2, axis=0))
+def distance(p1, p2):
+    return np.linalg.norm(p2 - p1, axis=0)
 
-to_cartesian = lambda r, a : (r*np.cos(a), r*np.sin(a))
+def norm(f):
+    return np.linalg.norm(f, axis=0)
 
-def get_speed(L, t):
-    if len(L.shape) == 1:    
-        return np.diff(L)/t*(len(L) - 1)
-    return np.diff(L, axis=1)/t*(L.shape[1] - 1)
+def to_cartesian(r, a):
+    return (r*np.cos(a), r*np.sin(a))
 
+def get_speed(p, t):
+    if len(p.shape) == 1:    
+        return np.diff(p)/t*(len(p) - 1)
+    return np.diff(p, axis=1)/t*(p.shape[1] - 1)
 
-def get_speed_accurate(L, t):
-    if len(L.shape) == 1:    
-        return (L[2:] - L[:-2])/(2*t/(len(L) - 1))
-    return (L[:, 2:] - L[:, :-2])/(2*t/(L.shape[1] - 1))
+def get_speed_accurate(p, t):
+    if len(p.shape) == 1:    
+        return (p[2:] - p[:-2])/(2*t/(len(p) - 1))
+    return (p[:, 2:] - p[:, :-2])/(2*t/(p.shape[1] - 1))
 
-
-def get_acceleration(L, t):
-    if len(L.shape) == 1:    
-        return np.diff(L, 2)/(t/(len(L) - 1))**2
-    return np.diff(L, 2, axis=1)/(t/(L.shape[1] - 1))**2
+def get_acceleration(p, t):
+    if len(p.shape) == 1:    
+        return np.diff(p, 2)/(t/(len(p) - 1))**2
+    return np.diff(p, 2, axis=1)/(t/(p.shape[1] - 1))**2
