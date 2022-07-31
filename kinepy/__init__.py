@@ -8,7 +8,7 @@ import json
 
 
 class System:
-    def __init__(self, sols=(), joints=(), piloted=(), blocked=(), signs=None, name=''):
+    def __init__(self, name='', sols=(), joints=(), piloted=(), blocked=(), signs=None):
         self.sols, self.joints = list(sols) if sols else [Solid(name='Ground')], list(joints)
         self.piloted, self.blocked = list(piloted), list(blocked)
         self.name = name if name else 'Main system'
@@ -44,7 +44,7 @@ class System:
         # Préparation dynamique
         self.interactions = []
 
-    def add_solid(self, j=0., m=0., g=(0., 0.), name=''):
+    def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
         s = Solid(j, m, g, name, len(self.sols))
         self.named_sols[s.name] = len(self.sols)
         self.sols.append(s)
@@ -218,13 +218,17 @@ class System:
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
         print('signs =', self.signs)
         
-    def solve_kinematics(self, inputs):
-        if isinstance(inputs, (list, tuple)):
-            inputs = np.array(inputs)
-        if len(inputs.shape) == 1:
-            inputs = inputs[np.newaxis, :]
-        self.reset(inputs.shape[1])
-        self.input = inputs
+    def solve_kinematics(self, inputs=None):
+        if inputs is None:
+            self.reset(1)
+        else:
+            if isinstance(inputs, (list, tuple)):
+                inputs = np.array(inputs)
+            if len(inputs.shape) == 1:
+                inputs = inputs[np.newaxis, :]
+            self.reset(inputs.shape[1])
+            self.input = inputs
+            
         for instr in self.kin_instr:
             eq = kin[instr[0]](self, *instr[1:])
             for s in eq:
@@ -235,6 +239,7 @@ class System:
     def solve_statics(self, inputs=None, compute_kine=True):
         if compute_kine:
             self.solve_kinematics(inputs)
+            
         for s in self.sols:
             s.mech_actions = []
             og = s.get_point(s.g)
@@ -254,6 +259,7 @@ class System:
         if compute_kine:
             self.solve_kinematics(inputs)
         dt = t/(self.input.shape[1] - 1)
+        
         for s in self.sols:
             s.mech_actions = []
             og = s.get_point(s.g)
@@ -270,12 +276,12 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
-    def add_gravity(self, g=(0, -9.81)):
+    def add_gravity(self, g=(0., -9.81)):
         af = Gravity(g)
         self.interactions.append(af)
         return af
 
-    def add_spring(self, k, l0, s1, s2, p1=(0, 0), p2=(2, 0)):
+    def add_spring(self, k, l0, s1, s2, p1=(0., 0.), p2=(0, 0.)):
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
