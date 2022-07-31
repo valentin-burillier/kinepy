@@ -90,8 +90,8 @@ def make_continuous(L):
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
 
-def norm(f):
-    return np.linalg.norm(f, axis=0)
+def norm(v):
+    return np.linalg.norm(v, axis=0)
 
 def to_cartesian(r, a):
     return (r*np.cos(a), r*np.sin(a))
