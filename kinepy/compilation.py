@@ -8,11 +8,19 @@ class CompilationError(Exception):
     pass
 
 
-def make_graph(system):
+def make_graph(system) -> list[list[tuple[int, int]]]:
     graph: list[list[tuple[int, int]]] = [list() for _ in system.sols]
     for i, l_ in enumerate(system.joints):
         graph[l_.s1].append((l_.s2, i))
         graph[l_.s2].append((l_.s1, i))
+    return graph
+
+
+def make_joint_graph(system):
+    graph: list[list[tuple[int, int]]] = [list() for _ in system.joints]
+    for i, l2 in enumerate(system.relations):
+        graph[l2.j1].append((l2.j2, i))
+        graph[l2.j2].append((l2.j1, i))
     return graph
 
 
@@ -140,12 +148,15 @@ def eq_union(eq, graph, eqs, _eqs):
 
 def compiler(system, mode=KINEMATICS):
     eqs, _eqs = list(range(len(system.sols))), list((i,) for i in range(len(system.sols)))
-    graph = make_graph(system)
+    s_graph = make_graph(system)
     kin_instr, dyn_instr = [], []
-    d = set_distances(graph, eqs)
+    d = set_distances(s_graph, eqs)
+
+    j_graph = make_joint_graph(system)
+
     final = [0] * len(eqs)
     while eqs != final:
-        cycle, eq, signed = next_step(system, eqs, graph, d, mode)
+        cycle, eq, signed = next_step(system, eqs, s_graph, d, mode)
         if isinstance(cycle, int):
             eq_, eq = tuple((_eqs[i], s) for i, s in eq), tuple(i for i, _ in eq)
             kin_instr.append(('Pilot', cycle))
@@ -160,6 +171,6 @@ def compiler(system, mode=KINEMATICS):
             if signed and cycle_indices not in system.signs:
                 system.signs[cycle_indices] = 1
                 print(f'Identified new signed cycle: {cycle_indices} ({tag}).\nChosen 1 as sign.')
-        eq_union(eq, graph, eqs, _eqs)
-        d = set_distances(graph, eqs)
+        eq_union(eq, s_graph, eqs, _eqs)
+        d = set_distances(s_graph, eqs)
     return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]

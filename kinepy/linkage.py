@@ -8,6 +8,7 @@ FUNCTION_TYPE = type(lambda: 0)
 
 class Joint:
     id_ = -1
+    dof = None
 
     def __init__(self, s1, s2, name):
         self.s1, self.s2, self.name = s1, s2, name
@@ -23,6 +24,7 @@ class Joint:
 class RevoluteJoint(Joint):
     id_ = 0
     tag = 'P'
+    dof = 1
     
     def __init__(self, s1, s2, p1, p2):
         Joint.__init__(self, s1, s2, f'Rev({s2}/{s1})')
@@ -76,6 +78,7 @@ class RevoluteJoint(Joint):
 class PrismaticJoint(Joint):
     id_ = 1
     tag = 'G'
+    dof = 1
 
     def __init__(self, s1, s2, a1, d1, a2, d2):
         Joint.__init__(self, s1, s2, f'Pri({s2}/{s1})')
@@ -128,6 +131,7 @@ class PrismaticJoint(Joint):
 class PinSlotJoint(Joint):
     id_ = 2
     tag = 'SP'
+    dof = 2
 
     def __init__(self, s1, s2, a1, d1, p2):
         Joint.__init__(self, s1, s2, f'Pin({s2}/{s1})')
@@ -193,6 +197,7 @@ class PinSlotJoint(Joint):
 class RectangularJoint(Joint):
     id_ = 3
     tag = 'T'
+    dof = 2
 
     def __init__(self, s1, s2, angle, base):
         Joint.__init__(self, s1, s2, f'Rect({s2}/{s1})')
@@ -233,6 +238,7 @@ class RectangularJoint(Joint):
 class ThreeDegreesOfFreedomJoint(Joint):
     id_ = 4
     tag = '3DoF'
+    dof = 3
 
     def __init__(self, s1, s2):
         Joint.__init__(self, s1, s2, f'3DoF({s2}/{s1})')
@@ -265,6 +271,3 @@ class ThreeDegreesOfFreedomJoint(Joint):
 
         system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
-
-
-class_dict = {cls.__name__: cls for cls in Joint.__subclasses__()}

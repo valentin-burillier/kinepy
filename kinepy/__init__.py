@@ -4,7 +4,7 @@ from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
 from kinepy.dynamic import dyn
 from kinepy.interactions import Spring, Gravity
-import json
+from kinepy.gearing import *
 
 
 class System:
@@ -43,6 +43,9 @@ class System:
 
         # Préparation dynamique
         self.interactions = []
+
+        # Relation Liaisons
+        self.relations = []
 
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
         s = Solid(j, m, g, name, len(self.sols))
@@ -295,3 +298,79 @@ class System:
 
     def __repr__(self):
         return self.name
+
+    def add_gear(self, rev1, rev2, r, v0=0.):
+        if isinstance(rev1, Joint):
+            rev1 = rev1.name
+        if isinstance(rev1, str):
+            rev1 = self.named_joints[rev1]
+        if not isinstance(self.joints[rev1], RevoluteJoint):
+            raise TypeError('Joints must be RevoluteJoints')
+
+        if isinstance(rev2, Joint):
+            rev2 = rev2.name
+        if isinstance(rev2, str):
+            rev2 = self.named_joints[rev2]
+        if not isinstance(self.joints[rev2], RevoluteJoint):
+            raise TypeError('Joints must be RevoluteJoints')
+
+        g = Gear(self, rev1, rev2, r, v0)
+        self.relations.append(g)
+        return g
+
+    def add_gearrack(self, rev, pri, r, v0=0.):
+        if isinstance(rev, Joint):
+            rev = rev.name
+        if isinstance(rev, str):
+            rev = self.named_joints[rev]
+        if not isinstance(self.joints[rev], RevoluteJoint):
+            raise TypeError('Joint 1 must be a RevoluteJoint')
+
+        if isinstance(pri, Joint):
+            pri = pri.name
+        if isinstance(pri, str):
+            pri = self.named_joints[pri]
+        if not isinstance(self.joints[pri], PrismaticJoint):
+            raise TypeError('Joint 2 must be a PrismaticJoint')
+
+        gr = GearRack(self, rev, pri, r, v0)
+        self.relations.append(gr)
+        return gr
+
+    def add_effortless_relation(self, j1, j2, r, v0=0.):
+        if isinstance(j1, Joint):
+            j1 = j1.name
+        if isinstance(j1, str):
+            j1 = self.named_joints[j1]
+        if self.joints[j1].dof != 1:
+            raise TypeError('Joints must have 1 degree of freedom')
+
+        if isinstance(j2, RevoluteJoint):
+            j2 = j2.name
+        if isinstance(j2, str):
+            j2 = self.named_joints[j2]
+        if self.joints[j2].dof != 1:
+            raise TypeError('Joints must have 1 degree of freedom')
+
+        er = EffortlessRelation(self, j1, j2, r, v0)
+        self.relations.append(er)
+        return er
+
+    def add_distant_relation(self, j1, j2, r, v0=0.):
+        if isinstance(j1, Joint):
+            j1 = j1.name
+        if isinstance(j1, str):
+            j1 = self.named_joints[j1]
+        if self.joints[j1].dof != 1:
+            raise TypeError('Joints must have 1 degree of freedom')
+
+        if isinstance(j2, RevoluteJoint):
+            j2 = j2.name
+        if isinstance(j2, str):
+            j2 = self.named_joints[j2]
+        if self.joints[j2].dof != 1:
+            raise TypeError('Joints must have 1 degree of freedom')
+
+        dr = DistantRelation(self, j1, j2, r, v0)
+        self.relations.append(dr)
+        return dr
