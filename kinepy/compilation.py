@@ -24,6 +24,17 @@ def make_joint_graph(system):
     return graph
 
 
+def explore_tree(start, visited, j_graph, prev_r=None):
+    res = [(start, prev_r)]
+    for j, r in j_graph[start]:
+        if visited[j]:
+            if r != prev_r:
+                raise CompilationError("Encountered hyperstatic relation-graph")
+        visited[j] = True
+        res.append(explore_tree(j, visited, j_graph, r))
+    return res
+
+
 def set_distances(graph, eqs):
     d = [-1] * len(graph)
     d[0] = 0
@@ -44,6 +55,18 @@ def closest_piloted_joint(system, eqs, d, mode):
         l_ = system.joints[l_i]
         if (eq1 := eqs[l_.s1]) != (eq2 := eqs[l_.s2]) and min(d[eq1], d[eq2]) < d_min:
             d_min, index, eq_ = min(d[eq1], d[eq2]), l_i, ((eq1, l_.s1), (eq2, l_.s2))[::(2 * (d[eq1] < d[eq2]) - 1)]
+            if d_min == 0:
+                return d_min, index, eq_
+    return d_min, index, eq_
+
+
+def closest_related_joint(system, eqs, d, queues):
+    d_min, index, eq_ = float('inf'), None, ()
+    for i, tree in enumerate(queues):
+        j, _ = tree[0]
+        j = system.joints[j]
+        if (eq1 := eqs[j.s1]) != (eq2 := eqs[j.s2]) and min(d[eq1], d[eq2]) < d_min:
+            d_min, index, eq_ = min(d[eq1], d[eq2]), i, ((eq1, j.s1), (eq2, j.s2))[::(2 * (d[eq1] < d[eq2]) - 1)]
             if d_min == 0:
                 return d_min, index, eq_
     return d_min, index, eq_
@@ -98,20 +121,27 @@ def find_cycle(system, eqs, graph, d):
     return float('inf'), None, (), False
 
 
-def next_step(system, eqs, graph, d, mode):
+def next_step(system, eqs, graph, queues, d, mode):
     d1, i1, eq1 = closest_piloted_joint(system, eqs, d, mode)
-    if not d1:
-        # pilot that joint
-        return i1, eq1, False
-    d2, cycle, eq2, sgn = find_cycle(system, eqs, graph, d)
-    if d1 < d2:
+    d2, i2, eq2 = closest_related_joint(system, eqs, d, queues)
+    d3, cycle, eq3, sgn = find_cycle(system, eqs, graph, d)
+    if d2 < d1:
+        if d2 < d3:
+            # pilot the joint
+            return i2, eq2, True
+        # solve the cycle
+        if d3 == float('inf'):
+            graph_text = "\n".join(str(i) for i in graph)
+            raise CompilationError(f'Nothing found in graph:\n{graph_text}\nEqs: {eqs}')
+        return cycle, eq3, sgn
+    if d1 < d3:
         # pilot the joint
         return i1, eq1, False
     # solve the cycle
-    if d2 == float('inf'):
+    if d3 == float('inf'):
         graph_text = "\n".join(str(i) for i in graph)
         raise CompilationError(f'Nothing found in graph:\n{graph_text}\nEqs: {eqs}')
-    return cycle, eq2, sgn
+    return cycle, eq3, sgn
 
 
 def align(cycle, cycle_eqs, cycle_indices, eqs):
@@ -153,24 +183,41 @@ def compiler(system, mode=KINEMATICS):
     d = set_distances(s_graph, eqs)
 
     j_graph = make_joint_graph(system)
+    waiting = [False] * len(system.joints)
+    queues = []
 
     final = [0] * len(eqs)
     while eqs != final:
-        cycle, eq, signed = next_step(system, eqs, s_graph, d, mode)
-        if isinstance(cycle, int):
+        concerned, eq, special = next_step(system, eqs, s_graph, queues, d, mode)
+        if isinstance(concerned, int) and special:
             eq_, eq = tuple((_eqs[i], s) for i, s in eq), tuple(i for i, _ in eq)
-            kin_instr.append(('Pilot', cycle))
-            dyn_instr.insert(0, ('Block', cycle) + eq_)
+            tree = queues.pop(concerned)
+            j, r = tree[0]
+            queues += tree[1:]
+            r_ = system.relations[r]
+            kin_instr.append(('RelPilot', concerned, j == r_.j2))
+            dyn_instr.insert(0, ('RelBlock', concerned, j == r_.j2) + eq_)
+        elif isinstance(concerned, int):
+            eq_, eq = tuple((_eqs[i], s) for i, s in eq), tuple(i for i, _ in eq)
+            kin_instr.append(('Pilot', concerned))
+            dyn_instr.insert(0, ('Block', concerned) + eq_)
+            if not waiting[concerned]:
+                waiting[concerned] = True
+                queues += explore_tree(concerned, waiting, j_graph)[1:]
         else:
-            cycle, eq, cycle_indices = align(tuple(system.joints[i] for i in cycle), eq, cycle, eqs)
+            cycle, eq, cycle_indices = align(tuple(system.joints[i] for i in concerned), eq, concerned, eqs)
             eq_ = tuple(_eqs[i] for i in eq)
             tag = '_'.join(system.joints[l_].tag for l_ in cycle_indices)
             kin_instr.append((tag, cycle_indices,) + cycle)
             dyn_instr.insert(0, (tag, cycle_indices,) + cycle + eq_)
 
-            if signed and cycle_indices not in system.signs:
+            if special and cycle_indices not in system.signs:
                 system.signs[cycle_indices] = 1
                 print(f'Identified new signed cycle: {cycle_indices} ({tag}).\nChosen 1 as sign.')
+            for c in cycle:
+                if not waiting[c]:
+                    waiting[c] = True
+                    queues += explore_tree(c, waiting, j_graph)[1:]
         eq_union(eq, s_graph, eqs, _eqs)
         d = set_distances(s_graph, eqs)
     return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]

@@ -1,4 +1,4 @@
-from kinepy.geometry import *
+from kinepy.geometry import np, rot, change_ref, mat_mul_n, z_cross, unit
 from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
 from kinepy.dynamic import tmd, trd
 
@@ -20,6 +20,18 @@ class Joint:
     def input_mode(self):
         return ()
 
+    def __get_angle__(self, index):
+        pass
+
+    def __get_unit__(self, index):
+        pass
+
+    def __get_point__(self, index):
+        pass
+
+    def __get_dist__(self, index):
+        pass
+
 
 class RevoluteJoint(Joint):
     id_ = 0
@@ -39,7 +51,7 @@ class RevoluteJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s1, self.p1), (self.s2, self.p2)
+        return (self.s1, 0), (self.s2, 1)
 
     def reset(self, n):
         self.force, self.torque = None, None
@@ -49,8 +61,7 @@ class RevoluteJoint(Joint):
     def pilot(self, system, index):
         self.angle = system.input[index[0]]
         theta = self.angle + system.get_ref(self.s1) - system.get_ref(self.s2)
-        change_ref(system, self.s2, theta, rot(theta),
-                   get_point(system, self.s2, self.p2), get_point(system, self.s1, self.p1))
+        change_ref(system, self.s2, theta, rot(theta), self.__get_point1(), self.__get_point0())
         return system.eqs[self.s1] + system.eqs[self.s2]
 
     def block(self, system, eq1s1, eq2s2):
@@ -64,7 +75,7 @@ class RevoluteJoint(Joint):
 
     @property
     def point(self):
-        return get_point(self.system, self.s1, self.p1)
+        return self.__get_point0()
 
     def set_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
@@ -73,6 +84,17 @@ class RevoluteJoint(Joint):
             self.interaction.t = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+
+    def __get_point0(self):
+        return self.system.get_origin(self.s1) + mat_mul_n(rot(self.system.get_ref(self.s1)), self.p1)
+
+    def __get_point1(self):
+        return self.system.get_origin(self.s2) + mat_mul_n(rot(self.system.get_ref(self.s2)), self.p2)
+
+    __point_getters = __get_point0, __get_point1
+
+    def __get_point__(self, index):
+        return self.__point_getters[index]()
 
 
 class PrismaticJoint(Joint):
@@ -93,7 +115,7 @@ class PrismaticJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s1, self.a1, self.d1), (self.s2, self.a2, self.d2)
+        return (self.s1, 0), (self.s2, 1)
     
     def reset(self, n):
         self.normal, self.tangent, self.torque = None, None, None
@@ -102,21 +124,20 @@ class PrismaticJoint(Joint):
 
     def pilot(self, system, index):
         self.delta = system.input[index[0]]
-        theta = (alpha := system.get_ref(self.s1) + self.a1) - system.get_ref(self.s2) - self.a2
-        ux = unit(alpha)
-        change_ref(system, self.s2, theta, rot(alpha), system.get_origin(self.s2),
-                   system.get_origin(self.s1) + self.delta * ux + (self.d1 - self.d2) * z_cross(ux))
+        theta = self.__get_angle0() - self.__get_angle1()
+        change_ref(system, self.s2, theta, rot(theta), system.get_origin(self.s2),
+                   self.__get_point__(0) + self.delta * self.__get_unit__(0))
         return system.eqs[self.s1] + system.eqs[self.s2]
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        p = system.get_origin(self.s1) + (self.d1 - self.d2) * unit(system.get_ref(self.s1) + self.a1 + np.pi * .5)
+        p = self.__get_point__(0)
         f_12 = trd(system, eq2)
         m_12 = tmd(system, p, eq2)
 
         system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
         system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
-        t_12, n_12 = mat_mul_n(rot(-system.get_ref(self.s1) - self.a1), f_12)
+        t_12, n_12 = mat_mul_n(rot(-self.__get_angle0()), f_12)
         self.torque, self.tangent, self.normal = (m_12, t_12, n_12) if s2 == self.s1 else (-m_12, -t_12, -n_12)
 
     def set_tangent(self, t):
@@ -126,6 +147,27 @@ class PrismaticJoint(Joint):
             self.interaction.f = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+
+    def __get_angle0(self):
+        return self.system.get_ref(self.s1) + self.a1
+
+    def __get_angle1(self):
+        return self.system.get_ref(self.s2) + self.a2
+
+    __angle_getters = __get_angle0, __get_angle1
+
+    def __get_angle__(self, index):
+        return self.__angle_getters[index]()
+
+    def __get_dist__(self, index):
+        return (2 * index - 1) * (self.d1 - self.d2)
+
+    def __get_unit__(self, index):
+        return unit(self.__get_angle__(index))
+
+    def __get_point__(self, index):
+        return self.system.get_origin((self.s1, self.s2)[index]) + \
+            z_cross(self.__get_dist__(index) * self.__get_unit__(index))
 
 
 class PinSlotJoint(Joint):
@@ -146,7 +188,7 @@ class PinSlotJoint(Joint):
     
     @property
     def identifier(self):
-        return (self.s2, self.p2), (self.s1, self.a1, self.d1)
+        return (self.s2, 1), (self.s1, 0)
 
     def reset(self, n):
         self.normal, self.tangent, self.torque = None, None, None
@@ -156,15 +198,14 @@ class PinSlotJoint(Joint):
 
     def pilot(self, system, index):
         self.delta, self.angle = system.input[index[0]], system.input[index[1]]
-        theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
-        ux = unit(system.get_ref(self.s1) + self.a1)
-        change_ref(system, self.s2, theta, rot(theta), get_point(system, self.s2, self.p2),
-                   system.get_origin(self.s1) + self.delta * ux + self.d1 * z_cross(ux))
+        theta = self.__get_angle__(0) - system.get_ref(self.s2)
+        ux = self.__get_unit__(0)
+        change_ref(system, self.s2, theta, rot(theta), self.__get_point1(), self.__get_point0() + self.delta * ux)
         return system.eqs[self.s1] + system.eqs[self.s2]
 
     @property
     def point(self):
-        return get_point(self.system, self.s2, self.p2)
+        return self.__get_point1()
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
@@ -193,6 +234,23 @@ class PinSlotJoint(Joint):
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
+    def __get_point0(self):
+        return self.system.get_origin(self.s1) + self.d1 * unit(self.system.get_ref(self.s1) + self.a1)
+
+    def __get_point1(self):
+        return self.system.get_origin(self.s2) + mat_mul_n(rot(self.system.get_ref(self.s2)), self.p2)
+
+    __point_getters = __get_point0, __get_point1
+
+    def __get_point__(self, index):
+        return self.__point_getters[index]()
+
+    def __get_angle__(self, index):
+        return self.system.get_ref(self.s1) + self.a1
+
+    def __get_unit__(self, index):
+        return unit(self.__get_angle__(index))
+
 
 class RectangularJoint(Joint):
     id_ = 3
@@ -211,7 +269,7 @@ class RectangularJoint(Joint):
         
     @property
     def identifier(self):
-        return (self.s1, self.angle), (self.s2, -self.angle)
+        return (self.s1, 0), (self.s2, 1)
     
     def reset(self, n):
         self.torque = None
@@ -219,7 +277,7 @@ class RectangularJoint(Joint):
 
     def pilot(self, system, index):
         self.delta = np.array((system.input[index[0]], system.input[index[1]]))
-        theta = system.get_ref(self.s1) + self.angle - system.get_ref(self.s2)
+        theta = self.__get_angle__(0) - system.get_ref(self.s2)
         ux, uy = unit(system.get_ref(self.s1) + self.base[0]), unit(system.get_ref(self.s1) + self.base[1])
         change_ref(system, self.s1, theta, rot(theta), system.get_origin(self.s2),
                    system.get_origin(self.s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), self.delta))
@@ -233,6 +291,9 @@ class RectangularJoint(Joint):
 
         system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
+    def __get_angle__(self, index):
+        return self.system.get_ref((self.s1, self.s2)[index]) - self.angle * (2 * index - 1)
 
 
 class ThreeDegreesOfFreedomJoint(Joint):

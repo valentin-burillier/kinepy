@@ -37,11 +37,11 @@ def inv_mat(u1, u2):  # (2, n) x (2, n) -> (2, 2, n)
     return np.array([[u2[1], -u2[0]], [-u1[1], u1[0]]]) / (u1[0] * u2[1] - u1[1] * u2[0])
 
 
-def get_angle(vec):  # (2, n) -> (n,)
+def angle(vec):  # (2, n) -> (n,)
     return np.arccos(np.maximum(np.minimum(vec[0] * inv_mag(vec), 1.), -1)) * (2 * (vec[1] > 0) - 1)
 
 
-def get_angle2(vec, im):
+def angle2(vec, im):
     return np.arccos(np.maximum(np.minimum(vec[0] * im, 1.), -1)) * (2 * (vec[1] > 0) - 1)
 
 
@@ -53,8 +53,20 @@ def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
     np.einsum('ikl,kl->il', mat, vec, out=vec)
 
 
-def get_point(system, sol, p):
-    return system.get_origin(sol) + np.einsum('ikl,k->il', rot(system.get_ref(sol)), p)
+def get_point(j, index):
+    return j.__get_point__(index)
+
+
+def get_dist(g, index):
+    return g.__get_dist__(index)
+
+
+def get_unit(j, index):
+    return j.__get_unit__(index)
+
+
+def get_angle(j, index):
+    return j.__get_angle__(index)
 
 
 def change_ref(system, sol, angle, mat, center, vec):
