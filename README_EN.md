@@ -10,10 +10,10 @@ Kinepy is built on the following hypotheses:
  - Mechanism is planar
  - Solids are rigid
  - Solids have constant mass
- - Joints are perfect (no friction, no slipping)
+ - Joints are perfect (no friction)
  - Systems are isostatic
  - System is made of dyads (order 1 Assur groups)
- - Ground is assiciated with an intertial frame of reference
+ - Ground is ass0ciated with an intertial frame of reference
  - Gravity is a uniform force field
 
 You need to check on this [file](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md) (still in French) to know how simulate a mechanism.
