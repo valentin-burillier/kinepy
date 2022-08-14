@@ -33,3 +33,7 @@ Very cool stuff
 
  - Tests for dynamics/statics
  - Gears
+
+# Links
+ - https://cdfg.mit.edu/assets/files/CDMC_0.pdf, https://n.ethz.ch/~bthomasz/assets/PDF/Megaro17Compliant.pdf - What inspired this repository
+ - http://faculty.tamucc.edu/psimionescu/PDFs/ASME%20DETC%202016%20-%2059086.pdf, https://blog.rectorsquid.com/linkage-mechanism-designer-and-simulator/ - Existing kinematics simulator
