@@ -4,7 +4,7 @@ from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
 from kinepy.dynamic import dyn
 from kinepy.interactions import Spring, Gravity
-from kinepy.gearing import *
+from kinepy.metajoints import *
 
 
 class System:

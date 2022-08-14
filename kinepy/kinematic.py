@@ -265,11 +265,11 @@ def sp_p(system, cycle, pin, rev):
 
 
 def pilot(system, index):
-    return system.joints[index].pilot(system, system.indices[index])
+    return system.joints[index].pilot(system.indices[index])
 
 
 def rel_pilot(system, rel, index):
-    pass
+    return system.relations[rel].rel_pilot(index)
 
 
 kin = {
