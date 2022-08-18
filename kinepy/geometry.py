@@ -49,6 +49,10 @@ def mat_mul_n(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), New array
     return np.einsum('ikl,kl->il', mat, vec)
 
 
+def mat_mul_n2(mat, vec):  # (2, 2, n) x (2,) -> (2, n)
+    return np.einsum('ikl,k->il', mat, vec)
+
+
 def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
     np.einsum('ikl,kl->il', mat, vec, out=vec)
 

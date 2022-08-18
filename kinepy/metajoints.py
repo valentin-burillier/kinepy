@@ -13,7 +13,7 @@ class LinearRelation:
     __pilot_joint = __pilot_joint0, __pilot_joint1
 
     def rel_pilot(self, index):
-        return self.__pilot_joint[index]
+        return self.__pilot_joint[index](self)
 
 
 class Gear(LinearRelation):

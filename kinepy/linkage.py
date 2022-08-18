@@ -1,4 +1,4 @@
-from kinepy.geometry import np, rot, change_ref, mat_mul_n, z_cross, unit
+from kinepy.geometry import np, rot, change_ref, mat_mul_n2, z_cross, unit, mat_mul_n
 from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
 from kinepy.dynamic import tmd, trd
 
@@ -83,10 +83,10 @@ class RevoluteJoint(Joint):
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
     def __get_point0(self):
-        return self.system.get_origin(self.s1) + mat_mul_n(rot(self.system.get_ref(self.s1)), self.p1)
+        return self.system.get_origin(self.s1) + mat_mul_n2(rot(self.system.get_ref(self.s1)), self.p1)
 
     def __get_point1(self):
-        return self.system.get_origin(self.s2) + mat_mul_n(rot(self.system.get_ref(self.s2)), self.p2)
+        return self.system.get_origin(self.s2) + mat_mul_n2(rot(self.system.get_ref(self.s2)), self.p2)
 
     __point_getters = __get_point0, __get_point1
 
@@ -250,12 +250,12 @@ class PinSlotJoint(Joint):
         return self.system.get_origin(self.s1) + self.d1 * unit(self.system.get_ref(self.s1) + self.a1)
 
     def __get_point1(self):
-        return self.system.get_origin(self.s2) + mat_mul_n(rot(self.system.get_ref(self.s2)), self.p2)
+        return self.system.get_origin(self.s2) + mat_mul_n2(rot(self.system.get_ref(self.s2)), self.p2)
 
     __point_getters = __get_point0, __get_point1
 
     def __get_point__(self, index):
-        return self.__point_getters[index]()
+        return self.__point_getters[index](self)
 
     def __get_angle__(self, index):
         return self.system.get_ref(self.s1) + self.a1
@@ -333,7 +333,8 @@ class ThreeDegreesOfFreedomJoint(Joint):
         self.delta[0], self.delta[1] = self.system.input[index[0]], self.system.input[index[1]]
         self.angle = self.system.input[index[2]]
         theta = self.system.get_ref(self.s1) + self.angle - self.system.get_ref(self.s2)
-        change_ref(self.system, self.s2, theta, rot(theta), self.system.get_origin(self.s2), self.system.get_origin(self.s1))
+        change_ref(self.system, self.s2, theta, rot(theta),
+                   self.system.get_origin(self.s2), self.system.get_origin(self.s1))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
     def block(self, system, eq1s1, eq2s2):
