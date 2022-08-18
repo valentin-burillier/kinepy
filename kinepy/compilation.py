@@ -30,6 +30,7 @@ def explore_tree(start, visited, j_graph, prev_r=None):
         if visited[j]:
             if r != prev_r:
                 raise CompilationError("Encountered hyperstatic relation-graph")
+            continue
         visited[j] = True
         res.append(explore_tree(j, visited, j_graph, r))
     return res
@@ -214,7 +215,7 @@ def compiler(system, mode=KINEMATICS):
             if special and cycle_indices not in system.signs:
                 system.signs[cycle_indices] = 1
                 print(f'Identified new signed cycle: {cycle_indices} ({tag}).\nChosen 1 as sign.')
-            for c in cycle:
+            for c in cycle_indices:
                 if not waiting[c]:
                     waiting[c] = True
                     queues += explore_tree(c, waiting, j_graph)[1:]
