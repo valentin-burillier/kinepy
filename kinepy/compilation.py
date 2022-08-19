@@ -196,11 +196,13 @@ def compiler(system, mode=KINEMATICS):
             j, r = tree[0]
             queues += tree[1:]
             r_ = system.relations[r]
-            kin_instr.append(('RelPilot', concerned, j == r_.j2))
+            jo = system.joints[j]
+            kin_instr.append(('RelPilot', concerned, j == r_.j2, d[eqs[jo.s1]] > d[eqs[jo.s2]]))
             dyn_instr.insert(0, ('RelBlock', concerned, j == r_.j2) + eq_)
         elif isinstance(concerned, int):
             eq_, eq = tuple((_eqs[i], s) for i, s in eq), tuple(i for i, _ in eq)
-            kin_instr.append(('Pilot', concerned))
+            jo = system.joints[concerned]
+            kin_instr.append(('Pilot', concerned, d[eqs[jo.s1]] > d[eqs[jo.s2]]))
             dyn_instr.insert(0, ('Block', concerned) + eq_)
             if not waiting[concerned]:
                 waiting[concerned] = True

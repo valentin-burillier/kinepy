@@ -58,8 +58,8 @@ class RevoluteJoint(Joint):
         self.input_torque = None
         self.angle = np.zeros((n,), float)
 
-    def pilot(self, index):
-        return self.set_value(self.system.input[index[0]])
+    def pilot(self, index, s_index):
+        return self.set_value(self.system.input[index[0]], s_index)
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
@@ -91,15 +91,16 @@ class RevoluteJoint(Joint):
     __point_getters = __get_point0, __get_point1
 
     def __get_point__(self, index):
-        return self.__point_getters[index]()
+        return self.__point_getters[index](self)
 
     def get_value(self):
         return self.angle
 
-    def set_value(self, value):
+    def set_value(self, value, s_index):
         self.angle = value
-        theta = self.angle + self.system.get_ref(self.s1) - self.system.get_ref(self.s2)
-        change_ref(self.system, self.s2, theta, rot(theta), self.__get_point1(), self.__get_point0())
+        theta = (self.angle + self.system.get_ref(self.s1) - self.system.get_ref(self.s2)) * (-2 * s_index + 1)
+        change_ref(self.system, (self.s1, self.s2)[1 ^ s_index], theta, rot(theta),
+                   self.__get_point__(1 ^ s_index), self.__get_point__(s_index))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
 
@@ -128,8 +129,8 @@ class PrismaticJoint(Joint):
         self.input_tangent = None
         self.delta = np.zeros((n,), float)
 
-    def pilot(self, index):
-        return self.set_value(self.system.input[index[0]])
+    def pilot(self, index, s_index):
+        return self.set_value(self.system.input[index[0]], s_index)
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
@@ -174,11 +175,11 @@ class PrismaticJoint(Joint):
     def get_value(self):
         return self.delta
 
-    def set_value(self, value):
+    def set_value(self, value, s_index):
         self.delta = value
-        theta = self.__get_angle0() - self.__get_angle1()
-        change_ref(self.system, self.s2, theta, rot(theta), self.system.get_origin(self.s2),
-                   self.__get_point__(0) + self.delta * self.__get_unit__(0))
+        theta = (self.__get_angle0() - self.__get_angle1()) * (-2 * s_index + 1)
+        change_ref(self.system, (self.s1, self.s2)[1 ^ s_index], theta, rot(theta), self.system.get_origin((self.s1, self.s2)[1 ^ s_index]),
+                   self.__get_point__(s_index) + self.delta * self.__get_unit__(s_index) * (-2 * s_index + 1))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
 
@@ -208,11 +209,11 @@ class PinSlotJoint(Joint):
         self.delta = np.zeros((n,))
         self.angle = np.zeros((n,))
 
-    def pilot(self, index):
+    def pilot(self, index, s_index):
         self.delta, self.angle = self.system.input[index[0]], self.system.input[index[1]]
-        theta = self.__get_angle__(0) - self.system.get_ref(self.s2)
-        ux = self.__get_unit__(0)
-        change_ref(self.system, self.s2, theta, rot(theta), self.__get_point1(), self.__get_point0() + self.delta * ux)
+        theta = (self.angle + self.system.get_ref(self.s1) - self.system.get_ref(self.s2)) * (-2 * s_index + 1)
+        ux = unit(self.system.get_ref(self.s1) + self.a1 - theta * s_index)
+        change_ref(self.system, (self.s1, self.s2)[1 ^ s_index], theta, rot(theta), self.__get_point__(1 ^ s_index), self.__get_point__(s_index) + self.delta * ux * (-2 * s_index + 1))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
     @property
@@ -287,12 +288,14 @@ class RectangularJoint(Joint):
         self.torque = None
         self.delta = np.zeros((2, n), float)
 
-    def pilot(self, index):
+    def pilot(self, index, s_index):
         self.delta = np.array((self.system.input[index[0]], self.system.input[index[1]]))
-        theta = self.__get_angle__(0) - self.system.get_ref(self.s2)
-        ux, uy = unit(self.system.get_ref(self.s1) + self.base[0]), unit(self.system.get_ref(self.s1) + self.base[1])
-        change_ref(self.system, self.s1, theta, rot(theta), self.system.get_origin(self.s2),
-                   self.system.get_origin(self.s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), self.delta))
+        f = -2 * s_index + 1
+        theta = self.angle * f
+        s1, s2 = (self.s1, self.s2)[::(-2 * s_index + 1)]
+        ux, uy = unit(self.system.get_ref(s1) + self.base[0] - s_index * self.angle), unit(self.system.get_ref(s1) + self.base[1] - s_index * self.angle)
+        change_ref(self.system, s2, theta, rot(theta), self.system.get_origin(s2),
+                   self.system.get_origin(s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), f * self.delta))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
     def block(self, system, eq1s1, eq2s2):
@@ -329,13 +332,15 @@ class ThreeDegreesOfFreedomJoint(Joint):
         self.delta = np.zeros((2, n), float)
         self.angle = np.zeros((n,), float)
 
-    def pilot(self, index):
+    def pilot(self, index, s_index):
         self.delta[0], self.delta[1] = self.system.input[index[0]], self.system.input[index[1]]
+        f = -2 * s_index + 1
         self.angle = self.system.input[index[2]]
-        theta = self.system.get_ref(self.s1) + self.angle - self.system.get_ref(self.s2)
-        change_ref(self.system, self.s2, theta, rot(theta),
-                   self.system.get_origin(self.s2), self.system.get_origin(self.s1))
-        return self.system.eqs[self.s1] + self.system.eqs[self.s2]
+        s1, s2 = (self.s1, self.s2)[::(-2 * s_index + 1)]
+        theta = (self.system.get_ref(self.s1) + self.angle - self.system.get_ref(self.s2)) * f
+        change_ref(self.system, s2, theta, rot(theta),
+                   self.system.get_origin(s2), self.system.get_origin(s1))
+        return self.system.eqs[s1] + self.system.eqs[s2]
 
     def block(self, system, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2

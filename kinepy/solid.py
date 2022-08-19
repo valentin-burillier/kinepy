@@ -1,4 +1,4 @@
-from kinepy.geometry import *
+from kinepy.geometry import np, rot
 
 
 FUNCTION_TYPE = type(lambda: 0)

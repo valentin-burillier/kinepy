@@ -1,5 +1,6 @@
 from kinepy.linkage import *
-from kinepy.solid import *
+from kinepy.geometry import make_continuous, det, derivative2_vec, derivative2
+from kinepy.solid import Solid
 from kinepy.compilation import compiler, DYNAMICS, BOTH
 from kinepy.kinematic import kin
 from kinepy.dynamic import dyn
