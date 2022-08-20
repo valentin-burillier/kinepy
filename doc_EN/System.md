@@ -15,38 +15,56 @@ For further information about the parameters and the features of this class, ple
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Adds a pin-slot joint between `s1` and `s2`, it returns the corresponding `PinSlotJoint` object. 
 For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md) (in french).
 
-*On notera que `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques et dynamiques.*
+*Note that `s1` is always the reference solid for kinematic and dynamic parameters of a joint.*
 
-# Pilotage et blocage du mécanisme
+# Joint piloting and blocking
 
-- `pilot(joints)` : Permet de spécifier quelles liaisons sont pilotés : c'est-à-dire les liaisons où l'on impose une cinématique particulière. L'argument `joints` correspondant aux liaisons pilotées peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Lors de la résolution, l'ordre des entrées doit correspondre à l'ordre du pilotage spécifié. Un message dans la console l'indiquera.
-- `show_input()` : Montre l'ordre des entrées de pilotage.
-- `block(joints)` : Une liaison est dite "bloquée" lorsqu'elle transmet des efforts sur ses degrés de liberté. Par défaut, les liaisons pilotées sont aussi les liaisons bloquées. Or, dans le cadre de la cinématique inverse d'un mécanisme il est utile de pouvoir dissocié les deux. Ainsi, la méthode `block` permet de définir les liaisons transmettant un effort. L'argument `joints` correspondant aux liaisons bloquées peut soit être une liaison (de type `Joint`) ou il peut correspondre à une liste/tuple de liaisons. Les valeurs des efforts transmis sont accessibles par des attributs de la liaison bloquée correspondante (voir la doc de chaque liaison pour plus d'informations).
+- `pilot(joints)` : Specifies which joints are piloted, you impose how these joits behave. 
+The `joints` argument can be either a joint (of type `Joint`) or an iterable of joints. 
+For the resolution, the order of entries must correspond to the specified order. It will be displayed in the console.
+- `show_input()` : Shows the entry order.
+- `block(joints)` : Joint is "blocked" when it can transfer mechanical actions through its degrees of freedom. 
+By default, the piloted joints are the blocked joints. It is useful too make them different for inverse kinematics.
+The `joints` argument can be either a joint (of type `Joint`) or an iterable of joints. 
+Effort values are accessible via joint attributes (check each joint documentation for further information).
 
-# Actions mécaniques
+# Mechanical actions
 
-- `add_spring(k, l0, s1, s2, p1=(0, 0), p2=(0, 0))` : Ajoute un ressort de raideur `k` et de longueur à vide `l0` fixé au point `p1` du solide `s1` et au point `p2` du solide `s2`. Par défaut, il se lie aux origines de chacun des solides.
-- `add_gravity(g=(0, -9.81))` : Ajoute un champ gravitationnel constant s'appliquant à l'ensemble des solides de valeur `g`. Par défaut, `g` correspond au champ gravitationnel terrestre.
-D'autres actions mécaniques propres aux solides et aux liaisons peuvent être imposées (voir leur doc respective).
+- `add_spring(k, l0, s1, s2, p1=(0, 0), p2=(0, 0))` : Add a spirong of constant `k`, of unloaded length `l0` attached to `p1` in solid `s1` and to `p2` in solid `s2`.
+By default, it is attached to the origins of the solids.
+- `add_gravity(g=(0, -9.81))` : Add a constant gravitational field `g`. By default, `g` is Earth's gravitationnal field.
+Other mechanical actions can be imposed on joints and solids.
 
 # Compilation
 
-- `compile()` : Lorsque le système est modélisé et que les liaisons sont déclarées pilotées/bloquées, cette méthode va permettre de définir les stratégies de résolution cinématiques, statiques et dynamiques à élaborer pour la résolution. Elle permet également de détecter et de signaler si le mécanisme n'est pas résoluble. Les différents cycles trouvés peuvent dépendre d'un "signe" : c'est-à-dire que le mécanisme peut avoir 2 configurations différentes pour un même paramétrage. C'est à vous de déterminer les bons signes correspondant à votre système. Cela peut être fait en visualisant le mécanisme ou en vérifiant la cohérence de certaines sorties cinématiques. Des signes par défaut sont choisis par la méthode. On les change en renseignant l'attribut `signs` du système. Il est toujours possible de modifier le paramétrage des liaisons et d'ajouter des actions mécaniques après cette étape. 
+- `compile()` : Once the mechanism is modeled, this method will establish the solving strategy for both statics et dynanics. 
+It detects if the mechanism can't be solved. 
+Some cycle may depend on a "sign" as a mechanism could be built in defferent ways with the same parrameters. 
+You have to determine the signs corresponding to your system. 
+It can be done by visualising the systme or by vérifing some kinematic outputs. 
+`1` is the default sign. They are changed in the attribute `signs` of the system. 
+Adding new mechanical actions or changing parameters of joints don't require a new compilation. 
 
-[mettre un ex]
+[Example coming soon]
 
-# Résolution
+# Resolution
 
-Dans les trois modes de résolution suivants, `inputs` aux entrées de liaisons pilotées. Si une seule liaison est pilotée, `inputs` prend la forme d'un tableau (1darray) de valeur de l'attribut correspondant : angle pour les pivots,... Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes. L'ordre des entrées pour la résolution étant indiqué par le système, par la méthode `show_input()` et correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
+In each of the following resolution mode, `inputs` is the piloted joints entry. 
+If a signle joint is piloted, `inputs` is a 1darra, if several joints are piloted `inputs` can be list/tuple of 1darrays or a 2darray. 
+The order corresponds to the one specified by `show_input()`.
 
-## Cinématique
+## Kinematics
 
-- `solve_kinematics(inputs=None)` : Réalise la résolution cinématique du mécanisme à partir des entrées `inputs` des liaisons pilotées. Cela va permettre de trouver l'angle/l'origine des solides et les valeurs des attributs des liaisons.
+- `solve_kinematics(inputs=None)` : Solves the kinematics of the system. Giving the postions of solids and the values of the joints.
+If `inputs` is `None`, it uses last input.
 
-## Dynamique
+## Dynamics
 
-- `solve_dynamics(t, inputs=None, compute_kine=True)` : Réalise la résolution dynamique du mécanisme à partir des entrées `inputs` des liaisons pilotées. Cela correspond à réaliser une simulation cinématique mais aussi de déterminer les efforts transmis par les liaisons lors de la simulation. Les valeurs des efforts transmis sont accessibles par les attributs de la liaison correspondanteb(voir la doc de chaque liaison pour plus d'informations). L'argument `t` correspond à la durée totale de la simulation. L'argument `compute_kine=True` signifie que la résolution cinématique est réalisée par défaut. Mais si le paramétrage géométrique ne change pas entre deux simulations, il est possible de ne la réaliser qu'une fois auparavant grâce à `solve_kinematics` permettant d'accélérer les temps de calculs. Les efforts au début et à la fin de la simulation ne sont pas défini puisque l'accélération ne l'est pas non plus.
+- `solve_dynamics(t, compute_kine=True, inputs=None)` :Solves the dynamics of the system. It determines the efforts transmitted by joints.
+They are accessible as attributes of the concerned joitns. `t` is the total duration of the simulation. 
+The argument `compute_kine` specifies if it solves kinematics, if `inputs` is `None`, it uses last input. 
+Efforts are undefined at the first and the last value as the computation of acceleration has a too weak order of convergence.
 
 ## Statique/Quasi-statique
 
-- `solve_statics(inputs=None, compute_kine=True)` : Réalise la résolution statique du mécanisme à partir des entrées `inputs` des liaisons pilotées. Par rapport à la dynamique, les effets d'inertie des solides sont négligés mais le but reste le même : déterminer les efforts transmis par les liaisons. Contrairement à la dynamique, les efforts sont bien définis tout au long de la simulation.
+- `solve_statics(compute_kine=True, inputs=None)` : Quite the same as `solve_dynamics` but without inertia. As opposed to `solve_dynamics`, efforts are well defined.

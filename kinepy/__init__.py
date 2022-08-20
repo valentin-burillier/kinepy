@@ -240,7 +240,7 @@ class System:
         for s in self.sols:
             make_continuous(s.angle)
             
-    def solve_statics(self, inputs=None, compute_kine=True):
+    def solve_statics(self, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
             
@@ -259,7 +259,7 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
             
-    def solve_dynamics(self, t, inputs=None, compute_kine=True):
+    def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
         dt = t/(self.input.shape[1] - 1)
