@@ -163,7 +163,7 @@ class PrismaticJoint(Joint):
         return self.__angle_getters[index](self)
 
     def __get_dist__(self, index):
-        return (2 * index - 1) * (self.d1 - self.d2)
+        return (2 * index - 1) * (self.d2 - self.d1)
 
     def __get_unit__(self, index):
         return unit(self.__get_angle__(index))
