@@ -214,11 +214,11 @@ def t_p(system, cycle, rec, rev, _, eq2):
 
 
 def block(system, index, eq1s1, eq2s2):
-    system.joints[index].block(system, eq1s1, eq2s2)
+    system.joints[index].block(eq1s1, eq2s2)
 
 
 def rel_block(system, rel, index, eq1s1, eq2s2):
-    pass
+    system.relations[rel].rel_block(index, eq1s1, eq2s2)
 
 
 dyn = {

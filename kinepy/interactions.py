@@ -35,7 +35,7 @@ class Spring(Interaction):
         self.f = None
 
     def set_ma(self, system):
-        a, b = get_point(system, self.s1, self.p1), get_point(system, self.s2, self.p2)
+        a, b = system.sols[self.s1].get_point(self.p1), system.sols[self.s2].get_point(self.p2)
         ab = b - a
         l_ = mag(ab)
         f = ab * (f_ := self.k * (1 - self.l0 / l_))

@@ -134,13 +134,6 @@ class System:
         self.joints.append(_3dof)
         _3dof.system = self
         return _3dof
-
-    def add_joint(self, joint: Joint):
-        self.named_joints[joint.name] = len(self.joints)
-        self.joints.append(joint)
-        joint.system = self
-        if joint.interaction is not None:
-            self.interactions.append(joint.interaction)
     
     def pilot(self, joints):
         if isinstance(joints, (tuple, list)):

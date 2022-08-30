@@ -8,5 +8,5 @@ setup(
     author='Loïc Chevalier - Valentin Burillier',
     url='https://github.com/valentin-burillier/kinepy',
     keywords=['robotics', 'dynamic', 'kinematics', 'static', 'inverse-kinematics', 'mechanism'],
-    requires=[],
+    requires=['numpy'],
 )

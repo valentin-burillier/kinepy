@@ -61,13 +61,13 @@ class RevoluteJoint(Joint):
     def pilot(self, index, s_index):
         return self.set_value(self.system.input[index[0]], s_index)
 
-    def block(self, system, eq1s1, eq2s2):
+    def block(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         p = self.point
-        f_12 = trd(system, eq2)
-        m_12 = tmd(system, p, eq2)
-        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
-        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        f_12 = trd(self.system, eq2)
+        m_12 = tmd(self.system, p, eq2)
+        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        self.system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
         self.force, self.torque = (f_12, m_12) if self.s1 == s2 else (-f_12, -m_12)
 
     @property
@@ -103,6 +103,9 @@ class RevoluteJoint(Joint):
                    self.__get_point__(1 ^ s_index), self.__get_point__(s_index))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
+    def get_effort(self):
+        return self.input_torque if self.torque is None else self.torque + self.input_torque
+
 
 class PrismaticJoint(Joint):
     id_ = 1
@@ -132,14 +135,14 @@ class PrismaticJoint(Joint):
     def pilot(self, index, s_index):
         return self.set_value(self.system.input[index[0]], s_index)
 
-    def block(self, system, eq1s1, eq2s2):
+    def block(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         p = self.__get_point__(0)
-        f_12 = trd(system, eq2)
-        m_12 = tmd(system, p, eq2)
+        f_12 = trd(self.system, eq2)
+        m_12 = tmd(self.system, p, eq2)
 
-        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
-        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        self.system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
         t_12, n_12 = mat_mul_n(rot(-self.__get_angle0()), f_12)
         self.torque, self.tangent, self.normal = (m_12, t_12, n_12) if s2 == self.s1 else (-m_12, -t_12, -n_12)
 
@@ -182,6 +185,9 @@ class PrismaticJoint(Joint):
                    self.__get_point__(s_index) + self.delta * self.__get_unit__(s_index) * (-2 * s_index + 1))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
+    def get_effort(self):
+        return self.input_tangent if self.tangent is None else self.tangent + self.input_tangent
+
 
 class PinSlotJoint(Joint):
     id_ = 2
@@ -220,15 +226,15 @@ class PinSlotJoint(Joint):
     def point(self):
         return self.__get_point1()
 
-    def block(self, system, eq1s1, eq2s2):
+    def block(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         p = self.point
-        f_12 = trd(system, eq2)
-        m_12 = tmd(system, p, eq2)
+        f_12 = trd(self.system, eq2)
+        m_12 = tmd(self.system, p, eq2)
 
-        system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
-        system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
-        t_12, n_12 = mat_mul_n(rot(-system.get_ref(self.s1) - self.a1), f_12)
+        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12, p, -m_12))
+        self.system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
+        t_12, n_12 = mat_mul_n(rot(-self.system.get_ref(self.s1) - self.a1), f_12)
         self.normal, self.tangent, self.torque = (n_12, t_12, m_12) if s2 == self.s1 else (-n_12, -t_12, -m_12)
 
     def set_torque(self, t):
@@ -298,14 +304,14 @@ class RectangularJoint(Joint):
                    self.system.get_origin(s1) + mat_mul_n(((ux[0], uy[0]), (ux[1], uy[1])), f * self.delta))
         return self.system.eqs[self.s1] + self.system.eqs[self.s2]
 
-    def block(self, system, eq1s1, eq2s2):
+    def block(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        p = system.get_origin(self.s1)
-        f = trd(system, eq2)
-        m = tmd(system, p, eq2)
+        p = self.system.get_origin(self.s1)
+        f = trd(self.system, eq2)
+        m = tmd(self.system, p, eq2)
 
-        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
-        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+        self.system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        self.system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
 
     def __get_angle__(self, index):
         return self.system.get_ref((self.s1, self.s2)[index]) - self.angle * (2 * index - 1)
@@ -342,11 +348,11 @@ class ThreeDegreesOfFreedomJoint(Joint):
                    self.system.get_origin(s2), self.system.get_origin(s1))
         return self.system.eqs[s1] + self.system.eqs[s2]
 
-    def block(self, system, eq1s1, eq2s2):
+    def block(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        p = system.get_origin(self.s1)
-        f = trd(system, eq2)
-        m = tmd(system, p, eq2)
+        p = self.system.get_origin(self.s1)
+        f = trd(self.system, eq2)
+        m = tmd(self.system, p, eq2)
 
-        system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
-        system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+        self.system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
+        self.system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
