@@ -27,8 +27,7 @@ Applications stylées à réaliser
 
 # TODO
 
-- Tester la dynamique/satatique
-- Coder engrenages/RSG
+- Tester les engrenages
 
 # Liens
 
