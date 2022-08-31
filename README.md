@@ -1,5 +1,7 @@
 # kinepy
 
+Not comfortable with French ? go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
+
 Cette librairie python est dédiée à la simulation de mécanisme plan.
 
 Elle permet de simuler rapidement et précisément un mécanisme complexe constituer de plusieurs boucles cinématiques. Il est facile d'évaluer ses performances que ce soit du point de vue de la position, de la vitesse des différents solides ou encore des efforts que subissent les pièces au niveau des liaisons. Ainsi, cet outil peut être utilisé pour réaliser le premier dimensionnement d'un mécanisme. Il fournit des modèles couplables à des algorithmes d'optimisation afin de réaliser une conception de mécanisme. De plus, cela peut permettre de réaliser la cinématique inverse d'un mécanisme. Des études plus approfondies peuvent être nécessaires aux vues des hypothèses que la bibliothèque suit :
