@@ -13,7 +13,7 @@ For further information about the parameters and the features of this class, ple
 - `add_prismatic(s1, s2, a1=0., d1=0., a2=0., d2=0.)` : Adds a prismatic joint between `s1` and `s2`, it returns the corresponding `PrismaticJoint` object. 
 For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/doc_EN/Prismatic.md).
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Adds a pin-slot joint between `s1` and `s2`, it returns the corresponding `PinSlotJoint` object. 
-For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md) (in french).
+For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/doc_EN/Pin_slot.md).
 
 *Note that `s1` is always the reference solid for kinematic and dynamic values of a joint.*
 
@@ -41,7 +41,7 @@ Other mechanical actions can be imposed on joints and solids.
 It detects if the mechanism can't be solved. 
 Some cycle may depend on a "sign" as a mechanism could be built in defferent ways with the same parrameters. 
 You have to determine the signs corresponding to your system. 
-It can be done by visualising the systme or by vérifing some kinematic outputs. 
+It can be done by visualising the system or by vérifing some kinematic outputs. 
 `1` is the default sign. They are changed in the attribute `signs` of the system. 
 Adding new mechanical actions or changing parameters of joints don't require a new compilation. 
 
