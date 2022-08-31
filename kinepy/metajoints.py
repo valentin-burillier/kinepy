@@ -122,4 +122,4 @@ class DistantRelation(LinearRelation):
     def rel_block(self, j_index, eq1s1, eq2s2):
         LinearRelation.rel_block(self, j_index, eq1s1, eq2s2)
         j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
-        add_effort((j2, j1)[j_index], self.r ** () * ((j1, j2)[j_index].get_effort()))
+        add_effort((j2, j1)[j_index], self.r ** (2 * j_index - 1) * ((j1, j2)[j_index].get_effort()))
