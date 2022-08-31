@@ -15,7 +15,7 @@ For further information about the parameters and the features of this class, ple
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Adds a pin-slot joint between `s1` and `s2`, it returns the corresponding `PinSlotJoint` object. 
 For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md) (in french).
 
-*Note that `s1` is always the reference solid for kinematic and dynamic parameters of a joint.*
+*Note that `s1` is always the reference solid for kinematic and dynamic values of a joint.*
 
 # Joint piloting and blocking
 
