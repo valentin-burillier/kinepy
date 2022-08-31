@@ -1,10 +1,13 @@
 # Mechanism representation
+
+All 1darrays are of shape (n,), all 2darray are of shape (2, n), n being the number of time entries.
+
 ## Adding a solid
 
 Ground is the only solid existing in a system by default.
 
 - `add_solid(j=0., m=0., g=0., name='')` : Adds a solid to the system et returns the corresponding `Solid` object. 
-For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md) (in french).
+For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/doc_EN/Solid.md).
 
 ## Adding a joint
 
