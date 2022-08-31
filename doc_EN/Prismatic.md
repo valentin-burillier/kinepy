@@ -10,8 +10,8 @@ There are 6 parameters to initialize a prismatic joint using the `System.add_pri
 - `s2`, int : Index of the second solid
 - `a1`, float : Angle between the direction of the joint and the `x` axis in the frame of `s1`
 - `a2`, float : Angle between the direction of the joint and the `x` axis in the frame of `s2`
-- `d1`, float : Algebraic distance from the origin of `s1` to the line of joint 
-- `d2`, float : Algebraic distance from the origin of `s2` to the line of joint
+- `d1`, float : Algebraic distance between the origin of `s1` and the line of joint 
+- `d2`, float : Algebraic distance between the origin of `s2` and the line of joint
 
 In this example: `d1` is positive and `d2` is negative
 It returns a `PrismaticJoint` object. The values of `a1`, `a2`, `d1` and `d2` can be changed at any time, event after the compilation of the mechanism. 
@@ -22,7 +22,7 @@ It returns a `PrismaticJoint` object. The values of `a1`, `a2`, `d1` and `d2` ca
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998713-5b020132-4f86-447d-b9d5-7e28a1be30cd.svg">
 </p>
 
-- `delta`, 1darray : Successive values of the algebraic distance from the origin of `s2` to the one of `s1` along the direction of the joint
+- `delta`, 1darray : Values of the algebraic distance between the origin of `s2` and the origin of `s1` along the direction of the joint
 
 Piloting the joint sets `delta`.
 
@@ -34,13 +34,13 @@ Piloting the joint sets `delta`.
 
 ## Inputs
 
-- `set_tangent(t)` : Defines a force `t` applied by `s2` on `s1` which is tangent to the axis of the joints. `t` can of type int/float for a constant force, 1darray for a time dependent force or fonction (no arguments) for any dependence you want, it has to return one of the previous types.
+- `set_tangent(t)` : Defines a force `t` applied by `s2` on `s1` which is tangent to the axis of the joint. `t` can be of type int/float for a constant force, 1darray for a time dependent force or fonction (no arguments) for any dependence you want, it has to return one of the previous types.
 For example, functions can depend on geometric/kinematic parameters of the mechanism even if it is not simulated yet.
 It can be accessed after a dynamic/static simulation of the mechanism using the `input_tangent` attribute.
 
 ## Outputs
 
-- `normal`, 1darray : Successive forces aplied by `s2` on `s1` perpendicularly to the direction of the joint
-- `torque`, 1darray : Successive torques applied by `s2` on `s1` on the perpendicular projction of the origin of `s1` on the axis of the joint. 
-- `tangent`, 1darray : For blocked prismatic joints only (and some related joints). Successive values of the tangent force `s2` needs to apply on `s1` to make the mechanism move like in the kinematic simulation, or not move if you are simulating statics. 
+- `normal`, 1darray : Forces applied by `s2` on `s1` perpendicularly to the direction of the joint
+- `torque`, 1darray : Torques applied by `s2` on `s1` on the perpendicular projction of the origin of `s1` on the axis of the joint. 
+- `tangent`, 1darray : For blocked prismatic joints only (and some related joints). Values of the tangent force `s2` needs to apply on `s1` to make the mechanism move like in the kinematic simulation, or not move if you are simulating statics. 
 It is `None` when the joint is not blocked
