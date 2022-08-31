@@ -9,7 +9,7 @@ For further information about the parameters and the features of this class, ple
 ## Adding a joint
 
 - `add_revolute(s1, s2, p1=(0., 0.), p2=(0., 0.))` : Adds a revolute joint between `s1` and `s2`, it returns the corresponding `RevoluteJoint` object. 
-For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Revolute.md) (in french).
+For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/doc_EN/Revolute.md).
 - `add_prismatic(s1, s2, a1=0., d1=0., a2=0., d2=0.)` : Adds a prismatic joint between `s1` and `s2`, it returns the corresponding `PrismaticJoint` object. 
 For further information about the parameters and the features of this class, please check on [this](https://github.com/valentin-burillier/kinepy/blob/main/docs/Prismatic.md) (in french).
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Adds a pin-slot joint between `s1` and `s2`, it returns the corresponding `PinSlotJoint` object. 
