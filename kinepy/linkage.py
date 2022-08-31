@@ -1,5 +1,5 @@
 from kinepy.geometry import np, rot, change_ref, mat_mul_n2, z_cross, unit, mat_mul_n
-from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent
+from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO
 from kinepy.dynamic import tmd, trd
 
 
@@ -106,6 +106,10 @@ class RevoluteJoint(Joint):
     def get_effort(self):
         return self.input_torque if self.torque is None else self.torque + self.input_torque
 
+    def __add_effort__(self, value):
+        self.system.sols[self.s1].mech_actions.append(MechanicalAction(ZERO, self.point, value))
+        self.system.sols[self.s2].mech_actions.append(MechanicalAction(ZERO, self.point, -value))
+
 
 class PrismaticJoint(Joint):
     id_ = 1
@@ -187,6 +191,12 @@ class PrismaticJoint(Joint):
 
     def get_effort(self):
         return self.input_tangent if self.tangent is None else self.tangent + self.input_tangent
+
+    def __add_effort__(self, value):
+        f_21 = value * self.__get_unit__(0)
+        p = self.system.get_origin(self.s1) + self.d1 * z_cross(self.__get_unit__(0))
+        self.system.sols[self.s1].mech_actions.append(MechanicalAction(f_21, p, 0.))
+        self.system.sols[self.s2].mech_actions.append(MechanicalAction(-f_21, p, 0.))
 
 
 class PinSlotJoint(Joint):

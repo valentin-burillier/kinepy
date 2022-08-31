@@ -10,6 +10,10 @@ def trd(system, eq) -> np.ndarray:  # Intertie - somme(Forces connues) = Forces 
     return np.array(-sum((sum(am.f for am in system.sols[s].mech_actions) for s in eq)))
 
 
+def add_effort(j, value):
+    j.__add_effort__(value)
+
+
 def p_p_p(system, cycle, rev1, rev2, rev3, _, eq2, eq3):
     p1_, p2_, p3_ = (system.joints[i] for i in cycle)
 
