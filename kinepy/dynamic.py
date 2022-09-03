@@ -235,5 +235,5 @@ dyn = {
     'SP_G': sp_g,
     'T_P': t_p,
     'Block': block,
-    'RelBlck': rel_block
+    'RelBlock': rel_block
 }

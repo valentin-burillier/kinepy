@@ -1,4 +1,5 @@
 from kinepy.geometry import np, rot
+from kinepy.interactions import ZERO
 
 
 FUNCTION_TYPE = type(lambda: 0)
@@ -40,6 +41,6 @@ class Solid:
 
     def add_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.external_actions.append(((lambda: 0), (lambda: t), self.g))
+            self.external_actions.append(((lambda: ZERO), (lambda: t), self.g))
         elif isinstance(t, FUNCTION_TYPE):
-            self.external_actions.append(((lambda: 0), t, self.g))
+            self.external_actions.append(((lambda: ZERO), t, self.g))
