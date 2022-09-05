@@ -74,8 +74,8 @@ class GearRack(LinearRelation):
         c = s2 == (j1.s1, j1.s2)[i1]
 
         f_12 = trd(self.system, eq2)
-        u = get_unit(j1, 0)
-        p = j2.point + r * z_cross(u)
+        u = get_unit(j2, 0)
+        p = j1.point + r * z_cross(u)
         tangent_12 = dot(f_12, u)
         normal_12 = np.tan(self.pressure_angle) * np.abs(tangent_12) * (2 * (r > 0) - 1) * (-2 * c + 1)
         f_1_2 = u * tangent_12 + z_cross(u) * normal_12
@@ -99,8 +99,8 @@ class GearRack(LinearRelation):
         c = s2 == (j2.s1, j2.s2)[i2]
         r = self.r * (2 * (i1 ^ i2) - 1)
 
-        u = get_unit(j1, 0)
-        p = j2.point
+        u = get_unit(j2, 0)
+        p = j1.point
         m_12 = tmd(self.system, p, eq2)
         tangent_12 = -m_12 / r
         normal_12 = np.tan(self.pressure_angle) * np.abs(tangent_12) * (2 * (r > 0) - 1) * (2 * c - 1)
@@ -116,7 +116,7 @@ class GearRack(LinearRelation):
         self.system.sols[((j1.s1, j1.s2)[not i1], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
 
     def rel_block(self, j_index, eq1s1, eq2s2):
-        (self._rel_block0, self._rel_block1)[j_index](self, eq1s1, eq2s2)
+        (self._rel_block0, self._rel_block1)[j_index](eq1s1, eq2s2)
 
 
 class EffortlessRelation(LinearRelation):
