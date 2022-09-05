@@ -62,7 +62,7 @@ class GearRack(LinearRelation):
         LinearRelation.__init__(self, system, j1, j2, r, v0)
         self.pressure_angle = pa
 
-    def _rel_block0(self, eq1s1, eq2s2):
+    def _rel_block1(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
 
@@ -71,7 +71,7 @@ class GearRack(LinearRelation):
         r = self.r * (2 * (i1 ^ i2) - 1)
 
         # s2 est-il le solide en commun
-        c = s2 == (j1.s1, j1.s2)[i1]
+        c = s2 == (j2.s1, j2.s2)[i1]
 
         f_12 = trd(self.system, eq2)
         u = get_unit(j2, 0)
@@ -80,15 +80,16 @@ class GearRack(LinearRelation):
         normal_12 = np.tan(self.pressure_angle) * np.abs(tangent_12) * (2 * (r > 0) - 1) * (-2 * c + 1)
         f_1_2 = u * tangent_12 + z_cross(u) * normal_12
 
-        self.system.sols[(s1, (j2.s1, j2.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
-        self.system.sols[((j2.s1, j2.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
+        self.system.sols[(s1, (j1.s1, j1.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
+        self.system.sols[((j1.s1, j1.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
 
+        p = self.system.get_origin(s1)
         mp_12 = tmd(self.system, p, eq2)
 
         self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12 + f_1_2, p, -mp_12))
         self.system.sols[s2].mech_actions.append(MechanicalAction(f_12 - f_1_2, p, mp_12))
 
-    def _rel_block1(self, eq1s1, eq2s2):
+    def _rel_block0(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
 
@@ -96,7 +97,7 @@ class GearRack(LinearRelation):
         i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
 
         # s2 est-il le solide en commun
-        c = s2 == (j2.s1, j2.s2)[i2]
+        c = s2 == (j1.s1, j1.s2)[i2]
         r = self.r * (2 * (i1 ^ i2) - 1)
 
         u = get_unit(j2, 0)
@@ -112,8 +113,8 @@ class GearRack(LinearRelation):
 
         p = p + r * z_cross(u)
 
-        self.system.sols[(s1, (j1.s1, j1.s2)[not i1])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
-        self.system.sols[((j1.s1, j1.s2)[not i1], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
+        self.system.sols[(s1, (j2.s1, j2.s2)[not i1])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
+        self.system.sols[((j2.s1, j2.s2)[not i1], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
 
     def rel_block(self, j_index, eq1s1, eq2s2):
         (self._rel_block0, self._rel_block1)[j_index](eq1s1, eq2s2)
