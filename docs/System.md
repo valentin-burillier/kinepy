@@ -3,7 +3,7 @@
 
 Le bâti est le seul solide déjà recensé dans le système.
 
-- `add_solid(j=0., m=0., g=0., name='')` : Ajoute un solide au système et retourne l'objet `Solid` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md).
+- `add_solid(name='', g=(0., 0.), m=0., j=0.)` : Ajoute un solide au système et retourne l'objet `Solid` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Solid.md).
 
 ## Ajout de liaisons
 
@@ -12,6 +12,17 @@ Le bâti est le seul solide déjà recensé dans le système.
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Ajoute une liaison sphère-plan entre `s1` et `s2` et retourne l'objet `PinSlotJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md).
 
 *On notera que `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques et dynamiques.*
+
+## Ajout de relations
+
+Une relation décrit une interaction accouplant 2 liaisons. Elle sont uniquement de nature linéaire. Cela permet entre autre de modéliser un train d'engrenage.
+
+Pour les méthodes suivantes, l'argument `r` de type entier ou réel correspond au rapport de transmission entre les liaisons et `v0` de type entier ou réel à la valeur initiale. Attention, aux solides de référence de chacune des liaisonsmise en argument. Cela change les signes des paramètres cinématiques et dynamiques des liaisons.
+
+- `add_gear(rev1, rev2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2` afin de modéliser un train d'engrenages. La relation cinématique s'écrit : `rev2.angle = rev1.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte.
+- `add_gearrack(rev, pri, r, v0=0.)` : Accouple cinématiquement et dynamiquement une pivot `rev` avec une glissière `pri` afin de modéliser une transmission pignon-crémaillère. La relation cinématique s'écrit : `pri.sliding = rev.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte. 
+- `add_distant_relation(j1, j2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons chacune de type `Prismatic` ou `Revolute`. La relation cinématique s'écrit : `j2.value = j1.value x r + v0` où `value` est soit `angle` ou `sliding`, tout dépend de la liaison concidérée. La transmission d'efforts entre les différents solides est prise en compte. Cette méthode ajoute la possibilité qu'une glissière fasse agir une autre glissière ce qui peut modéliser dans certain système l'action d'un vérin hydraulique sur un autre.
+- `add_effortless_relation(j1, j2, r, v0=0.)` : Accouple cinématiquement deux liaisons chacune de type `Prismatic` ou `Revolute`. A la différence des méthodes précédentes, il n'y a pas de transmission d'efforts entre les solides intervenant dans les liaisons `j1` et `j2`.
 
 # Pilotage et blocage du mécanisme
 
