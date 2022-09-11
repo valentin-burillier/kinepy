@@ -339,7 +339,7 @@ class System:
         if self.joints[j1].dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
 
-        if isinstance(j2, RevoluteJoint):
+        if isinstance(j2, Joint):
             j2 = j2.name
         if isinstance(j2, str):
             j2 = self.named_joints[j2]
@@ -358,7 +358,7 @@ class System:
         if self.joints[j1].dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
 
-        if isinstance(j2, RevoluteJoint):
+        if isinstance(j2, Joint):
             j2 = j2.name
         if isinstance(j2, str):
             j2 = self.named_joints[j2]
