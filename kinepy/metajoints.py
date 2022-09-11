@@ -33,7 +33,7 @@ class Gear(LinearRelation):
 
         # indices du solide commun
         i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
-        r = (self.r * (2 * (i1 ^ i2) - 1)) ** (1, -1)[j_index]
+        r = (self.r * (2 * (i1 ^ i2) - 1)) ** (-1, 1)[j_index]
 
         # s2 est-il le solide en commun
         c = s2 == (j1.s1, j1.s2)[i1]
