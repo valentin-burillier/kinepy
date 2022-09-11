@@ -22,7 +22,11 @@ Une relation décrit une interaction accouplant deux liaisons. Elle est uniqueme
     <img width="40%" src="https://user-images.githubusercontent.com/93446869/189528207-ae1991f3-a57c-46af-8388-67d4100215f3.svg">
 </p>
 
-Pour les méthodes suivantes, l'argument `r` de type entier ou réel correspond au rapport de transmission entre les liaisons et `v0` de type entier ou réel à la valeur initiale du paramètre de liaison (`angle` pour les pivots et `sliding` pour les glissières). Attention, aux solides de référence de chacune des liaisons mise en argument. Cela change les signes des paramètres cinématiques et dynamiques des liaisons.
+Les méthodes ci-après, on les arguments suivants en commun :
+- `r`, float : Rapport de transmission entre les liaisons
+- `v0`, float : Valeur initiale du paramètre cinématique de la liaison (`angle` pour les pivots et `sliding` pour les glissières)
+
+Attention, aux solides de référence de chacune des liaisons mise en argument. Cela change les signes des paramètres cinématiques et dynamiques des liaisons.
 
 - `add_gear(rev1, rev2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2` afin de modéliser un train d'engrenages (voir l'image de gauche ci-dessus). La relation cinématique s'écrit : `rev2.angle = rev1.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte.
 - `add_gearrack(rev, pri, r, v0=0.)` : Accouple cinématiquement et dynamiquement une pivot `rev` avec une glissière `pri` afin de modéliser une transmission pignon-crémaillère (voir l'image de droite ci-dessus). La relation cinématique s'écrit : `pri.sliding = rev.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte. 
@@ -53,7 +57,7 @@ D'autres actions mécaniques propres aux solides et aux liaisons peuvent être i
 
 # Résolution
 
-Dans les trois modes de résolution suivants, `inputs` aux entrées de liaisons pilotées. Si une seule liaison est pilotée, `inputs` prend la forme d'un tableau (1darray) de valeur de l'attribut correspondant : angle pour les pivots,... Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes. L'ordre des entrées pour la résolution étant indiqué par le système, par la méthode `show_input()` et correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
+Dans les trois modes de résolution suivants, l'argument `inputs` correspond aux entrées des liaisons pilotées. Si une seule liaison est pilotée, `inputs` prend la forme d'un tableau (1darray) de valeur de l'attribut correspondant : angle pour les pivots,... Si plusieurs liaisons sont pilotées, `inputs` va correspondre à une liste/tuple/array de valeurs des attributs des liaisons correspondantes. L'ordre des entrées pour la résolution étant indiqué par le système, par la méthode `show_input()` et correspond à l'ordre à laquelle les liaisons ont été déclaré pilotées.
 
 ## Cinématique
 
