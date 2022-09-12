@@ -1,7 +1,7 @@
 # Paramètres
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998717-29c55798-3157-4605-a70c-5fc98c37d6d7.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189606974-76c4e831-ec9c-410f-be80-dfce1439331a.svg">
 </p>
 
 Le paramétrage d'une glissière s'effectue grâce à ces 6 attributs :
@@ -18,17 +18,17 @@ Il est constamment possible de changer les valeurs de `a1`, `a2`, `d1` et `d2` m
 # Cinématiques
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180998713-5b020132-4f86-447d-b9d5-7e28a1be30cd.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189606990-39cba9d1-d43b-4ebf-86fb-8b87dc4e28de.svg">
 </p>
 
-- `delta`, 1darray : Valeurs successives de la distance algébrique de l'origine de `s2` par rapport à celle de `s1` le long de l'axe de glissement
+- `sliding`, 1darray : Valeurs successives de la distance algébrique de l'origine de `s2` par rapport à celle de `s1` le long de l'axe de glissement
 
-`s1` est la référence : c'est par rapport à lui que la valeur de glissement est exprimée. Le pilotage d'une liaison glissière permet de fixer l'attribut `delta`.
+`s1` est la référence : c'est par rapport à lui que la valeur de glissement est exprimée. Le pilotage d'une liaison glissière permet de fixer l'attribut `sliding`.
 
 # Actions mécaniques internes
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/181913881-2f462197-1df0-4826-bf42-ef6c753074ef.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189607008-d5a6c649-da05-43b4-acc2-e5ecd1318bec.svg">
 </p>
 
 ## Entrées
