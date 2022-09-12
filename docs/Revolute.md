@@ -27,7 +27,7 @@ Il est constamment possible de changer les valeurs de `p1` et `p2` même après 
 # Actions mécaniques internes
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/181909316-8e097b1c-a33f-4740-a54a-1d95736e96df.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189607566-5f5080d2-9295-4178-85b6-dfeda7c667f5.svg">
 </p>
 
 ## Entrées
