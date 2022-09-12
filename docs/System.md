@@ -11,7 +11,8 @@ Le bâti est le seul solide déjà recensé dans le système.
 - `add_prismatic(s1, s2, a1=0., d1=0., a2=0., d2=0.)` : Ajoute une liaison glissière entre `s1` et `s2` et retourne l'objet `PrismaticJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Prismatic.md).
 - `add_pin_slot(s1, s2, a1=0., d1=0., p2=(0., 0.))` : Ajoute une liaison sphère-plan entre `s1` et `s2` et retourne l'objet `PinSlotJoint` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/Pin_slot.md).
 
-*On notera que `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques et dynamiques.*
+
+On notera que quelque soit la liaison `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques $\\{ \mathcal{V}_{s_2/s_1} \\}$ et dynamiques $\\{ \mathcal{T}_{s_2\rightarrow s_1} \\}$.
 
 ## Ajout de relations
 
