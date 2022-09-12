@@ -3,7 +3,7 @@
 *Dans les différentes représentations ci-dessous, une sphère fait contact au plan en réalité le contact est réalisé en un seul point (ie le rayon de la sphère est nul)*
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180995202-8aa4efe1-f6f4-4875-af6d-c4638de9d920.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603588-7434f2c8-9ec9-4c88-b530-99f3d8453576.svg">
 </p>
 
 Le paramétrage d'une sphère-plan s'effectue grâce à ces 5 attributs :
@@ -19,19 +19,19 @@ Il est constamment possible de changer les valeurs de `a1`, `d1` et `p2` même a
 # Cinématique
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/180994983-7e22c490-3204-499d-95a2-d96de7a14656.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603637-0d328c0e-7c1f-4e5d-837a-b773e0be251d.svg">
 </p>
 
 - `point`, 2darray : Coordonnées successives du point de contact exprimées dans le système de coordonnées global
 - `angle`, 1darray : Valeurs successives de l'angle de `s2` par rapport à `s1`
-- `delta`, 1darray : Valeurs successives de la distance algébrique du centre de la sphère par rapport à l'origine de `s1` le long de l'axe de glissement
+- `sliding`, 1darray : Valeurs successives de la distance algébrique du centre de la sphère par rapport à l'origine de `s1` le long de l'axe de glissement
 
-`s1` est la référence : c'est par rapport à lui que l'angle de pivotement et la valeur de glissement sont exprimés. Le pilotage d'une liaison sphère-plan permet de fixer les attributs `angle` et `delta`. Il n'est pas possible de piloter qu'une seule des 2 variables.
+`s1` est la référence : c'est par rapport à lui que l'angle de pivotement et la valeur de glissement sont exprimés. Le pilotage d'une liaison sphère-plan permet de fixer les attributs `angle` et `sliding`. Il n'est pas possible de piloter qu'une seule des deux variables.
 
 # Actions mécaniques internes
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/181915275-bbe2af79-ad1d-4ce4-8bca-cdbdda294592.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603654-a06bfa81-da29-488d-80c0-e93e4900ca51.svg">
 </p>
 
 # Entrées
