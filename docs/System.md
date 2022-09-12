@@ -15,7 +15,7 @@ Le bâti est le seul solide déjà recensé dans le système.
 
 ## Ajout de relations
 
-Une relation décrit une interaction accouplant deux liaisons. Elle est uniquement de nature affine. Cela permet entre autres de modéliser un train d'engrenage, un système pignon-crémaillère...
+Une relation décrit une interaction accouplant deux liaisons. Elle est uniquement de nature affine. Cela permet entre autres de modéliser un train d'engrenage, un système pignon-crémaillère, un système poulie-courroie...
 
 <p align="center" width="100%">
     <img width="40%" src="https://user-images.githubusercontent.com/93446869/189528398-bf80d262-3890-4425-a195-e6857afcb08c.svg">
@@ -28,7 +28,7 @@ Les méthodes ci-après, on les arguments suivants en commun :
 
 Attention, aux solides de référence de chacune des liaisons mise en argument. Cela change les signes des paramètres cinématiques et dynamiques des liaisons.
 
-- `add_gear(rev1, rev2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2` afin de modéliser un train d'engrenages (voir l'image de gauche ci-dessus). La relation cinématique s'écrit : `rev2.angle = rev1.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte.
+- `add_gear(rev1, rev2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2` afin de modéliser un train d'engrenages (voir l'image de gauche ci-dessus) ou un système poulie-courroie. La relation cinématique s'écrit : `rev2.angle = rev1.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte.
 - `add_gearrack(rev, pri, r, v0=0.)` : Accouple cinématiquement et dynamiquement une pivot `rev` avec une glissière `pri` afin de modéliser une transmission pignon-crémaillère (voir l'image de droite ci-dessus). La relation cinématique s'écrit : `pri.sliding = rev.angle x r + v0`. La transmission d'efforts entre les différents solides est prise en compte. 
 - `add_distant_relation(j1, j2, r, v0=0.)` : Accouple cinématiquement et dynamiquement deux liaisons chacunes de type `Prismatic` ou `Revolute`. La relation cinématique s'écrit : `j2.value = j1.value x r + v0` où `value` est soit `angle` ou `sliding`, tout dépend de la liaison considérée. La transmission d'efforts entre les différents solides est prise en compte. Cette méthode ajoute la possibilité qu'une glissière fasse agir une autre glissière ce qui peut modéliser dans certains systèmes l'action d'un vérin hydraulique sur un autre.
 - `add_effortless_relation(j1, j2, r, v0=0.)` : Accouple cinématiquement deux liaisons chacunes de type `Prismatic` ou `Revolute`. À la différence des méthodes précédentes, il n'y a pas de transmission d'efforts entre les solides intervenant dans les liaisons `j1` et `j2`.
