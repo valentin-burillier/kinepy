@@ -77,25 +77,25 @@ def change_ref(system, sol, angle, mat, center, vec):
     # O' = R(angle).(O - center) + vec
     for i in system.eqs[sol]:
         s = system.sols[i]
-        s.origin -= center
-        mat_mul_r(mat, s.origin)
-        s.origin += vec
-        s.angle += angle
+        s.origin_ -= center
+        mat_mul_r(mat, s.origin_)
+        s.origin_ += vec
+        s.angle_ += angle
 
 
 def change_ref2(system, sol, angle, mat, center):
     # O' = R(angle).(O - center)
     for i in system.eqs[sol]:
         s = system.sols[i]
-        s.origin -= center
-        mat_mul_r(mat, s.origin)
-        s.angle += angle
+        s.origin_ -= center
+        mat_mul_r(mat, s.origin_)
+        s.angle_ += angle
 
 
 def trans(system, sol, vec):
     # O' = O + vec
     for i in system.eqs[sol]:
-        system.sols[i].origin += vec
+        system.sols[i].origin_ += vec
 
 
 # ----------------------------------------------- Calculus -------------------------------------------------------------

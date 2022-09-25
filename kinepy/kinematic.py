@@ -38,8 +38,8 @@ def p_p_p(system, cycle, rev1, rev2, rev3):
     change_ref(system, s22, gamma, mat, p32, p33)
     
     for p in (p1, p2, p3):
-        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-        make_continuous(p.angle)
+        p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+        make_continuous(p.angle_)
     
     return sum((system.eqs[s] for s in (s11, s22, s33)), ())
     
@@ -77,9 +77,9 @@ def g_p_p(system, cycle, pri, rev2, rev3):
     trans(system, s1p, get_point(p3, p32))
 
     for p in (p2, p3):
-        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-        make_continuous(p.angle)
-    g.delta = (v[0, :] + dx) * (2 * s1p_ - 1)
+        p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+        make_continuous(p.angle_)
+    g.sliding_ = (v[0, :] + dx) * (2 * s1p_ - 1)
     
     return sum((system.eqs[s] for s in (s1, s22, s33)), ())
 
@@ -115,9 +115,9 @@ def p_p_g(system, cycle, rev1, rev2, pri):
     change_ref(system, s13, gamma, rot(gamma), get_point(p1, p13), get_point(p1, p11))
     
     for p in (p1, p2):
-        p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-        make_continuous(p.angle)
-    g.delta = (v[0] + dx) * (2 * s1p_ - 1)
+        p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+        make_continuous(p.angle_)
+    g.sliding_ = (v[0] + dx) * (2 * s1p_ - 1)
     
     return sum((system.eqs[s] for s in (s11, s22, s1p)), ())
 
@@ -148,10 +148,10 @@ def p_g_g(system, cycle, rev, pri1, pri2):
     
     trans(system, s1p, system.get_origin(s1) + offset + x * ux)
 
-    g1.delta = x * (2 * s1p_ - 1)
-    g2.delta = y * (2 * s2p_ - 1)
-    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-    make_continuous(p.angle)
+    g1.sliding_ = x * (2 * s1p_ - 1)
+    g2.sliding_ = y * (2 * s2p_ - 1)
+    p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+    make_continuous(p.angle_)
 
     return sum((system.eqs[s] for s in (s11, s1p, s2p)), ())
 
@@ -182,10 +182,10 @@ def g_g_p(system, cycle, pri1, pri2, rev):
     trans(system, s1p, system.get_origin(s1) + get_dist(g1, s1_) * z_cross(ux) + x * ux)
     trans(system, s2p, get_point(p1, p13))
 
-    g1.delta = x * (2 * s1p_ - 1)
-    g2.delta = y * (2 * s2p_ - 1)
-    p1.angle = system.get_ref(p1.s2) - system.get_ref(p1.s1)
-    make_continuous(p1.angle)
+    g1.sliding_ = x * (2 * s1p_ - 1)
+    g2.sliding_ = y * (2 * s2p_ - 1)
+    p1.angle_ = system.get_ref(p1.s2) - system.get_ref(p1.s1)
+    make_continuous(p1.angle_)
     
     return sum((system.eqs[s] for s in (s1, s1p, s2p)), ())
    
@@ -204,10 +204,10 @@ def sp_g(system, cycle, pin, pri):
     x, y = mat_mul_n(inv_mat(ux, uy), get_point(sp, s0_) - get_point(sp, s0p_))
     trans(system, s1, y * uy)
 
-    g.delta = y * (2 * s1p_ - 1)
-    sp.delta = x * (2 * s0_ - 1)
-    sp.angle = system.get_ref(sp.s2) - system.get_ref(sp.s1)
-    make_continuous(sp.angle)
+    g.sliding_ = y * (2 * s1p_ - 1)
+    sp.sliding_ = x * (2 * s0_ - 1)
+    sp.angle_ = system.get_ref(sp.s2) - system.get_ref(sp.s1)
+    make_continuous(sp.angle_)
     return system.eqs[s0] + system.eqs[s1p]
 
 
@@ -221,11 +221,11 @@ def t_p(system, cycle, rec, rev):
     gamma = get_angle(t, s1) - system.get_ref(s2)
     change_ref(system, s12, gamma, rot(gamma), get_point(p, p12), get_point(p, p11))
 
-    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-    make_continuous(p.angle)
+    p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+    make_continuous(p.angle_)
     v, theta = system.get_origin(t.s2) - system.get_origin(t.s1), system.get_ref(t.s1)
     
-    t. delta = mat_mul_r(inv_mat(unit(t.base[0] + theta), unit(t.base[1] + theta)), v)
+    t.sliding_ = mat_mul_r(inv_mat(unit(t.base_[0] + theta), unit(t.base_[1] + theta)), v)
     return system.eqs[s1] + system.eqs[s2]
     
 
@@ -255,11 +255,11 @@ def sp_p(system, cycle, pin, rev):
     gamma = (2 * s0_ - 1) * (theta1 - theta2 - get_angle(sp, 0))
     change_ref(system, s21, gamma, rot(gamma), get_point(p, p22), get_point(p, p21))
 
-    sp.delta = v2[0] + dx
-    sp.angle = system.get_ref(sp.s2) - system.get_ref(sp.s1)
-    make_continuous(sp.angle)
-    p.angle = system.get_ref(p.s2) - system.get_ref(p.s1)
-    make_continuous(p.angle)
+    sp.sliding_ = v2[0] + dx
+    sp.angle_ = system.get_ref(sp.s2) - system.get_ref(sp.s1)
+    make_continuous(sp.angle_)
+    p.angle_ = system.get_ref(p.s2) - system.get_ref(p.s1)
+    make_continuous(p.angle_)
     
     return system.eqs[s0] + system.eqs[s0p]
 

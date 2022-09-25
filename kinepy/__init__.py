@@ -9,9 +9,9 @@ from kinepy.metajoints import DistantRelation, EffortlessRelation, Gear, GearRac
 
 
 class System:
-    def __init__(self, name='', sols=(), joints=(), piloted=(), blocked=(), signs=None):
-        self.sols, self.joints = list(sols) if sols else [Solid(name='Ground')], list(joints)
-        self.piloted, self.blocked = list(piloted), list(blocked)
+    def __init__(self, name=''):
+        self.sols, self.joints = [Solid(self, name='Ground')], []
+        self.piloted, self.blocked = [], []
         self.name = name if name else 'Main system'
 
         # Renumérotation des Sols
@@ -19,26 +19,14 @@ class System:
             s.rep = i
 
         # Dictionnaires des noms
-        self.named_sols = {s.name: i for i, s in enumerate(self.sols)}
-        self.named_joints = {s.name: i for i, s in enumerate(joints)}
+        self.named_sols = {}
+        self.named_joints = {}
 
-        # Référence dans les liaisons
-        for l_ in self.joints:
-            l_.system = self
-
-        # Pilotage, mise à jour de l'entrée pour résolution cinématique
         self.tot, self.indices = 0, {}
-        for l_ in piloted:
-            pil = []
-            for _ in self.joints[l_].input_mode():
-                pil.append(self.tot)
-                self.tot += 1
-            self.indices[l_] = tuple(pil)
-        self.show_input()
 
         # Préparation cinématique
         self.input = None
-        self.signs = dict() if signs is None else signs
+        self.signs = dict()
         self.eqs = None
         self.kin_instr, self.dyn_instr = [], []
 
@@ -48,8 +36,10 @@ class System:
         # Relation Liaisons
         self.relations = []
 
+        self.units = {'Length': 1e-3, 'Time': 1., 'Angle': 1., 'Mass': 1., 'Force': 1., 'Inertia': 1., 'Acceleration': 1., 'SpringConstant': 1., 'Torque':1.}
+
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
-        s = Solid(j, m, g, name, len(self.sols))
+        s = Solid(self, j, m, g, name, len(self.sols))
         self.named_sols[s.name] = len(self.sols)
         self.sols.append(s)
         return s
@@ -63,12 +53,11 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
         
-        p = RevoluteJoint(s1, s2, p1, p2)
+        p = RevoluteJoint(self, s1, s2, p1, p2)
         print(f'Added linkage {p}')
         self.named_joints[p.name] = len(self.joints)
 
         self.joints.append(p)
-        p.system = self
         self.interactions.append(p.interaction)
         return p
 
@@ -80,11 +69,10 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
             
-        g = PrismaticJoint(s1, s2, a1, d1, a2, d2)
+        g = PrismaticJoint(self, s1, s2, a1, d1, a2, d2)
         print(f'Added linkage {g}')
         self.named_joints[g.name] = len(self.joints)
         self.joints.append(g)
-        g.system = self
         self.interactions.append(g.interaction)
         return g
     
@@ -96,12 +84,11 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
             
-        sp = PinSlotJoint(s1, s2, a1, d1, p2)
+        sp = PinSlotJoint(self, s1, s2, a1, d1, p2)
         print(f'Added linkage {sp}')
         self.named_joints[sp.name] = len(self.joints)
 
         self.joints.append(sp)
-        sp.system = self
         self.interactions.append(sp.interaction)
         return sp
     
@@ -113,11 +100,10 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
         
-        t = RectangularJoint(s1, s2, angle, base)
+        t = RectangularJoint(self, s1, s2, angle, base)
         print(f'Added linkage {t}')
         self.named_joints[t.name] = len(self.joints)
         self.joints.append(t)
-        t.system = self
         return t
 
     def add_3dof(self, s1, s2):
@@ -128,11 +114,10 @@ class System:
             # Référence par le nom
             s2 = self.named_sols[s2]
 
-        _3dof = ThreeDegreesOfFreedomJoint(s1, s2)
+        _3dof = ThreeDegreesOfFreedomJoint(self, s1, s2)
         print(f'Added linkage {_3dof}')
         self.named_joints[_3dof.name] = len(self.joints)
         self.joints.append(_3dof)
-        _3dof.system = self
         return _3dof
     
     def pilot(self, joints):
@@ -203,10 +188,14 @@ class System:
             joint.reset(n)
 
     def get_origin(self, sol):
-        return self.sols[sol].origin
+        return self.sols[sol].origin_
     
     def get_ref(self, sol):
-        return self.sols[sol].angle
+        return self.sols[sol].angle_
+
+    def get_point(self, sol, p):
+        sol = self.sols[sol]
+        return sol.origin_ + mat_mul_n(rot(sol.angle_), p)
 
     def compile(self):
         if not self.blocked or set(self.blocked) == set(self.piloted):
@@ -231,7 +220,7 @@ class System:
             for s in eq:
                 self.eqs[s] = eq
         for s in self.sols:
-            make_continuous(s.angle)
+            make_continuous(s.angle_)
             
     def solve_statics(self, compute_kine=True, inputs=None):
         if compute_kine:
@@ -239,12 +228,12 @@ class System:
             
         for s in self.sols:
             s.mech_actions = []
-            og = s.get_point(s.g)
+            og = self.get_point(s.rep, s.g_)
             f_tot, t_tot = np.array(((0.,), (0.,))), 0.
             for f, t, p in s.external_actions:
                 f = f()
                 f_tot += f
-                t_tot += t() + det(s.get_point(p) - og, f)
+                t_tot += t() + det(self.get_point(s.rep, p) - og, f)
             s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
         
         for inter in self.interactions:
@@ -255,17 +244,17 @@ class System:
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
-        dt = t/(self.input.shape[1] - 1)
+        dt = t/(self.input.shape[1] - 1) * self.units['Time']
         
         for s in self.sols:
             s.mech_actions = []
-            og = s.get_point(s.g)
-            s.mech_actions.append(MechanicalAction(-s.m * derivative2_vec(og, dt), og, -s.j * derivative2(s.angle, dt)))
+            og = self.get_point(s.rep, s.g_)
+            s.mech_actions.append(MechanicalAction(-s.m_ * derivative2_vec(og, dt), og, -s.j_ * derivative2(s.angle_, dt)))
             f_tot, t_tot = np.array(((0.,), (0.,))), 0.
             for f, t, p in s.external_actions:
                 f = f()
                 f_tot += f
-                t_tot += t() + det(s.get_point(p) - og, f)
+                t_tot += t() + det(self.get_point(s.rep, p) - og, f)
             s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
 
         for inter in self.interactions:
@@ -273,8 +262,8 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
-    def add_gravity(self, g=(0., -9.81)):
-        af = Gravity(g)
+    def add_gravity(self, g=None):
+        af = Gravity(g * self.units['Acceleration'] if g is not None else (0, -9.81))
         self.interactions.append(af)
         return af
 
@@ -286,7 +275,7 @@ class System:
         if isinstance(s2, str):
             # Référence par le nom
             s2 = self.named_sols[s2]
-        spr = Spring(k, l0, s1, s2, p1, p2)
+        spr = Spring(k * self.units['SpringConstant'], l0 * self.units['Length'], s1, s2, np.array(p1) * self.units['Length'], np.array(p2) * self.units['Length'])
         self.interactions.append(spr)
         return spr
 
