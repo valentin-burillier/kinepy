@@ -8,6 +8,55 @@ from kinepy.interactions import Spring, Gravity
 from kinepy.metajoints import DistantRelation, EffortlessRelation, Gear, GearRack
 
 
+#  ------------------------------------------------ Length units -------------------------------------------------------
+
+MILLIMETER = 1e-3, 'Length'
+METER = 1., 'Length'
+CENTIMETER = 1e-2, 'Length'
+INCH = 2.54e-2, 'Length'
+
+#  ----------------------------------------------- Time units ----------------------------------------------------------
+
+SECOND = 1., 'Time'
+MILLISECOND = 1e-3, 'Time'
+MINUTE = 60., 'Time'
+
+# ------------------------------------------------ Angle units ---------------------------------------------------------
+
+RADIAN = 1., 'Angle'
+DEGREE = np.pi / 180, 'Angle'
+
+# ----------------------------------------------- Acceleration units ---------------------------------------------------
+
+METER_PER_SQUARE_SECOND = 1., 'Acceleration'
+G = 9.8067, 'Acceleration'
+
+# ---------------------------------------------- Force units -----------------------------------------------------------
+
+NEWTON = 1., 'Force'
+DECANEWTON = 10., 'Force'
+MILLINEWTON = 1e-3, 'Force'
+
+# --------------------------------------------- Mass units -------------------------------------------------------------
+
+KILOGRAM = 1., 'Mass'
+GRAM = 1e-3, 'Mass'
+POUND = 2.20462, 'Mass'
+
+# -------------------------------------------- Torque units ------------------------------------------------------------
+
+NEWTON_METER = 1., 'Torque'
+MILLINEWTON_METER = 1e-3, 'Torque'
+
+# -------------------------------------------- Spring constant units ---------------------------------------------------
+
+NEWTON_PER_METER = 1., 'SpringConstant'
+
+# -------------------------------------------- Intertia units ----------------------------------------------------------
+
+KILOGRAM_METER_SQUARED = 1., 'Intertia'
+
+
 class System:
     def __init__(self, name=''):
         self.sols, self.joints = [Solid(self, name='Ground')], []
@@ -36,7 +85,16 @@ class System:
         # Relation Liaisons
         self.relations = []
 
-        self.units = {'Length': 1e-3, 'Time': 1., 'Angle': 1., 'Mass': 1., 'Force': 1., 'Inertia': 1., 'Acceleration': 1., 'SpringConstant': 1., 'Torque':1.}
+        self.units = {
+            'Length': 1e-3, 'Time': 1., 'Angle': 1., 'Mass': 1., 'Force': 1., 'Inertia': 1.,
+            'Acceleration': 1., 'SpringConstant': 1., 'Torque': 1.
+        }
+
+    def set_unit(self, u: tuple[float, str]):
+        u_, phy = u
+        if phy not in self.units:
+            raise ValueError(f'Unknown Physical Quantity: {phy}')
+        self.units[phy] = u_
 
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
         s = Solid(self, j, m, g, name, len(self.sols))
@@ -249,7 +307,9 @@ class System:
         for s in self.sols:
             s.mech_actions = []
             og = self.get_point(s.rep, s.g_)
-            s.mech_actions.append(MechanicalAction(-s.m_ * derivative2_vec(og, dt), og, -s.j_ * derivative2(s.angle_, dt)))
+            s.mech_actions.append(
+                MechanicalAction(-s.m_ * derivative2_vec(og, dt), og, -s.j_ * derivative2(s.angle_, dt))
+            )
             f_tot, t_tot = np.array(((0.,), (0.,))), 0.
             for f, t, p in s.external_actions:
                 f = f()
