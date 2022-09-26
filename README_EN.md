@@ -1,5 +1,5 @@
 # Kinepy
-This python library is dedicated to planar mechanism simulations.
+This python library is dedicated to planar mechanism simulations. testing stuff
 
 It enables to analytically simulate complex mechanisms made of multiple kinematic cycles. 
 It can easily compute position, velocity and acceleration of solids as well as mechanical actions of joints.
