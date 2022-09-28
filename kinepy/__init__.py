@@ -1,234 +1,114 @@
-from kinepy.linkage import *
-from kinepy.geometry import make_continuous, det, derivative2_vec, derivative2
-from kinepy.solid import Solid
-from kinepy.compilation import compiler, DYNAMICS, BOTH
-from kinepy.kinematic import kin
-from kinepy.dynamic import dyn
-from kinepy.interactions import Spring, Gravity
-from kinepy.metajoints import DistantRelation, EffortlessRelation, Gear, GearRack
+from kinepy.solid import *
+from kinepy.linkage import Joint, RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint, J3DOF
+from kinepy.interactions import Gravity, Spring
+from kinepy.metajoints import Gear, GearRack, DistantRelation, EffortlessRelation
+from kinepy.compilation import make_sets, compiler, KINEMATICS, DYNAMICS, BOTH
 
 
-#  ------------------------------------------------ Length units -------------------------------------------------------
+def solid_checker(f):
+    def g(self, s1, s2, *args, **kwargs):
+        if isinstance(s1, str):
+            s1 = self.named_sols[s1]
+        if isinstance(s1, int):
+            s1 = self.sols[s1]
+        if isinstance(s2, str):
+            s2 = self.named_sols[s2]
+        if isinstance(s2, int):
+            s2 = self.sols[s2]
+        return f(self, s1, s2, *args, **kwargs)
+    return g
 
-MILLIMETER = 1e-3, 'Length'
-METER = 1., 'Length'
-CENTIMETER = 1e-2, 'Length'
-INCH = 2.54e-2, 'Length'
 
-#  ----------------------------------------------- Time units ----------------------------------------------------------
+def joint_checker(f):
+    def g(self, j1, j2, *args, **kwargs):
+        if isinstance(j1, str):
+            j1 = self.named_joints[j1]
+        if isinstance(j1, int):
+            j1 = self.joints[j1]
+        if isinstance(j1, str):
+            j2 = self.named_joints[j2]
+        if isinstance(j1, int):
+            j2 = self.joints[j2]
+        return f(self, j1, j2, *args, **kwargs)
+    return g
 
-SECOND = 1., 'Time'
-MILLISECOND = 1e-3, 'Time'
-MINUTE = 60., 'Time'
 
-# ------------------------------------------------ Angle units ---------------------------------------------------------
-
-RADIAN = 1., 'Angle'
-DEGREE = np.pi / 180, 'Angle'
-
-# ----------------------------------------------- Acceleration units ---------------------------------------------------
-
-METER_PER_SQUARE_SECOND = 1., 'Acceleration'
-G = 9.8067, 'Acceleration'
-
-# ---------------------------------------------- Force units -----------------------------------------------------------
-
-NEWTON = 1., 'Force'
-DECANEWTON = 10., 'Force'
-MILLINEWTON = 1e-3, 'Force'
-
-# --------------------------------------------- Mass units -------------------------------------------------------------
-
-KILOGRAM = 1., 'Mass'
-GRAM = 1e-3, 'Mass'
-POUND = 2.20462, 'Mass'
-
-# -------------------------------------------- Torque units ------------------------------------------------------------
-
-NEWTON_METER = 1., 'Torque'
-MILLINEWTON_METER = 1e-3, 'Torque'
-
-# -------------------------------------------- Spring constant units ---------------------------------------------------
-
-NEWTON_PER_METER = 1., 'SpringConstant'
-
-# -------------------------------------------- Intertia units ----------------------------------------------------------
-
-KILOGRAM_METER_SQUARED = 1., 'Intertia'
+def single_or_list(post_call=None):
+    def decor(f):
+        def g(self, arg):
+            if isinstance(arg, (tuple, list)):
+                for a in arg:
+                    f(self, a)
+            else:
+                f(self, arg)
+            if post_call is not None:
+                post_call(self)
+        return g
+    return decor
 
 
 class System:
+    inputs = None
+    tot = 0
+
     def __init__(self, name=''):
-        self.sols, self.joints = [Solid(self, name='Ground')], []
-        self.piloted, self.blocked = [], []
         self.name = name if name else 'Main system'
+        self._unit_system = UnitSystem()
+        self.sols = [Solid(self._unit_system, 0, 0., 0., (0., 0.), 'Ground')]
+        self.named_sols = {'Ground': 0}
+        self.named_joints, self.indices, self.signs = {}, {}, {}
+        self.kin_instr, self.dyn_instr, self.interactions, self.relations, self.joints, self.blocked, self.piloted = \
+            [], [], [], [], [], [], []
+        self.kin_solving_sols = self.kin_solving_joints = self.dyn_solving_sols = self.dyn_solving_joints = None
 
-        # Renumérotation des Sols
-        for i, s in enumerate(self.sols):
-            s.rep = i
-
-        # Dictionnaires des noms
-        self.named_sols = {}
-        self.named_joints = {}
-
-        self.tot, self.indices = 0, {}
-
-        # Préparation cinématique
-        self.input = None
-        self.signs = dict()
-        self.eqs = None
-        self.kin_instr, self.dyn_instr = [], []
-
-        # Préparation dynamique
-        self.interactions = []
-
-        # Relation Liaisons
-        self.relations = []
-
-        self.units = {
-            'Length': 1e-3, 'Time': 1., 'Angle': 1., 'Mass': 1., 'Force': 1., 'Inertia': 1.,
-            'Acceleration': 1., 'SpringConstant': 1., 'Torque': 1.
-        }
-
-    def set_unit(self, u: tuple[float, str]):
-        u_, phy = u
-        if phy not in self.units:
-            raise ValueError(f'Unknown Physical Quantity: {phy}')
-        self.units[phy] = u_
-
-    def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
-        s = Solid(self, j, m, g, name, len(self.sols))
-        self.named_sols[s.name] = len(self.sols)
+    def add_solid(self, name=0., m=0., j=0., g=(0., 0.)):
+        s = Solid(self._unit_system, len(self.sols), j, m, g, name)
+        self.named_sols[s.name] = s.rep
         self.sols.append(s)
         return s
-    
-    def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-    
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-        
-        p = RevoluteJoint(self, s1, s2, p1, p2)
-        print(f'Added linkage {p}')
-        self.named_joints[p.name] = len(self.joints)
 
+    @solid_checker
+    def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+        p = RevoluteJoint(self._unit_system, len(self.joints), s1, s2, p1, p2)
+        print(f'Added linkage {p}')
+        self.named_joints[p.name] = p.rep
         self.joints.append(p)
         self.interactions.append(p.interaction)
         return p
 
+    @solid_checker
     def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-            
-        g = PrismaticJoint(self, s1, s2, a1, d1, a2, d2)
+        g = PrismaticJoint(self._unit_system, len(self.joints), s1, s2, a1, d1, a2, d2)
         print(f'Added linkage {g}')
-        self.named_joints[g.name] = len(self.joints)
+        self.named_joints[g.name] = g.rep
         self.joints.append(g)
         self.interactions.append(g.interaction)
         return g
-    
-    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-            
-        sp = PinSlotJoint(self, s1, s2, a1, d1, p2)
-        print(f'Added linkage {sp}')
-        self.named_joints[sp.name] = len(self.joints)
 
+    @solid_checker
+    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
+        sp = PinSlotJoint(self._unit_system, len(self.joints), s1, s2, a1, d1, p2)
+        print(f'Added linkage {sp}')
+        self.named_joints[sp.name] = sp.rep
         self.joints.append(sp)
         self.interactions.append(sp.interaction)
         return sp
-    
-    def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2)):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-        
-        t = RectangularJoint(self, s1, s2, angle, base)
+
+    @solid_checker
+    def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2), p1=(0., 0.), p2=(0., 0.)):
+        t = RectangularJoint(self._unit_system, len(self.joints), s1, s2, angle, base, p1, p2)
         print(f'Added linkage {t}')
-        self.named_joints[t.name] = len(self.joints)
+        self.named_joints[t.name] = t.rep
         self.joints.append(t)
         return t
 
-    def add_3dof(self, s1, s2):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-
-        _3dof = ThreeDegreesOfFreedomJoint(self, s1, s2)
+    @solid_checker
+    def add_3dof(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+        _3dof = J3DOF(self._unit_system, len(self.joints), s1, s2, p1, p2)
         print(f'Added linkage {_3dof}')
-        self.named_joints[_3dof.name] = len(self.joints)
+        self.named_joints[_3dof.name] = _3dof.rep
         self.joints.append(_3dof)
         return _3dof
-    
-    def pilot(self, joints):
-        if isinstance(joints, (tuple, list)):
-            # Plusieurs liaisons en entrée
-            for j in joints:
-                if isinstance(j, Joint):
-                    j = j.name
-                if isinstance(j, str):
-                    # Référence par le nom
-                    j = self.named_joints[j]
-                self.piloted.append(j)
-
-                # Mse à jour de l'entrée pour résolution cinématiue
-                pil = []
-                for _ in self.joints[j].input_mode():
-                    pil.append(self.tot)
-                    self.tot += 1
-                self.indices[j] = tuple(pil)
-
-            return self.show_input()
-        if isinstance(joints, Joint):
-            joints = joints.name
-        if isinstance(joints, str):
-            # Référence par le nom
-            joints = self.named_joints[joints]
-
-        # Mse à jour de l'entrée pour résolution cinématiue
-        pil = []
-        for _ in self.joints[joints].input_mode():
-            pil.append(self.tot)
-            self.tot += 1
-        self.indices[joints] = tuple(pil)
-
-        self.piloted.append(joints)
-        self.show_input()
-
-    def block(self, joints):
-        if isinstance(joints, (tuple, list)):
-            for j in joints:
-                if isinstance(j, Joint):
-                    j = j.name
-                if isinstance(j, str):
-                    # Référence par le nom
-                    j = self.named_joints[j]
-                self.blocked.append(j)
-        else:
-            if isinstance(joints, Joint):
-                joints = joints.name
-            if isinstance(joints, str):
-                # Référence par le nom
-                joints = self.named_joints[joints]
-            self.blocked.append(joints)
 
     def show_input(self):
         j = []
@@ -237,9 +117,31 @@ class System:
                 j.append(m)
         print('Current input order:')
         print(f"({'; '.join(j)})")
-    
+
+    @single_or_list(show_input)
+    def pilot(self, joint):
+        if isinstance(joint, str):
+            joint = self.named_joints[joint]
+        if isinstance(joint, int):
+            joint = self.joints[joint]
+
+        # Mse à jour de l'entrée pour résolution cinématiue
+        pil = []
+        for _ in joint.input_mode():
+            pil.append(self.tot)
+            self.tot += 1
+        self.indices[joint.rep] = tuple(pil)
+        self.piloted.append(joint.rep)
+
+    @single_or_list()
+    def block(self, joint):
+        if isinstance(joint, str):
+            joint = self.named_joints[joint]
+        if isinstance(joint, int):
+            joint = self.joints[joint]
+        self.blocked.append(joint.rep)
+
     def reset(self, n):
-        self.eqs = [(i,) for i in range(len(self.sols))]
         for sol in self.sols:
             sol.reset(n)
         for joint in self.joints:
@@ -257,11 +159,17 @@ class System:
 
     def compile(self):
         if not self.blocked or set(self.blocked) == set(self.piloted):
+            lst, dct = make_sets(self, self.piloted)
+            self.kin_solving_sols = self.dyn_solving_sols = lst
+            self.kin_solving_joints = self.dyn_solving_joints = dct
             self.kin_instr, self.dyn_instr = compiler(self, BOTH)
         else:
+            self.kin_solving_sols, self.kin_solving_joints = make_sets(self, self.piloted)
+            self.dyn_solving_sols, self.dyn_solving_joints = make_sets(self, self.blocked)
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
         print('signs =', self.signs)
-        
+
+    """       
     def solve_kinematics(self, inputs=None):
         if inputs is None:
             self.reset(1)
@@ -271,7 +179,7 @@ class System:
             if len(inputs.shape) == 1:
                 inputs = inputs[np.newaxis, :]
             self.reset(inputs.shape[1])
-            self.input = inputs
+            self.inputs = inputs
             
         for instr in self.kin_instr:
             eq = kin[instr[0]](self, *instr[1:])
@@ -298,11 +206,11 @@ class System:
             inter.set_ma(self)
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
-            
+
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
-        dt = t/(self.input.shape[1] - 1) * self.units['Time']
+        dt = t/(self.input.shape[1] - 1) * self._unit_system[TIME]
         
         for s in self.sols:
             s.mech_actions = []
@@ -321,99 +229,58 @@ class System:
             inter.set_ma(self)
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
+    """
 
     def add_gravity(self, g=None):
-        af = Gravity(g * self.units['Acceleration'] if g is not None else (0, -9.81))
+        af = Gravity(self._unit_system, self, g)
         self.interactions.append(af)
         return af
 
+    @solid_checker
     def add_spring(self, k, l0, s1, s2, p1=(0., 0.), p2=(0, 0.)):
-        if isinstance(s1, str):
-            # Référence par le nom
-            s1 = self.named_sols[s1]
-
-        if isinstance(s2, str):
-            # Référence par le nom
-            s2 = self.named_sols[s2]
-        spr = Spring(k * self.units['SpringConstant'], l0 * self.units['Length'], s1, s2, np.array(p1) * self.units['Length'], np.array(p2) * self.units['Length'])
+        spr = Spring(self._unit_system, k, l0, s1, s2, p1, p2)
         self.interactions.append(spr)
         return spr
 
     def __repr__(self):
         return self.name
 
-    def add_gear(self, rev1, rev2, r, v0=0.):
-        if isinstance(rev1, Joint):
-            rev1 = rev1.name
-        if isinstance(rev1, str):
-            rev1 = self.named_joints[rev1]
-        if not isinstance(self.joints[rev1], RevoluteJoint):
+    @joint_checker
+    def add_gear(self, rev1, rev2, r, v0=0., pressure_angle=None):
+        if not isinstance(rev1, RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
-
-        if isinstance(rev2, Joint):
-            rev2 = rev2.name
-        if isinstance(rev2, str):
-            rev2 = self.named_joints[rev2]
-        if not isinstance(self.joints[rev2], RevoluteJoint):
+        if not isinstance(rev2, RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
-
-        g = Gear(self, rev1, rev2, r, v0)
+        g = Gear(self._unit_system, rev1, rev2, r, v0, pressure_angle)
         self.relations.append(g)
         return g
 
-    def add_gearrack(self, rev, pri, r, v0=0.):
-        if isinstance(rev, Joint):
-            rev = rev.name
-        if isinstance(rev, str):
-            rev = self.named_joints[rev]
-        if not isinstance(self.joints[rev], RevoluteJoint):
+    @joint_checker
+    def add_gearrack(self, rev, pri, r, v0=0., pressure_angle=None):
+        if not isinstance(rev, RevoluteJoint):
             raise TypeError('Joint 1 must be a RevoluteJoint')
-
-        if isinstance(pri, Joint):
-            pri = pri.name
-        if isinstance(pri, str):
-            pri = self.named_joints[pri]
-        if not isinstance(self.joints[pri], PrismaticJoint):
+        if not isinstance(pri, PrismaticJoint):
             raise TypeError('Joint 2 must be a PrismaticJoint')
-
-        gr = GearRack(self, rev, pri, r, v0)
+        gr = GearRack(self, rev, pri, r, v0, pressure_angle)
         self.relations.append(gr)
         return gr
 
+    @joint_checker
     def add_effortless_relation(self, j1, j2, r, v0=0.):
-        if isinstance(j1, Joint):
-            j1 = j1.name
-        if isinstance(j1, str):
-            j1 = self.named_joints[j1]
-        if self.joints[j1].dof != 1:
+        if j1.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
-
-        if isinstance(j2, Joint):
-            j2 = j2.name
-        if isinstance(j2, str):
-            j2 = self.named_joints[j2]
-        if self.joints[j2].dof != 1:
+        if j2.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
-
         er = EffortlessRelation(self, j1, j2, r, v0)
         self.relations.append(er)
         return er
 
+    @joint_checker
     def add_distant_relation(self, j1, j2, r, v0=0.):
-        if isinstance(j1, Joint):
-            j1 = j1.name
-        if isinstance(j1, str):
-            j1 = self.named_joints[j1]
-        if self.joints[j1].dof != 1:
+        if j1.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
-
-        if isinstance(j2, Joint):
-            j2 = j2.name
-        if isinstance(j2, str):
-            j2 = self.named_joints[j2]
-        if self.joints[j2].dof != 1:
+        if j2.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
-
         dr = DistantRelation(self, j1, j2, r, v0)
         self.relations.append(dr)
         return dr

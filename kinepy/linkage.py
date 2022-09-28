@@ -1,21 +1,28 @@
-from kinepy.geometry import np, rot, change_ref, mat_mul_n2, z_cross, unit, mat_mul_n
-from kinepy.interactions import MechanicalAction, RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO
-from kinepy.dynamic import tmd, trd
+from kinepy.base_units import *
+from kinepy.solid import GhostSolid
+from kinepy.interactions import RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO, ZERO_F
 
 
-FUNCTION_TYPE = type(lambda: 0)
+class Joint(metaclass=MetaUnit):
+    read_only = read_write = ()
 
-
-class Joint:
     id_ = -1
     dof = None
+    interaction = None
 
-    def __init__(self, system, s1, s2, name):
+    def __init__(self, unit_system, rep, s1, s2, name):
         self.s1, self.s2, self.name = s1, s2, name
-        self.system, self.interaction = system, None
+        self._unit_system, self.rep = unit_system, self.rep
+        self.identifier = (s1.rep, 0), (s2.rep, 1)
 
     def __repr__(self):
         return self.name
+
+    def set_value(self, value, index):
+        pass
+
+    def get_value(self):
+        pass
 
     def input_mode(self):
         return ()
@@ -37,52 +44,17 @@ class RevoluteJoint(Joint):
     id_ = 0
     tag = 'P'
     dof = 1
-    
-    def __init__(self, system, s1, s2, p1, p2):
-        Joint.__init__(self, system, s1, s2, f'Rev({s2}/{s1})')
-        self.p1_, self.p2_ = np.array(p1) * system.units['Length'], np.array(p2) * system.units['Length']
-        self.angle_ = None
-        self.interaction = RevoluteTorque(self, lambda: 0.)
-        self.force_, self.torque_ = None, None
 
-    @property
-    def p1(self):
-        return self.p1_ / self.system.units['Length']
+    read_only = ANGLE2_, FORCE_, TORQUE_
+    read_write = P1, P2
 
-    @p1.setter
-    def p1(self, value):
-        self.p1_ = np.array(value) * self.system.units['Length']
-
-    @property
-    def p2(self):
-        return self.p2_ / self.system.units['Length']
-
-    @p2.setter
-    def p2(self, value):
-        self.p2_ = np.array(value) * self.system.units['Length']
-
-    @property
-    def point(self):
-        return self.__get_point0() / self.system.units['Length']
-
-    @property
-    def angle(self):
-        return self.angle_ / self.system.units['Angle']
-
-    @property
-    def torque(self):
-        return self.torque_ / self.system.units['Torque']
-
-    @property
-    def force(self):
-        return self.force_ / self.system.units['Force']
+    def __init__(self, unit_system, rep, s1, s2, p1, p2):
+        Joint.__init__(self, unit_system, rep, s1, s2, f'Rev({s2.rep}/{s1.rep})')
+        self.p1, self.p2 = p1, p2
+        self.interaction = RevoluteTorque(self, ZERO_F)
 
     def input_mode(self):
-        return f'{self.name}: Angle',
-    
-    @property
-    def identifier(self):
-        return (self.s1, 0), (self.s2, 1)
+        return f'{self.name}: {ANGLE}',
 
     def reset(self, n):
         self.force_, self.torque_ = None, None
@@ -102,9 +74,9 @@ class RevoluteJoint(Joint):
 
     def set_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.t = lambda: t * self.system.units['Torque']
+            self.interaction.torque = lambda: t
         elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.t = lambda: t() * self.system.units['Torque']
+            self.interaction.torque = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
@@ -143,68 +115,16 @@ class PrismaticJoint(Joint):
     tag = 'G'
     dof = 1
 
-    def __init__(self, system, s1, s2, a1, d1, a2, d2):
-        Joint.__init__(self, system, s1, s2, f'Pri({s2}/{s1})')
-        self.a1_, self.a2_, self.d1_, self.d2_ = a1 * system.units['Angle'], a2 * system.units['Angle'], d1 * system.units['Length'], d2 * system.units['Length']
-        self.sliding_ = None
-        self.interaction = PrismaticTangent(self, lambda: 0.)
-        self.normal_, self.tangent_, self.torque_ = None, None, None
-        self.input_tangent = None
+    read_only = SLIDING, NORMAL, TANGENT, TORQUE_
+    read_write = A1, A2, D1, D1
 
-    @property
-    def a1(self):
-        return self.a1_ / self.system.units['Angle']
-
-    @a1.setter
-    def a1(self, value):
-        self.a1_ = value * self.system.units['Angle']
-
-    @property
-    def a2(self):
-        return self.a2_ / self.system.units['Angle']
-
-    @a2.setter
-    def a2(self, value):
-        self.a2_ = value * self.system.units['Angle']
-
-    @property
-    def d1(self):
-        return self.d1_ / self.system.units['Length']
-
-    @d1.setter
-    def d1(self, value):
-        self.d1_ = value * self.system.units['Length']
-
-    @property
-    def d2(self):
-        return self.d2_ / self.system.units['Length']
-
-    @d2.setter
-    def d2(self, value):
-        self.d2_ = value * self.system.units['Length']
-
-    @property
-    def sliding(self):
-        return self.sliding_ / self.system.units['Length']
-
-    @property
-    def normal(self):
-        return self.normal_ / self.system.units['Force']
-
-    @property
-    def tangent(self):
-        return self.tangent_ / self.system.units['Force']
-
-    @property
-    def torque(self):
-        return self.torque_ / self.system.units['Torque']
+    def __init__(self, unit_system, rep, s1, s2, a1, d1, a2, d2):
+        Joint.__init__(self, unit_system, rep, s1, s2, f'Pri({s2}/{s1})')
+        self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
+        self.interaction = PrismaticTangent(self, ZERO_F)
 
     def input_mode(self):
-        return f'{self.name}: Length',
-    
-    @property
-    def identifier(self):
-        return (self.s1, 0), (self.s2, 1)
+        return f'{self.name}: {LENGTH}',
     
     def reset(self, n):
         self.normal_, self.tangent_, self.torque_ = None, None, None
@@ -226,9 +146,9 @@ class PrismaticJoint(Joint):
 
     def set_tangent(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.f = lambda: t * self.system.units['Force']
+            self.interaction.f = lambda: t
         elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.f = lambda: t() * self.system.units['Force']
+            self.interaction.f = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
@@ -278,63 +198,18 @@ class PinSlotJoint(Joint):
     tag = 'SP'
     dof = 2
 
-    def __init__(self, system, s1, s2, a1, d1, p2):
-        Joint.__init__(self, system, s1, s2, f'Pin({s2}/{s1})')
-        self.p2_, self.a1_, self.d1_ = np.array(p2) * system.units['Length'], a1 * system.units['Angle'], d1 * system.units['Length']
-        self.sliding_ = self.angle_ = None
-        self.interaction = PinSlotTangentTorque(self, (lambda: 0), lambda: 0)
-        self.normal_, self.tangent_, self.torque_ = None, None, None
+    read_only = SLIDING, NORMAL, TANGENT, TORQUE_
+    read_write = A1, D1, P2
 
-    @property
-    def a1(self):
-        return self.a1_ / self.system.units['Angle']
+    def __init__(self, unit_system, rep, s1, s2, a1, d1, p2):
+        Joint.__init__(self, unit_system, rep, s1, s2, f'Pin({s2}/{s1})')
+        self.p2, self.a1, self.d1 = p2, a1, d1
+        self.interaction = PinSlotTangentTorque(self, ZERO_F, ZERO_F)
+        self.ghost_sol = GhostSolid()
 
-    @a1.setter
-    def a1(self, value):
-        self.a1_ = value * self.system.units['Angle']
-
-    @property
-    def d1(self):
-        return self.d1_ / self.system.units['Length']
-
-    @d1.setter
-    def d1(self, value):
-        self.d1_ = value * self.system.units['Length']
-
-    @property
-    def p2(self):
-        return self.p2_ / self.system.units['Length']
-
-    @p2.setter
-    def p2(self, value):
-        self.p2_ = np.array(value) * self.system.units['Length']
-
-    @property
-    def point(self):
-        return self.__get_point1() / self.system.units['Length']
-
-    @property
-    def sliding(self):
-        return self.sliding_ / self.system.units['Length']
-
-    @property
-    def normal(self):
-        return self.normal_ / self.system.units['Force']
-
-    @property
-    def tangent(self):
-        return self.tangent_ / self.system.units['Force']
-
-    @property
-    def torque(self):
-        return self.torque_ / self.system.units['Torque']
 
     def input_mode(self):
-        return f'{self.name}: Length', f'{self.name}: Angle'
-    
-    @property
-    def identifier(self):
-        return (self.s2, 1), (self.s1, 0)
+        return f'{self.name}: {LENGTH}', f'{self.name}: {ANGLE}'
 
     def reset(self, n):
         self.normal_, self.tangent_, self.torque_ = None, None, None
@@ -361,17 +236,17 @@ class PinSlotJoint(Joint):
 
     def set_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.t = lambda: t * self.system.units['Torque']
+            self.interaction.t = lambda: t
         elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.t = lambda: t() * self.system.units['Torque']
+            self.interaction.t = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
     def set_tangent(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.f = lambda: t * self.system.units['Force']
+            self.interaction.f = lambda: t
         elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.f = lambda: t() * self.system.units['Force']
+            self.interaction.f = t
         else:
             raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
 
@@ -398,43 +273,17 @@ class RectangularJoint(Joint):
     tag = 'T'
     dof = 2
 
-    def __init__(self, system, s1, s2, angle, base):
-        Joint.__init__(self, system, s1, s2, f'Rect({s2}/{s1})')
-        self.angle_, self.base_ = angle * system.units['Angle'], np.array(base) * system.units['Angle']
-        self.sliding_ = None
-        self.interaction = None
-        self.torque_ = None
+    read_only = SLIDING, TORQUE_
+    read_write = P1, P2, ANGLE1_, ('base', ANGLE, (0., np.pi/2))
 
-    @property
-    def angle(self):
-        return self.angle_ / self.system.units['Angle']
-
-    @angle.setter
-    def angle(self, value):
-        self.angle_ = value * self.system.units['Angle']
-
-    @property
-    def base(self):
-        return self.base_ / self.system.units['Angle']
-
-    @base.setter
-    def base(self, value):
-        self.base_ = value * self.system.units['Angle']
-
-    @property
-    def sliding(self):
-        return self.sliding_ / self.system.units['Length']
-
-    @property
-    def torque(self):
-        return self.torque_ / self.system.units['Torque']
+    def __init__(self, unit_system, rep, s1, s2, angle, base, p1, p2):
+        Joint.__init__(self, unit_system, rep, s1, s2, f'Rect({s2}/{s1})')
+        self.angle, self.base, self.p1, self.p2 = angle, base, p1, p2
+        self.ghost_sol = GhostSolid()
+        self.ghost_j1, self.ghost_j2 = GhostPrismatic(self, 0), GhostPrismatic(self, 1)
 
     def input_mode(self):
-        return f'{self.name}: X', f'{self.name}: Y'
-        
-    @property
-    def identifier(self):
-        return (self.s1, 0), (self.s2, 1)
+        return f'{self.name}: X {LENGTH}', f'{self.name}: Y {LENGTH}'
     
     def reset(self, n):
         self.torque_ = None
@@ -468,21 +317,20 @@ class ThreeDegreesOfFreedomJoint(Joint):
     tag = '3DoF'
     dof = 3
 
-    def __init__(self, system, s1, s2):
-        Joint.__init__(self, system, s1, s2, f'3DoF({s2}/{s1})')
-        self.delta, self.angle = None, None
-        self.interaction = None
+    read_only = SLIDING, ANGLE2_
+    read_write = P1, P2
+
+    def __init__(self, unit_system, rep, s1, s2, p1, p2):
+        Joint.__init__(self, unit_system, rep, s1, s2, f'3DoF({s2}/{s1})')
+        self.p1, self.p2 = p1, p2
+        self.ghost_sol = GhostSolid()
 
     def input_mode(self):
-        return f'{self.name}: X', f'{self.name}: Y', f'{self.name}: Angle'
-
-    @property
-    def identifier(self):  # Ne devrait pas servir...
-        return (self.s1,), (self.s2,)
+        return f'{self.name}: X {LENGTH}', f'{self.name}: Y {LENGTH}', f'{self.name}: {FORCE}'
 
     def reset(self, n):
-        self.delta = np.zeros((2, n), float)
-        self.angle = np.zeros((n,), float)
+        self.sliding_ = np.zeros((2, n), float)
+        self.angle_ = np.zeros((n,), float)
 
     def pilot(self, index, s_index):
         self.delta[0], self.delta[1] = self.system.input[index[0]] * self.system.units['Length'], self.system.input[index[1]] * self.system.units['Length']
@@ -502,3 +350,41 @@ class ThreeDegreesOfFreedomJoint(Joint):
 
         self.system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         self.system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
+J3DOF = ThreeDegreesOfFreedomJoint
+
+
+class GhostRevolute:
+    id_ = 1
+    rep = None
+
+    def __init__(self, joint, index):
+        self.joint, self.index = joint, index
+        self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
+        self.get_p1 = ((lambda: joint.p1_), lambda: (0., 0.))[index]
+        self.get_p2 = ((lambda: (0., 0.)), lambda: joint.p2_)[index]
+
+    def __getattribute__(self, item):
+        if item == 'p1_':
+            return self.get_p1()
+        elif item == 'p2_':
+            return self.get_p2()
+        return object.__getattribute__(item)
+
+
+class GhostPrismatic:
+    id_ = 2
+    rep = None
+
+    def __init__(self, joint, index):
+        self.joint, self.index = joint, index
+        self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
+        self.get_a = ((lambda: joint.a1_), lambda: joint.a2_)[index]
+        self.d1_, self.d2_ = 0., 0.
+
+    def __getattribute__(self, item):
+        if item == 'a1_':
+            return self.get_a()
+        elif item == 'a2_':
+            return self.get_a()
+        return object.__getattribute__(item)

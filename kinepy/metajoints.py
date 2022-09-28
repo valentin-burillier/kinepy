@@ -1,26 +1,18 @@
-import numpy as np
-from kinepy.geometry import mag, angle2, mat_mul_n, rot, unit, get_unit, dot, z_cross
-from kinepy.dynamic import tmd, trd, MechanicalAction, add_effort
+from kinepy.base_units import *
+from linkage import Joint
 
 
-class LinearRelation:
-    def __init__(self, system, j1, j2, r, v0):
-        self.v0_physics = 'Angle' if not system.joints[j2].id_ else 'Length'
-        self.system, self.j1, self.j2, self.r, self.v0_ = system, j1, j2, r, v0 * system.units[self.v0_physics]
-
-    @property
-    def v0(self):
-        return self.v0_ / self.system.units[self.v0_physics]
-
-    @v0.setter
-    def v0(self, value):
-        self.v0_ = value * self.system.units[self.v0_physics]
+class LinearRelationBase(metaclass=MetaUnit):
+    v0_ = r_ = None
+    read_only = read_write = ()
+    j1: Joint
+    j2: Joint
 
     def __pilot_joint0(self, si):
-        return self.system.joints[self.j1].set_value((self.system.joints[self.j2].get_value() - self.v0_) / self.r, si)
+        return self.j1.set_value((self.j2.get_value() - self.v0_) / self.r_, si)
 
     def __pilot_joint1(self, si):
-        return self.system.joints[self.j2].set_value(self.system.joints[self.j1].get_value() * self.r + self.v0_, si)
+        return self.j2.set_value(self.j1.get_value() * self.r_ + self.v0_, si)
 
     __pilot_joint = __pilot_joint0, __pilot_joint1
 
@@ -28,25 +20,60 @@ class LinearRelation:
         return self.__pilot_joint[j_index](self, si)
 
     def rel_block(self, j_index, eq1s1, eq2s2):
-        self.system.joints[(self.j1, self.j2)[j_index]].block(eq1s1, eq2s2)
+        (self.j1, self.j2)[j_index].block(eq1s1, eq2s2)
 
 
-class Gear(LinearRelation):
-    def __init__(self, system, j1, j2, r, v0, pa=None):
-        LinearRelation.__init__(self, system, j1, j2, r, v0)
-        self.pressure_angle_ = np.pi/9 if pa is None else pa * system.units['Angle']
+class LinearRelation(LinearRelationBase):
+    def __init__(self, unit_system, j1, j2, r, v0):
+        self.v0_physics = ANGLE if j2.id_ == 1 else LENGTH
+        self.r_physics = (ANGLE if j1.id_ == 1 else LENGTH), ANGLE if j2.id_ == 1 else LENGTH
+        self._unit_system, self.j1, self.j2, self.r, self.v0 = unit_system, j1, j2, r, v0
 
     @property
-    def pressure_angle(self):
-        return self.pressure_angle_ / self.system.units['Angle']
+    def v0(self):
+        return self.v0_ / self._unit_system[self.v0_physics]
 
-    @pressure_angle.setter
-    def pressure_angle(self, value):
-        self.pressure_angle_ = value * self.system.units['Angle']
+    @v0.setter
+    def v0(self, value):
+        self.v0_ = value * self._unit_system[self.v0_physics]
 
+    @property
+    def r(self):
+        return self.r_ * self._unit_system[self.r_physics[0]] / self._unit_system[self.r_physics[1]]
+
+    @r.setter
+    def r(self, value):
+        self.r_ = value * self._unit_system[self.r_physics[1]] / self._unit_system[self.r_physics[0]]
+
+
+class EffortlessRelation(LinearRelation):
+    pass
+
+
+class DistantRelation(LinearRelation):
+    """
+    def rel_block(self, j_index, eq1s1, eq2s2):
+        LinearRelation.rel_block(self, j_index, eq1s1, eq2s2)
+        add_effort(
+            (self.j2, self.j1)[j_index],
+            -self.r_ ** (2 * j_index - 1) * ((self.j1, self.j2)[j_index].get_effort())
+        )
+    """
+
+
+class GearRelation(LinearRelationBase):
+    read_write = ('pressure_angle', ANGLE, np.pi/9), ('v0', ANGLE, 0.), ('r', ADIMENSIONNED, 1.)
+
+    def __init__(self, unit_system, j1, j2, r, v0, pa=None):
+        self._unit_system, self.j1, self.j2, self.r, self.v0 = unit_system, j1, j2, r, v0
+        self.pressure_angle = pa
+
+
+class Gear(GearRelation):
+    """
     def rel_block(self, j_index, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = (self.system.joints[self.j1], self.system.joints[self.j2])[::(1, -1)[j_index]]
+        j1, j2 = (self.j1, self.j2)[::(1, -1)[j_index]]
 
         # indices du solide commun
         i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
@@ -72,24 +99,16 @@ class Gear(LinearRelation):
         p = a + rad * unit(theta)
         self.system.sols[(s1, (j2.s1, j2.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_12, p, 0.))
         self.system.sols[((j2.s1, j2.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_12, p, 0.))
+        """
 
 
-class GearRack(LinearRelation):
-    def __init__(self, system, j1, j2, r, v0, pa=None):
-        LinearRelation.__init__(self, system, j1, j2, r, v0)
-        self.pressure_angle_ = np.pi/9 if pa is None else pa * system.units['Angle']
+class GearRack(GearRelation):
+    read_write = ('v0', LENGTH, 0.), ('r', LENGTH, 1.)
 
-    @property
-    def pressure_angle(self):
-        return self.pressure_angle_ / self.system.units['Angle']
-
-    @pressure_angle.setter
-    def pressure_angle(self, value):
-        self.pressure_angle_ = value * self.system.units['Angle']
-
+    """
     def _rel_block1(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
+        j1, j2 = self.j1, self.j2
 
         # indices du solide commun
         i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
@@ -113,10 +132,12 @@ class GearRack(LinearRelation):
 
         self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12 + f_1_2, p, -mp_12))
         self.system.sols[s2].mech_actions.append(MechanicalAction(f_12 - f_1_2, p, mp_12))
+    """
 
+    """
     def _rel_block0(self, eq1s1, eq2s2):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
+        j1, j2 = self.j1, self.j2
 
         # indices du solide commun
         i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
@@ -143,14 +164,4 @@ class GearRack(LinearRelation):
 
     def rel_block(self, j_index, eq1s1, eq2s2):
         (self._rel_block0, self._rel_block1)[j_index](eq1s1, eq2s2)
-
-
-class EffortlessRelation(LinearRelation):
-    pass
-
-
-class DistantRelation(LinearRelation):
-    def rel_block(self, j_index, eq1s1, eq2s2):
-        LinearRelation.rel_block(self, j_index, eq1s1, eq2s2)
-        j1, j2 = self.system.joints[self.j1], self.system.joints[self.j2]
-        add_effort((j2, j1)[j_index], -self.r ** (2 * j_index - 1) * ((j1, j2)[j_index].get_effort()))
+    """

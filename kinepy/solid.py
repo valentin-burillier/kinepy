@@ -1,80 +1,55 @@
-from kinepy.geometry import np, rot
-from kinepy.interactions import ZERO
+from kinepy.base_units import *
+from kinepy.geometry import rot, mat_mul_n
 
+ZERO = np.zeros((2, 1))
+ZERO_F = (lambda: 0)
+ZERO_ARRAY_F = (lambda : ZERO)
 
-FUNCTION_TYPE = type(lambda: 0)
+class Solid(metaclass=MetaUnit):
+    read_only = ('origin', LENGTH, None), ('angle', ANGLE, None)
+    read_write = ('m', MASS, 0.), ('g', LENGTH, (0., 0.)), ('j', INERTIA, 0.)
 
+    def __init__(self, unit_system, rep, m, j, g, name):
+        self._unit_system, self.rep, self.name = unit_system, rep, name if name else f'Solid {rep}'
+        self.j, self.m, self.g = j, m, g
+        self.mech_actions, self.external_actions = [], []
 
-class Solid:
-    def __init__(self, system, j=0., m=0., g=(0., 0.), name='', rep=0):
-        self.system = system
-        self.rep = rep
-        self.name = name if name else f'Solid {self.rep}'
-        self.angle_ = self.origin_ = None
-        self.j_, self.m_, self.g_ = j * system.units['Inertia'], m * system.units['Mass'], np.array(g) * system.units['Length']
-
-        self.mech_actions = []
-        self.external_actions = []
-
-    def get_point(self, point):
-        point = np.array(point)
-        if point.shape[0] != 2:
-            raise ValueError('Shape must start with 2')
-        (a00, a01), (a10, a11) = rot(self.angle_)
-        return self.origin_ / self.system.units['Length'] + np.array((point[0] * a00 + point[1] * a01, point[0] * a10 + point[1] * a11))
-
-    @property
-    def origin(self):
-        return self.origin_ / self.system.units['Length']
-
-    @property
-    def angle(self):
-        return self.angle_ / self.system.units['Angle']
-
-    @property
-    def g(self):
-        return self.g_ / self.system.units['Length']
-
-    @g.setter
-    def g(self, value):
-        self.g_ = np.array(value) * self.system['Length']
-
-    @property
-    def m(self):
-        return self.m_ / self.system.units['Mass']
-
-    @m.setter
-    def m(self, value):
-        self.m_ = value * self.system['Mass']
-
-    @property
-    def j(self):
-        return self.j_ / self.system.units['Interia']
-
-    @j.setter
-    def j(self, value):
-        self.j_ = value * self.system['Inertia']
+    def __repr__(self):
+        return f'{self.rep} | {self.name}'
 
     def reset(self, n):
         self.mech_actions = []
-        self.origin_ = np.zeros((2, n), float)
         self.angle_ = np.zeros((n,), float)
-    
-    def __repr__(self):
-        return str(self.rep) + ' | ' + self.name
+        self.origin_ = np.zeros((2, n), float)
 
+    @physics_output(LENGTH)
+    @physics_input(LENGTH)
+    def get_point(self, p):
+        return self.origin_ + mat_mul_n(rot(self.angle_), p)
+
+    @physics_input(FORCE, LENGTH)
     def add_force(self, f, p):
-        p = np.array(p) * self.system.units['Length']
-        if isinstance(f, (tuple, list, np.ndarray)) and len(f) == 2:
-            f = np.array(f) * self.system.units['Force']
+        if isinstance(f, np.ndarray) and len(f) == 2:
             if f.shape == (2,):
                 f = f.reshape((2, 1))
-            self.external_actions.append(((lambda: f), (lambda: 0), p))
+            self.external_actions.append(((lambda: f), ZERO_F, p))
         elif isinstance(f, FUNCTION_TYPE):
-            self.external_actions.append(((lambda: f() * self.system.units['Force']), (lambda: 0), p))
+            self.external_actions.append((f, ZERO_F, p))
 
+    @physics_input(TORQUE)
     def add_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.external_actions.append(((lambda: ZERO), (lambda: t * self.system.units['Torque']), self.g_))
+            self.external_actions.append((ZERO_ARRAY_F, (lambda: t), self.g_))
         elif isinstance(t, FUNCTION_TYPE):
-            self.external_actions.append(((lambda: ZERO), (lambda: t() * self.system.units['Torque']), self.g_))
+            self.external_actions.append((ZERO_ARRAY_F, t, self.g_))
+
+
+class GhostSolid:
+    m, j, g = 0., 0., (0., 0.)
+    angle_, origin_ = None, None
+
+    def __init__(self):
+        self.mech_actions = []
+        self.rep = None
+
+    reset = Solid.reset

@@ -1,6 +1,6 @@
+from kinepy.base_units import *
+from kinepy.solid import ZERO, ZERO_F, ZERO_ARRAY_F
 from kinepy.geometry import *
-
-ZERO = np.array([[0.], [0.]])
 
 
 class MechanicalAction:
@@ -11,28 +11,38 @@ class MechanicalAction:
         return self.m + det(self.p - point, self.f)
 
 
-class Interaction:
-    name: str
+class Interaction(metaclass=MetaUnit):
+    read_only = read_write = ()
+
+    def __init__(self, unit_system):
+        self._unit_system = unit_system
 
     def set_ma(self, system):
         pass
 
 
 class Gravity(Interaction):
-    def __init__(self, g):
-        self.g = g
+    read_write = ('g', ACCELERATION, (0., -G)),
 
-    def set_ma(self, system):
+    def __init__(self, unit_system, system, g):
+        Interaction.__init__(self, unit_system)
+        self.g, self.system = g, system
+    """
+    def set_ma(self):
         g = np.reshape(np.array(self.g), (2, 1))
-        for s in system.sols:
+        for s in self.system.sols:
             s.mech_actions.append(MechanicalAction(g * s.m_, system.get_point(s.rep, s.g_), 0.))
+    """
 
 
 class Spring(Interaction):
-    def __init__(self, k, l0, s1, s2, p1, p2):
+    read_only = FORCE_,
+    read_write = P1, P2
+
+    def __init__(self, unit_system, k, l0, s1, s2, p1, p2):
+        Interaction.__init__(self, unit_system)
         self.s1, self.s2, self.p1, self.p2 = s1, s2, p1, p2
         self.l0, self.k = l0, k
-        self.f = None
 
     def set_ma(self, system):
         a, b = system.get_point(self.s1, self.p1), system.get_point(self.s2, self.p2)
@@ -41,12 +51,15 @@ class Spring(Interaction):
         f = ab * (f_ := self.k * (1 - self.l0 / l_))
         system.sols[self.s1].mech_actions.append(MechanicalAction(f, a, 0.))
         system.sols[self.s2].mech_actions.append(MechanicalAction(-f, b, 0.))
-        self.f = f_ * l_
+        self.force_ = f_ * l_
 
 
 class RevoluteTorque(Interaction):
-    def __init__(self, rev, t):
-        self.rev, self.t = rev, t
+    read_write = ('torque', TORQUE, ZERO_F),
+
+    def __init__(self, unit_system, rev, t):
+        Interaction.__init__(self, unit_system)
+        self.rev, self.torque = rev, t
 
     def set_ma(self, system):
         t = self.t()
@@ -55,7 +68,10 @@ class RevoluteTorque(Interaction):
 
 
 class PrismaticTangent(Interaction):
-    def __init__(self, pri, f):
+    read_write = ('tangent', TANGENT, ZERO_F),
+
+    def __init__(self, unit_system, pri, f):
+        Interaction.__init__(self, unit_system)
         self.pri, self.f = pri, f
 
     def set_ma(self, system):
@@ -67,8 +83,11 @@ class PrismaticTangent(Interaction):
 
 
 class PinSlotTangentTorque(Interaction):
-    def __init__(self, pin, f, t):
-        self.pin, self.f, self.t = pin, f, t
+    read_write = ('tangent', TANGENT, ZERO_F), ('torque', TORQUE, ZERO_F)
+
+    def __init__(self, unit_system, pin, f, t):
+        Interaction.__init__(self, unit_system)
+        self.pin, self.tangent, self.torque = pin, f, t
 
     def set_ma(self, system):
         u = unit(system.get_ref(self.pin.s1) + self.pin.a1)
