@@ -35,12 +35,13 @@ def joint_checker(f):
 
 def single_or_list(post_call=None):
     def decor(f):
-        def g(self, arg):
-            if isinstance(arg, (tuple, list)):
-                for a in arg:
-                    f(self, a)
-            else:
-                f(self, arg)
+        def g(self, *args):
+            for arg in args:
+                if isinstance(arg, (tuple, list)):
+                    for a in arg:
+                        f(self, a)
+                else:
+                    f(self, arg)
             if post_call is not None:
                 post_call(self)
         return g

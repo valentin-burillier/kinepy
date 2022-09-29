@@ -1,5 +1,6 @@
 from kinepy.graphs import GRAPHS, EDGES
 from kinepy.metajoints import LinearRelationBase
+from kinepy.linkage import Ghost
 
 
 class CompilationError(Exception):
@@ -111,11 +112,11 @@ def make_sets(system, check):
         if j.dof == 1:
             dct[j.rep] = j
         if j.dof == 2 and j.rep not in check:
-            j.ghost_joint1.rep = j.rep
-            dct[j.rep] = j.ghost_joint1
-            j.ghost_joint2.rep = len(system.joints) + cnt
+            j.ghost_j1.rep = j.rep
+            dct[j.rep] = j.ghost_j1
+            j.ghost_j2.rep = len(system.joints) + cnt
             cnt += 1
-            dct[j.ghost_joint2.rep] = j.ghost_joint2
+            dct[j.ghost_j2.rep] = j.ghost_j2
             j.ghost_sol.rep = len(lst)
             lst.append(j.ghost_sol)
     return lst, dct
@@ -140,7 +141,7 @@ def make_joint_graph(relations, n):
     return graph
 
 
-KINEMATICS, DYNAMICS, BOTH = 0, 1, 2
+DYNAMICS, KINEMATICS, BOTH = 0, 1, 2
 
 
 def compile_relations(joint_graph, solved, queue):
@@ -171,32 +172,45 @@ def compiler(system, mode=KINEMATICS):
     )[not mode]
 
     graph = make_graph(joints, len(sols))
-    joint_graph = make_joint_graph(system.relations, len(joints))
-    solved = [False] * len(joints)
-    queue = (system.blocked, system.piloted)[not mode]
-
-    for j in queue:
-        solved[j] = True
+    joint_graph = make_joint_graph(system.relations, len(system.joints))
+    solved = [False] * len(system.joints)
+    queue = (system.blocked, system.piloted)[not not mode]
 
     eqs = [(i,) for i in range(len(sols))]
     sol_to_eqs = list(range(len(sols)))
 
+    for j in queue:
+        solved[j] = True
+        j = system.joints[j]
+        fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
+
+    dist = distances(graph)
+
     while len(graph) > 1:
         rel_instr = compile_relations(joint_graph, solved, queue)
+
         for rel, b in rel_instr:
             j = (rel.j1, rel.j2)[b]
-            kin_instr.append(('SolveRelationKin', rel, b))
-            dyn_instr.insert(0, ('SolveRelationDyn', rel, b, eqs[sol_to_eqs[j.s1.rep]], eqs[sol_to_eqs[j.s1.rep]]))
+            e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]
+            ref = dist[e1] > dist[e2]
+            kin_instr.append(('SolveRelationKin', rel, b, ref))
+            dyn_instr.insert(0, ('SolveRelationDyn', rel, b, eqs[e1], eqs[e2], ref))
             fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]), eqs, sol_to_eqs)
+            dist = distances(graph)
 
         index, eqs_ = search_graph(graph)
         eqs__ = tuple(tuple(sols[s] for s in eqs[i]) for i in eqs_)
+        ref = min(enumerate(eqs_), key=(lambda x: dist[x[1]]))[0]
 
-        #  joints and direction (False: According to edge, True: Opposed to edge
-        js = tuple(((j_ := joints[graph[eqs_[i]][eqs_[j]][1]]), j_.s2.rep in eqs[eqs_[i]]) for i, j in EDGES[index])
+        #  joints and direction (True: According to edge, False: Opposed to edge
+        js = tuple(((j_ := joints[graph[eqs_[i]][eqs_[j]][1]]), j_.s1.rep in eqs[eqs_[i]]) for i, j in EDGES[index])
+        for j, _ in js:
+            if not isinstance(j, Ghost):
+                solved[j.rep] = True
+                queue.append(j.rep)
 
         kin_instr.append(('SolveGraphKin', index, eqs__, js))
-        dyn_instr.insert(0, ('SolveGraphDyn', index, eqs__, js))
+        dyn_instr.insert(0, ('SolveGraphDyn', index, eqs__, js, ref))
 
         fusion(graph, eqs_, eqs, sol_to_eqs)
     return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]

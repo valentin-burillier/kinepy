@@ -5,14 +5,14 @@ from kinepy.interactions import RevoluteTorque, PinSlotTangentTorque, PrismaticT
 
 class Joint(metaclass=MetaUnit):
     read_only = read_write = ()
-
-    id_ = -1
+    tag = 'Joint'
+    id_ = 0
     dof = None
     interaction = None
 
-    def __init__(self, unit_system, rep, s1, s2, name):
-        self.s1, self.s2, self.name = s1, s2, name
-        self._unit_system, self.rep = unit_system, self.rep
+    def __init__(self, unit_system, rep, s1, s2):
+        self.s1, self.s2, self.name = s1, s2, f'{self.tag}({s2.rep}/{s1.rep})'
+        self._unit_system, self.rep = unit_system, rep
         self.identifier = (s1.rep, 0), (s2.rep, 1)
 
     def __repr__(self):
@@ -41,17 +41,17 @@ class Joint(metaclass=MetaUnit):
 
 
 class RevoluteJoint(Joint):
-    id_ = 0
-    tag = 'P'
+    id_ = 1
+    tag = 'Rev'
     dof = 1
 
     read_only = ANGLE2_, FORCE_, TORQUE_
     read_write = P1, P2
 
     def __init__(self, unit_system, rep, s1, s2, p1, p2):
-        Joint.__init__(self, unit_system, rep, s1, s2, f'Rev({s2.rep}/{s1.rep})')
+        Joint.__init__(self, unit_system, rep, s1, s2)
         self.p1, self.p2 = p1, p2
-        self.interaction = RevoluteTorque(self, ZERO_F)
+        self.interaction = RevoluteTorque(self._unit_system, self, ZERO_F)
 
     def input_mode(self):
         return f'{self.name}: {ANGLE}',
@@ -111,17 +111,17 @@ class RevoluteJoint(Joint):
 
 
 class PrismaticJoint(Joint):
-    id_ = 1
-    tag = 'G'
+    id_ = 2
+    tag = 'Pri'
     dof = 1
 
     read_only = SLIDING, NORMAL, TANGENT, TORQUE_
     read_write = A1, A2, D1, D1
 
     def __init__(self, unit_system, rep, s1, s2, a1, d1, a2, d2):
-        Joint.__init__(self, unit_system, rep, s1, s2, f'Pri({s2}/{s1})')
+        Joint.__init__(self, unit_system, rep, s1, s2)
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
-        self.interaction = PrismaticTangent(self, ZERO_F)
+        self.interaction = PrismaticTangent(self._unit_system, self, ZERO_F)
 
     def input_mode(self):
         return f'{self.name}: {LENGTH}',
@@ -194,18 +194,20 @@ class PrismaticJoint(Joint):
 
 
 class PinSlotJoint(Joint):
-    id_ = 2
-    tag = 'SP'
+    id_ = 3
+    tag = 'PinSlot'
     dof = 2
 
     read_only = SLIDING, NORMAL, TANGENT, TORQUE_
     read_write = A1, D1, P2
 
     def __init__(self, unit_system, rep, s1, s2, a1, d1, p2):
-        Joint.__init__(self, unit_system, rep, s1, s2, f'Pin({s2}/{s1})')
+        Joint.__init__(self, unit_system, rep, s1, s2)
         self.p2, self.a1, self.d1 = p2, a1, d1
-        self.interaction = PinSlotTangentTorque(self, ZERO_F, ZERO_F)
+        self.interaction = PinSlotTangentTorque(self._unit_system, self, ZERO_F, ZERO_F)
         self.ghost_sol = GhostSolid()
+        self.ghost_j1, self.ghost_j2 = GhostPrismatic(self, 0), GhostRevolute(self, 1)
+
 
 
     def input_mode(self):
@@ -269,15 +271,15 @@ class PinSlotJoint(Joint):
 
 
 class RectangularJoint(Joint):
-    id_ = 3
-    tag = 'T'
+    id_ = 4
+    tag = 'Rec'
     dof = 2
 
     read_only = SLIDING, TORQUE_
     read_write = P1, P2, ANGLE1_, ('base', ANGLE, (0., np.pi/2))
 
     def __init__(self, unit_system, rep, s1, s2, angle, base, p1, p2):
-        Joint.__init__(self, unit_system, rep, s1, s2, f'Rect({s2}/{s1})')
+        Joint.__init__(self, unit_system, rep, s1, s2)
         self.angle, self.base, self.p1, self.p2 = angle, base, p1, p2
         self.ghost_sol = GhostSolid()
         self.ghost_j1, self.ghost_j2 = GhostPrismatic(self, 0), GhostPrismatic(self, 1)
@@ -313,7 +315,7 @@ class RectangularJoint(Joint):
 
 
 class ThreeDegreesOfFreedomJoint(Joint):
-    id_ = 4
+    id_ = 5
     tag = '3DoF'
     dof = 3
 
@@ -321,7 +323,7 @@ class ThreeDegreesOfFreedomJoint(Joint):
     read_write = P1, P2
 
     def __init__(self, unit_system, rep, s1, s2, p1, p2):
-        Joint.__init__(self, unit_system, rep, s1, s2, f'3DoF({s2}/{s1})')
+        Joint.__init__(self, unit_system, rep, s1, s2)
         self.p1, self.p2 = p1, p2
         self.ghost_sol = GhostSolid()
 
@@ -353,38 +355,33 @@ class ThreeDegreesOfFreedomJoint(Joint):
 
 J3DOF = ThreeDegreesOfFreedomJoint
 
+def joint_attr(joint, name):
+    return property(lambda self: getattr(joint, name))
 
-class GhostRevolute:
+
+class Ghost:
+    pass
+
+
+class GhostRevolute(Ghost):
     id_ = 1
     rep = None
 
     def __init__(self, joint, index):
         self.joint, self.index = joint, index
         self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
-        self.get_p1 = ((lambda: joint.p1_), lambda: (0., 0.))[index]
-        self.get_p2 = ((lambda: (0., 0.)), lambda: joint.p2_)[index]
-
-    def __getattribute__(self, item):
-        if item == 'p1_':
-            return self.get_p1()
-        elif item == 'p2_':
-            return self.get_p2()
-        return object.__getattribute__(item)
+        if index:
+            self.p1_, self.p2_ = (0., 0.), joint_attr(joint, 'p2_')
+        else:
+            self.p1_, self.p2 = joint_attr(joint, 'p1_'), (0., 0.)
 
 
-class GhostPrismatic:
+class GhostPrismatic(Ghost):
     id_ = 2
     rep = None
 
     def __init__(self, joint, index):
         self.joint, self.index = joint, index
         self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
-        self.get_a = ((lambda: joint.a1_), lambda: joint.a2_)[index]
-        self.d1_, self.d2_ = 0., 0.
-
-    def __getattribute__(self, item):
-        if item == 'a1_':
-            return self.get_a()
-        elif item == 'a2_':
-            return self.get_a()
-        return object.__getattribute__(item)
+        self.a1_ = self.a2_ = joint_attr(joint, ('a1_', 'a2_')[index])
+        self.d1_, self.d2 = joint_attr(joint, 'd1_') if isinstance(PinSlotJoint) and not index else 0., 0.

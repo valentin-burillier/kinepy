@@ -1,5 +1,5 @@
 from kinepy.base_units import *
-from linkage import Joint
+from kinepy.linkage import Joint
 
 
 class LinearRelationBase(metaclass=MetaUnit):

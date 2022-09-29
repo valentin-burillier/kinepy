@@ -57,10 +57,6 @@ def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
     np.einsum('ikl,kl->il', mat, vec, out=vec)
 
 
-def get_point(j, index):
-    return j.__get_point__(index)
-
-
 def get_dist(g, index):
     return g.__get_dist__(index)
 
@@ -69,8 +65,29 @@ def get_unit(j, index):
     return j.__get_unit__(index)
 
 
-def get_angle(j, index):
-    return j.__get_angle__(index)
+def get_angle(pri, index):
+    return (pri.s1, pri.s2)[index].angle_ + (pri.a1_, pri.a2_)[index]
+
+
+def get_zero(pri, index, u):
+    s = (pri.s1, pri.s2)[index]
+    return s.origin_ + (pri.d1_, pri.d2_)[index] * z_cross(u)
+
+
+def get_point(rev, index):
+    s = (rev.s1, rev.s2)[index]
+    return s.origin_ + mat_mul_n2(rot(s.angle_), (rev.p1_, rev.p2_)[index])
+
+
+def rotate_eq(eq, theta):
+    r = rot(theta)
+    for s in eq:
+        mat_mul_r(r, s.origin_)
+
+
+def move_eq(eq, vec):
+    for s in eq:
+        s.origin_ += vec
 
 
 def change_ref(system, sol, angle, mat, center, vec):
