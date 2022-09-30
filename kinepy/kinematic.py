@@ -1,6 +1,7 @@
 import numpy as np
 
-from kinepy.geometry import get_angle, rotate_eq, get_point, move_eq, make_continuous, unit, get_zero, det, dot, sq_mag, angle2
+from kinepy.geometry import get_angle, rotate_eq, get_point, move_eq, make_continuous, unit, get_zero, det, dot, \
+    sq_mag, angle2
 
 
 def solve_p(p, b, eq):
@@ -96,6 +97,34 @@ def solve_graph4(eqs, js, sgn):
     pp_grouping(eq1, (P0, b0), (P3, not b3), sq_a)
     pp_grouping(eq2, (P1, b1), (P4, not b4), sq_b)
     gg_grouping(eq3, (G2, b2), (G5, not b5))
+
+
+def solve_graph5(eqs, js, sgn):
+    eq0, eq1, eq2, eq3, eq4 = eqs
+    (P0, b0), (P1, b1), (P2, b2), (G3, b3), (G4, b4), (G5, b5) = js
+
+    g_chain(((G3, b3), (G4, not b4)), (eq4, eq2))
+    g_chain(((G5, not b5),), (eq3,))
+
+    u1, u2, u3 = get_angle(G3, b3), get_angle(G4, b4), get_angle(G5, b5)
+    c1, c2 = det(u1, u2), det(u1, u3)
+
+    k0 = det(get_zero(G5, b5, u3) - get_zero(G3, b3, u1), u3) * c1 - \
+        det(get_zero(G4, b4, u2) - get_zero(G3, b3, u1), u2) * c2
+
+    a = get_point(P0, not b0)
+    ab, ac = get_point(P1, not b1) - a, get_point(P2, not b2) - a
+    coeff1 = dot(ac, u3) * c1 - dot(ab, u2) * c2
+    coeff2 = det(ac, u3) * c1 - det(ab, u2) * c2
+    inv_z = (coeff1 ** 2 + coeff2 ** 2) ** -.5
+
+    rotate_eq(eq0, np.arccos(k0 * inv_z) * sgn - np.arccos(coeff2 * inv_z) * (2 * (coeff1 > 0) - 1))
+    solve_p(P0, b0, eq1)
+    solve_p(P1, b1, eq2)
+    solve_p(P2, b2, eq3)
+
+    gg_grouping(eq4, (G3, b3), (G4, b4))
+    G5.sliding_ = dot(u3, get_zero(G5, 1, u3) - get_zero(G5, 0, u3))
 
 
 def solve_graph7(eqs, js, sgn):
