@@ -3,7 +3,7 @@ from kinepy.linkage import Joint, RevoluteJoint, PrismaticJoint, PinSlotJoint, R
 from kinepy.interactions import Gravity, Spring
 from kinepy.metajoints import Gear, GearRack, DistantRelation, EffortlessRelation
 from kinepy.compilation import make_sets, compiler, KINEMATICS, DYNAMICS, BOTH
-from kinepy.kinematic import KIN, set_origin, continuous_solid_angle
+from kinepy.kinematic import KIN
 
 
 def solid_checker(f):
@@ -172,8 +172,6 @@ class System:
         self.reset(self.inputs.shape[1])
         for instr in self.kin_instr:
             KIN[instr[0]](*instr[1:])
-        set_origin(self)
-        continuous_solid_angle(self)
 
     """       
     def solve_statics(self, compute_kine=True, inputs=None):
