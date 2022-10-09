@@ -95,7 +95,7 @@ def solve_graph4(eqs, js, sgn):
     v = get_point(P1, not b1) - get_point(P0, not b0) + get_point(P3, b3) - get_point(P4, b4)
     sq_z = sq_mag(v)
     sq_a, sq_b = sq_mag(get_point(P3, not b3) - get_point(P0, b0)), sq_mag(get_point(P4, not b4) - get_point(P1, b1))
-    alpha = np.arccos(0.5 * (sq_a + sq_b - sq_z) * (sq_b * sq_a) ** -.5) * sgn
+    alpha = np.arccos(0.5 * (sq_a + sq_z - sq_b) * (sq_z * sq_a) ** -.5) * sgn
     move_eq(eq4, unit(angle2(v, sq_z ** -.5) + alpha) * sq_a ** .5 + get_point(P0, not b0) - get_point(P3, b3))
 
     pp_grouping(eq1, (P0, b0), (P3, not b3), sq_a)

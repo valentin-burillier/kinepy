@@ -232,8 +232,8 @@ class RectangularJoint(Joint):
         self.sliding_ = x, y
         rotate_eq(eq2, self.s1.angle_ + self.angle_ - self.s2.angle_)
         ux, uy = unit(self.s1.angle_ + self.a1_), unit(self.s1.angle_ + self.a2_)
-        p1 = self.s1.origin_ + r_vec(self.s1.angle_, self.p1_)
-        p2 = self.s2.origin_ + r_vec(self.s2.angle_, self.p2_)
+        p1 = self.s1.origin_ + rvec(self.s1.angle_, self.p1_)
+        p2 = self.s2.origin_ + rvec(self.s2.angle_, self.p2_)
         move_eq(eq2, p1 + x * ux + y * uy - p2)
 
     def block(self, eq1s1, eq2s2):
@@ -247,7 +247,7 @@ class RectangularJoint(Joint):
 
     def kin_recover_ghosts(self):
         ux, uy = unit(self.s1.angle_ + self.a1_), unit(self.s1.angle_ + self.a2_)
-        p = self.s2.origin_ + r_vec(self.s2.angle_, self.p2_) - self.s1.origin_ - r_vec(self.s1.angle_, self.p1_)
+        p = self.s2.origin_ + rvec(self.s2.angle_, self.p2_) - self.s1.origin_ - rvec(self.s1.angle_, self.p1_)
         d = det(ux, uy)
         self.sliding_ = det(p, uy) / d, det(ux, p) / d
 
