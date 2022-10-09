@@ -53,16 +53,12 @@ def mat_mul_n2(mat, vec):  # (2, 2, n) x (2,) -> (2, n)
     return np.einsum('ikl,k->il', mat, vec)
 
 
+def rotate_vec(angle_, vec):
+    return np.einsum('ikl,k->il', rot(angle_), vec)
+
+
 def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
     np.einsum('ikl,kl->il', mat, vec, out=vec)
-
-
-def get_dist(g, index):
-    return g.__get_dist__(index)
-
-
-def get_unit(j, index):
-    return j.__get_unit__(index)
 
 
 def get_angle(pri, index):
@@ -88,31 +84,6 @@ def rotate_eq(eq, theta):
 def move_eq(eq, vec):
     for s in eq:
         s.origin_ += vec
-
-
-def change_ref(system, sol, angle, mat, center, vec):
-    # O' = R(angle).(O - center) + vec
-    for i in system.eqs[sol]:
-        s = system.sols[i]
-        s.origin_ -= center
-        mat_mul_r(mat, s.origin_)
-        s.origin_ += vec
-        s.angle_ += angle
-
-
-def change_ref2(system, sol, angle, mat, center):
-    # O' = R(angle).(O - center)
-    for i in system.eqs[sol]:
-        s = system.sols[i]
-        s.origin_ -= center
-        mat_mul_r(mat, s.origin_)
-        s.angle_ += angle
-
-
-def trans(system, sol, vec):
-    # O' = O + vec
-    for i in system.eqs[sol]:
-        system.sols[i].origin_ += vec
 
 
 # ----------------------------------------------- Calculus -------------------------------------------------------------

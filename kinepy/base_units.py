@@ -40,7 +40,7 @@ def physics_input(*args):
         def g(self, *args2):
             return f(
                 self,
-                *(arg if not t else decor_multiply[isinstance(arg, FUNCTION_TYPE)](arg, self.unit_system[t])
+                *(arg if not t else decor_multiply[isinstance(arg, FUNCTION_TYPE)](arg, self._unit_system[t])
                     for t, arg in zip(args, args2))
             )
         return g

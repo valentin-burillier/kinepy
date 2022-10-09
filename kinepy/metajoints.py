@@ -99,7 +99,7 @@ class Gear(GearRelation):
         p = a + rad * unit(theta)
         self.system.sols[(s1, (j2.s1, j2.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_12, p, 0.))
         self.system.sols[((j2.s1, j2.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_12, p, 0.))
-        """
+    """
 
 
 class GearRack(GearRelation):

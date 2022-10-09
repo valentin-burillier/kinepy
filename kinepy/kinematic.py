@@ -5,7 +5,7 @@ from kinepy.geometry import get_angle, rotate_eq, get_point, move_eq, make_conti
 
 
 def solve_p(p, b, eq):
-    move_eq(eq, get_point(p, not b)) - get_point(p, b)
+    move_eq(eq, get_point(p, not b) - get_point(p, b))
     p.angle_ = p.s2.angle_ - p.s1.angle_
     make_continuous(p.angle_)
 
@@ -70,7 +70,7 @@ def solve_graph1(eqs, js, sgn, chain=True):
     pp_grouping(eq0, (P0, not b0), (P1, not b1), sq_z)
 
 
-def solve_graph2(eqs, js):
+def solve_graph2(eqs, js, sgn=None):
     eq0, eq1, eq2 = eqs
     (G0, b0), (G1, b1), (P2, b2) = js
 
@@ -80,6 +80,10 @@ def solve_graph2(eqs, js):
     make_continuous(P2.angle_)
 
     gg_grouping(eq1 + eq2, (G0, b0), (G1, b1))
+
+
+def solve_graph3(eqs, js, sgn=None):
+    pass
 
 
 def solve_graph4(eqs, js, sgn):
@@ -127,6 +131,10 @@ def solve_graph5(eqs, js, sgn):
     G5.sliding_ = dot(u3, get_zero(G5, 1, u3) - get_zero(G5, 0, u3))
 
 
+def solve_graph6(eqs, js, sgn=None):
+    pass
+
+
 def solve_graph7(eqs, js, sgn):
     eq0, eq1, eq2, eq3, eq4 = eqs
     (G0, b0), (P1, b1), (G2, b2), (G3, b3), (P4, b4), (P5, b5) = js
@@ -140,7 +148,11 @@ def solve_graph7(eqs, js, sgn):
     gg_grouping(eq1, (G0, b0), (G3, not b3))
 
 
-def solve_graph9(eqs, js):
+def solve_graph8(eqs, js, sgn=None):
+    pass
+
+
+def solve_graph9(eqs, js, sgn=None):
     eq0, eq1, eq2, eq3, eq4 = eqs
     (G0, b0), (G1, b1), (P2, b2), (G3, b3), (P4, b4), (G5, b5) = js
 
@@ -153,7 +165,7 @@ def solve_graph9(eqs, js):
     gg_grouping(eq1, (G0, b0), (G3, not b3))
 
 
-def solve_graph10(eqs, js):
+def solve_graph10(eqs, js, sgn=None):
     eq0, eq1, eq2, eq3, eq4 = eqs
     (G0, b0), (P1, b1), (P2, b2), (G3, b3), (G4, b4), (G5, b5) = js
 
@@ -165,3 +177,62 @@ def solve_graph10(eqs, js):
 
     gg_grouping(eq4, (G4, b4), (G5, b5))
     gg_grouping(eq1, (G0, b0), (G3, not b3))
+
+
+def solve_graph11(eqs, js, sgn=None):
+    pass
+
+
+def solve_graph12(eqs, js, sgn=None):
+    pass
+
+
+#  ---------------------------------------------------------------------------------------------------------------------
+
+
+def solve_graph(system, index, eqs, js):
+    key = tuple(j.rep for j, _ in js)
+    SOLVE_GRAPHS[index](eqs, js, system.signs.get(key, None))
+
+
+def continuous_solid_angle(system):
+    for s in system.sols:
+        make_continuous(s.angle_)
+
+
+def solve_relation(rel, j_index):
+    rel.rel_pilot(j_index)
+
+
+def solve_pilot(system, j, eq1, eq2):
+    j.pilot(eq1, eq2, *(system.inputs[i] for i in system.indices[j.rep]))
+
+
+def set_origin(system):
+    move_eq(system.sols, -system.sols[0].origin_)
+    rotate_eq(system.sols, -system.sols[0].angle_)
+
+
+SOLVE_GRAPHS = (
+    solve_graph0,
+    solve_graph1,
+    solve_graph2,
+    solve_graph3,
+    solve_graph4,
+    solve_graph5,
+    solve_graph6,
+    solve_graph7,
+    solve_graph8,
+    solve_graph9,
+    solve_graph10,
+    solve_graph11,
+    solve_graph12
+)
+
+KIN = (
+    solve_pilot,
+    solve_graph,
+    solve_relation,
+    continuous_solid_angle,
+    set_origin
+)

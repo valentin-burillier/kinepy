@@ -45,7 +45,7 @@ class Solid(metaclass=MetaUnit):
 
 
 class GhostSolid:
-    m, j, g = 0., 0., (0., 0.)
+    m_, j_, g_ = 0., 0., (0., 0.)
     angle_, origin_ = None, None
 
     def __init__(self):

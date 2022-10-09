@@ -108,3 +108,11 @@ GRAPHS = [
 EDGES = [
     edges0, edges0, edges0, edges1, edges1, edges1, edges1, edges1, edges1, edges1, edges1, edges1, edges1
 ]
+
+SOLVED = [
+    True, True, True, False, True, True, False, True, False, True, True, False, False
+]
+
+SIGNS = [
+    1, 1, None, None, 1, 1, None, 1, None, None, None, None, None
+]

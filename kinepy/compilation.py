@@ -1,6 +1,9 @@
-from kinepy.graphs import GRAPHS, EDGES
+from kinepy.graphs import GRAPHS, EDGES, SOLVED, SIGNS
 from kinepy.metajoints import LinearRelationBase
 from kinepy.linkage import Ghost
+
+
+SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CSA, SET_ORIGIN = range(5)
 
 
 class CompilationError(Exception):
@@ -72,6 +75,7 @@ def search_graph(g):
         f_ = list(isomorph(g_, g, DEGREES[i], d, ()))
         if f_:
             return i, f_
+    raise CompilationError(f"Nothing found in graph {g}")
 
 
 def _fusion(graph, a, b, eqs, sol_to_eqs):
@@ -87,9 +91,9 @@ def _fusion(graph, a, b, eqs, sol_to_eqs):
             c = line.pop()
             line[b] = c
             graph[b][i] = c
-            eqs[b], eqs[-1] = eqs[-1], eqs[b]
-            for s in eqs[b]:
-                sol_to_eqs[s] = b
+        eqs[b], eqs[-1] = eqs[-1], eqs[b]
+        for s in eqs[b]:
+            sol_to_eqs[s] = b
     graph.pop()
     e = eqs.pop()
     eqs[a] += e
@@ -99,9 +103,8 @@ def _fusion(graph, a, b, eqs, sol_to_eqs):
 
 def fusion(graph, eq, eqs, sol_to_eqs):
     mcr = min(eq)
-    for i in sorted(eq, reverse=True):
-        if i != mcr:
-            _fusion(graph, mcr, i, eqs, sol_to_eqs)
+    for i in sorted(eq, reverse=True)[:-1]:
+        _fusion(graph, mcr, i, eqs, sol_to_eqs)
 
 
 def make_sets(system, check):
@@ -165,7 +168,7 @@ def compile_relations(joint_graph, solved, queue):
 
 
 def compiler(system, mode=KINEMATICS):
-    kin_instr, dyn_instr = [('SolvePilots',)], [('SolveBlocks',)]
+    kin_instr, dyn_instr = [], []
     joints, sols = (
         (system.dyn_solving_joints, system.dyn_solving_sols),
         (system.kin_solving_joints, system.kin_solving_sols)
@@ -179,28 +182,43 @@ def compiler(system, mode=KINEMATICS):
     eqs = [(i,) for i in range(len(sols))]
     sol_to_eqs = list(range(len(sols)))
 
+    dist = distances(graph)
+
+    # solving for piloted/block
     for j in queue:
         solved[j] = True
         j = system.joints[j]
-        fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
 
-    dist = distances(graph)
+        e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
+        eq1, eq2 = tuple(sols[s] for s in eqs[e1]), tuple(sols[s] for s in eqs[e2])
+        kin_instr.append((SOLVE_PILOT, system, j, eq1, eq2))
+        dyn_instr.insert(0, (SOLVE_PILOT, j, eq1, eq2, dist[e2] < dist[e1]))
+
+        fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
+        dist = distances(graph)
 
     while len(graph) > 1:
         rel_instr = compile_relations(joint_graph, solved, queue)
 
+        #  relation resolution
         for rel, b in rel_instr:
             j = (rel.j1, rel.j2)[b]
-            e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]
+            e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
             ref = dist[e1] > dist[e2]
-            kin_instr.append(('SolveRelationKin', rel, b, ref))
-            dyn_instr.insert(0, ('SolveRelationDyn', rel, b, eqs[e1], eqs[e2], ref))
+
+            kin_instr.append((SOLVE_RELATION, rel, b))
+            dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eqs[e1], eqs[e2], ref))
+
             fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]), eqs, sol_to_eqs)
             dist = distances(graph)
 
         index, eqs_ = search_graph(graph)
         eqs__ = tuple(tuple(sols[s] for s in eqs[i]) for i in eqs_)
         ref = min(enumerate(eqs_), key=(lambda x: dist[x[1]]))[0]
+
+        if not SOLVED[index]:
+            raise CompilationError(f"Sorry, unable to solve the graph, sub-graph index {index}.\n"
+                                   f"See on [explanation page] for further information")
 
         #  joints and direction (True: According to edge, False: Opposed to edge
         js = tuple(((j_ := joints[graph[eqs_[i]][eqs_[j]][1]]), j_.s1.rep in eqs[eqs_[i]]) for i, j in EDGES[index])
@@ -209,8 +227,19 @@ def compiler(system, mode=KINEMATICS):
                 solved[j.rep] = True
                 queue.append(j.rep)
 
-        kin_instr.append(('SolveGraphKin', index, eqs__, js))
-        dyn_instr.insert(0, ('SolveGraphDyn', index, eqs__, js, ref))
+        sgn = SIGNS[index] if SIGNS[index] is not None else None
+        if sgn is not None and mode:
+            key = tuple(j.rep for j, _ in js)
+            print(f"Identified new signed group: graph n°{index} with joints {key}.\nChosen {sgn} as sign.")
+            system.signs[key] = sgn
+
+        kin_instr.append((SOLVE_GRAPH, system, index, eqs__, js))
+        dyn_instr.insert(0, (SOLVE_GRAPH, index, eqs__, js, ref))
 
         fusion(graph, eqs_, eqs, sol_to_eqs)
-    return (kin_instr, dyn_instr, (kin_instr, dyn_instr))[mode]
+        dist = distances(graph)
+
+    kin_instr.append((CSA, system))
+    kin_instr.append((SET_ORIGIN, system))
+
+    return (dyn_instr, kin_instr, (kin_instr, dyn_instr))[mode]

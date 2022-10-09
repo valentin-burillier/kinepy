@@ -3,6 +3,7 @@ from kinepy.linkage import Joint, RevoluteJoint, PrismaticJoint, PinSlotJoint, R
 from kinepy.interactions import Gravity, Spring
 from kinepy.metajoints import Gear, GearRack, DistantRelation, EffortlessRelation
 from kinepy.compilation import make_sets, compiler, KINEMATICS, DYNAMICS, BOTH
+from kinepy.kinematic import KIN, set_origin, continuous_solid_angle
 
 
 def solid_checker(f):
@@ -96,8 +97,8 @@ class System:
         return sp
 
     @solid_checker
-    def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2), p1=(0., 0.), p2=(0., 0.)):
-        t = RectangularJoint(self._unit_system, len(self.joints), s1, s2, angle, base, p1, p2)
+    def add_rectangle(self, s1, s2, angle=0., a1=0., a2=np.pi * .5, p1=(0., 0.), p2=(0., 0.)):
+        t = RectangularJoint(self._unit_system, len(self.joints), s1, s2, angle, a1, a2, p1, p2)
         print(f'Added linkage {t}')
         self.named_joints[t.name] = t.rep
         self.joints.append(t)
@@ -148,16 +149,6 @@ class System:
         for joint in self.joints:
             joint.reset(n)
 
-    def get_origin(self, sol):
-        return self.sols[sol].origin_
-    
-    def get_ref(self, sol):
-        return self.sols[sol].angle_
-
-    def get_point(self, sol, p):
-        sol = self.sols[sol]
-        return sol.origin_ + mat_mul_n(rot(sol.angle_), p)
-
     def compile(self):
         if not self.blocked or set(self.blocked) == set(self.piloted):
             lst, dct = make_sets(self, self.piloted)
@@ -170,25 +161,20 @@ class System:
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
         print('signs =', self.signs)
 
-    """       
     def solve_kinematics(self, inputs=None):
-        if inputs is None:
-            self.reset(1)
-        else:
-            if isinstance(inputs, (list, tuple)):
-                inputs = np.array(inputs)
+        if inputs is not None:
+            inputs = np.array(inputs)
             if len(inputs.shape) == 1:
                 inputs = inputs[np.newaxis, :]
-            self.reset(inputs.shape[1])
             self.inputs = inputs
-            
+
+        self.reset(self.inputs.shape[1])
         for instr in self.kin_instr:
-            eq = kin[instr[0]](self, *instr[1:])
-            for s in eq:
-                self.eqs[s] = eq
-        for s in self.sols:
-            make_continuous(s.angle_)
-            
+            KIN[instr[0]](*instr[1:])
+        set_origin(self)
+        continuous_solid_angle(self)
+
+    """       
     def solve_statics(self, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
