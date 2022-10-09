@@ -3,7 +3,7 @@ from kinepy.metajoints import LinearRelationBase
 from kinepy.linkage import Ghost
 
 
-SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CSA, SET_ORIGIN = range(5)
+SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CSA, SET_ORIGIN, REC_GHOSTS = range(6)
 
 
 class CompilationError(Exception):
@@ -241,7 +241,6 @@ def compiler(system, mode=KINEMATICS):
         fusion(graph, eqs_, eqs, sol_to_eqs)
         dist = distances(graph)
 
-    kin_instr.append((CSA, system))
-    kin_instr.append((SET_ORIGIN, system))
+    kin_instr += [(CSA, system), (SET_ORIGIN, system), (REC_GHOSTS, system)]
 
     return (dyn_instr, kin_instr, (kin_instr, dyn_instr))[mode]

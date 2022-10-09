@@ -3,7 +3,7 @@ import numpy as np
 from kinepy.base_units import *
 from kinepy.solid import GhostSolid
 from kinepy.interactions import RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO, ZERO_F
-from kinepy.geometry import rotate_eq, move_eq, get_point, get_angle, get_zero, unit, z_cross, rotate_vec
+from kinepy.geometry import rotate_eq, move_eq, get_point, get_angle, get_zero, unit, z_cross, rvec, det
 
 
 def to_function(f):
@@ -178,7 +178,7 @@ class PinSlotJoint(Joint):
         theta = angle + self.s1.angle_ - self.s2.angle_
         rotate_eq(eq2, theta)
         u = unit(alpha := self.s1.angle_ + self.a1)
-        z, p = self.s1.origin_ + self.d1_ * z_cross(u), self.s2.origin_ +rotate_vec(self.s2.angle_, self.p2_)
+        z, p = self.s1.origin_ + self.d1_ * z_cross(u), self.s2.origin_ +r_vec(self.s2.angle_, self.p2_)
         move_eq(eq2, u * sliding + z - p)
 
     def block(self, eq1s1, eq2s2):
@@ -199,6 +199,10 @@ class PinSlotJoint(Joint):
     @to_function
     def set_tangent(self, t):
         self.interaction.f = t
+
+    def kin_recover_ghosts(self):
+        self.angle_ = self.ghost_j2.angle_
+        self.sliding_ = self.ghost_j1.sliding_
 
 
 class RectangularJoint(Joint):
@@ -228,8 +232,8 @@ class RectangularJoint(Joint):
         self.sliding_ = x, y
         rotate_eq(eq2, self.s1.angle_ + self.angle_ - self.s2.angle_)
         ux, uy = unit(self.s1.angle_ + self.a1_), unit(self.s1.angle_ + self.a2_)
-        p1 = self.s1.origin_ + rotate_vec(self.s1.angle_, self.p1)
-        p2 = self.s2.origin_ + rotate_vec(self.s2.angle_, self.p2)
+        p1 = self.s1.origin_ + r_vec(self.s1.angle_, self.p1_)
+        p2 = self.s2.origin_ + r_vec(self.s2.angle_, self.p2_)
         move_eq(eq2, p1 + x * ux + y * uy - p2)
 
     def block(self, eq1s1, eq2s2):
@@ -240,6 +244,12 @@ class RectangularJoint(Joint):
 
         self.system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         self.system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
+    def kin_recover_ghosts(self):
+        ux, uy = unit(self.s1.angle_ + self.a1_), unit(self.s1.angle_ + self.a2_)
+        p = self.s2.origin_ + r_vec(self.s2.angle_, self.p2_) - self.s1.origin_ - r_vec(self.s1.angle_, self.p1_)
+        d = det(ux, uy)
+        self.sliding_ = det(p, uy) / d, det(ux, p) / d
 
 
 class ThreeDegreesOfFreedomJoint(Joint):
@@ -265,8 +275,8 @@ class ThreeDegreesOfFreedomJoint(Joint):
     def pilot(self, eq1, eq2, x, y, angle):
         self.sliding_, self.angle_ = (x, y), angle
         rotate_eq(eq2, angle + self.s1.origin_ - self.s2.origin_)
-        p1 = self.s1.origin_ + rotate_vec(self.s1.angle_, self.p1)
-        p2 = self.s2.origin_ + rotate_vec(self.s2.angle_, self.p2)
+        p1 = self.s1.origin_ + r_vec(self.s1.angle_, self.p1_)
+        p2 = self.s2.origin_ + r_vec(self.s2.angle_, self.p2_)
         move_eq(eq2, p1 + (x, y) - p2)
 
     def block(self, eq1s1, eq2s2):
@@ -277,6 +287,7 @@ class ThreeDegreesOfFreedomJoint(Joint):
 
         self.system.sols[s1].mech_actions[self.name](MechanicalAction(f, p, m))
         self.system.sols[s2].mech_actions[self.name](MechanicalAction(-f, p, -m))
+
 
 J3DOF = ThreeDegreesOfFreedomJoint
 

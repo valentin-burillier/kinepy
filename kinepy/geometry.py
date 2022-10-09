@@ -53,7 +53,7 @@ def mat_mul_n2(mat, vec):  # (2, 2, n) x (2,) -> (2, n)
     return np.einsum('ikl,k->il', mat, vec)
 
 
-def rotate_vec(angle_, vec):
+def rvec(angle_, vec):
     return np.einsum('ikl,k->il', rot(angle_), vec)
 
 

@@ -213,6 +213,11 @@ def set_origin(system):
     rotate_eq(system.sols, -system.sols[0].angle_)
 
 
+def recover_ghosts(system):
+    for j in system.kin_ghosted:
+        j.kin_recover_ghosts()
+
+
 SOLVE_GRAPHS = (
     solve_graph0,
     solve_graph1,
@@ -234,5 +239,6 @@ KIN = (
     solve_graph,
     solve_relation,
     continuous_solid_angle,
-    set_origin
+    set_origin,
+    recover_ghosts
 )
