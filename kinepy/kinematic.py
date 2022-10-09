@@ -200,8 +200,8 @@ def continuous_solid_angle(system):
         make_continuous(s.angle_)
 
 
-def solve_relation(rel, j_index):
-    rel.rel_pilot(j_index)
+def solve_relation(rel, j_index, eq1, eq2):
+    rel.rel_pilot(j_index, eq1, eq2)
 
 
 def solve_pilot(system, j, eq1, eq2):

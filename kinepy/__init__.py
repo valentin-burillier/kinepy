@@ -61,7 +61,7 @@ class System:
         self.named_joints, self.indices, self.signs = {}, {}, {}
         self.kin_instr, self.dyn_instr, self.interactions, self.relations, self.joints, self.blocked, self.piloted = \
             [], [], [], [], [], [], []
-        self.kin_solving_sols = self.kin_solving_joints = self.dyn_solving_sols = self.dyn_solving_joints = None
+        self.kin_sols = self.kin_joints = self.dyn_sols = self.dyn_joints = self.kin_ghosted = self.dyn_ghosted = None
 
     def add_solid(self, name=0., m=0., j=0., g=(0., 0.)):
         s = Solid(self._unit_system, len(self.sols), j, m, g, name)
@@ -151,13 +151,14 @@ class System:
 
     def compile(self):
         if not self.blocked or set(self.blocked) == set(self.piloted):
-            lst, dct = make_sets(self, self.piloted)
-            self.kin_solving_sols = self.dyn_solving_sols = lst
-            self.kin_solving_joints = self.dyn_solving_joints = dct
+            lst, dct, g = make_sets(self, self.piloted)
+            self.kin_sols = self.dyn_sols = lst
+            self.kin_joints = self.dyn_joints = dct
+            self.kin_ghosted = self.dyn_ghosted = g
             self.kin_instr, self.dyn_instr = compiler(self, BOTH)
         else:
-            self.kin_solving_sols, self.kin_solving_joints = make_sets(self, self.piloted)
-            self.dyn_solving_sols, self.dyn_solving_joints = make_sets(self, self.blocked)
+            self.kin_sols, self.kin_joints, self.kin_ghosted = make_sets(self, self.piloted)
+            self.dyn_sols, self.dyn_joints, self.dyn_ghosted = make_sets(self, self.blocked)
             self.kin_instr, self.dyn_instr = compiler(self), compiler(self, DYNAMICS)
         print('signs =', self.signs)
 
@@ -194,6 +195,7 @@ class System:
         for instr in self.dyn_instr:
             dyn[instr[0]](self, *instr[1:])
 
+    @physics_input(TIME, '', '')
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)

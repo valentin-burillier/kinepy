@@ -1,7 +1,19 @@
+import numpy as np
+
 from kinepy.base_units import *
 from kinepy.solid import GhostSolid
 from kinepy.interactions import RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO, ZERO_F
 from kinepy.geometry import rotate_eq, move_eq, get_point, get_angle, get_zero, unit, z_cross, rotate_vec
+
+
+def to_function(f):
+    def g(self, arg):
+        if isinstance(arg, (int, float, np.ndarray)):
+            return f(self, lambda: arg)
+        elif not isinstance(arg, FUNCTION_TYPE):
+            raise TypeError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+        return f(self, arg)
+    return g
 
 
 class Joint(metaclass=MetaUnit):
@@ -64,13 +76,9 @@ class RevoluteJoint(Joint):
         self.system.sols[s2].mech_actions.append(MechanicalAction(f_12, p, m_12))
         self.force_, self.torque_ = (f_12, m_12) if self.s1 == s2 else (-f_12, -m_12)
 
+    @to_function
     def set_torque(self, t):
-        if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.torque = lambda: t
-        elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.torque = t
-        else:
-            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+        self.interaction.torque = t
 
     def get_value(self):
         return self.angle_
@@ -123,13 +131,9 @@ class PrismaticJoint(Joint):
         t_12, n_12 = mat_mul_n(rot(-self.__get_angle0()), f_12)
         self.torque_, self.tangent_, self.normal_ = (m_12, t_12, n_12) if s2 == self.s1 else (-m_12, -t_12, -n_12)
 
+    @to_function
     def set_tangent(self, t):
-        if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.f = lambda: t
-        elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.f = t
-        else:
-            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+        self.interaction.f = t
 
     def get_value(self):
         return self.sliding_
@@ -188,21 +192,13 @@ class PinSlotJoint(Joint):
         t_12, n_12 = mat_mul_n(rot(-self.system.get_ref(self.s1) - self.a1), f_12)
         self.normal_, self.tangent_, self.torque_ = (n_12, t_12, m_12) if s2 == self.s1 else (-n_12, -t_12, -m_12)
 
+    @to_function
     def set_torque(self, t):
-        if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.t = lambda: t
-        elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.t = t
-        else:
-            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+        self.interaction.t = t
 
+    @to_function
     def set_tangent(self, t):
-        if isinstance(t, (int, float, np.ndarray)):
-            self.interaction.f = lambda: t
-        elif isinstance(t, FUNCTION_TYPE):
-            self.interaction.f = t
-        else:
-            raise ValueError(f'Invalid type: {type(t)}, expected int, float, np.ndarray or function')
+        self.interaction.f = t
 
 
 class RectangularJoint(Joint):

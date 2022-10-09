@@ -1,49 +1,34 @@
 from kinepy.base_units import *
-from kinepy.linkage import Joint
 
 
 class LinearRelationBase(metaclass=MetaUnit):
     v0_ = r_ = None
     read_only = read_write = ()
-    j1: Joint
-    j2: Joint
+    j1 = j2 = None
 
-    def __pilot_joint0(self, si):
-        return self.j1.set_value((self.j2.get_value() - self.v0_) / self.r_, si)
+    def rel_pilot(self, j_index, eq1, eq2):
+        v = self.j1.get_value() * self.r_ + self.v0_ if j_index else (self.j2.get_value() - self.v0_) / self.r_
+        return (self.j1, self.j2)[j_index].set_value(v, eq1, eq2)
 
-    def __pilot_joint1(self, si):
-        return self.j2.set_value(self.j1.get_value() * self.r_ + self.v0_, si)
-
-    __pilot_joint = __pilot_joint0, __pilot_joint1
-
-    def rel_pilot(self, j_index, si):
-        return self.__pilot_joint[j_index](self, si)
-
-    def rel_block(self, j_index, eq1s1, eq2s2):
-        (self.j1, self.j2)[j_index].block(eq1s1, eq2s2)
+    def rel_block(self, j_index, eq1, eq2):
+        (self.j1, self.j2)[j_index].block(eq1, eq2)
 
 
 class LinearRelation(LinearRelationBase):
     def __init__(self, unit_system, j1, j2, r, v0):
-        self.v0_physics = ANGLE if j2.id_ == 1 else LENGTH
-        self.r_physics = (ANGLE if j1.id_ == 1 else LENGTH), ANGLE if j2.id_ == 1 else LENGTH
+        self.v0_phy = ANGLE if j2.id_ == 1 else LENGTH
+        self.r_phy = (ANGLE if j1.id_ == 1 else LENGTH), ANGLE if j2.id_ == 1 else LENGTH
         self._unit_system, self.j1, self.j2, self.r, self.v0 = unit_system, j1, j2, r, v0
 
-    @property
-    def v0(self):
-        return self.v0_ / self._unit_system[self.v0_physics]
+    v0 = property(
+        (lambda self: self.v0_ / self._unit_system[self.v0_phy]),
+        lambda self, v: setattr(self, 'v0_', v * self._unit_system[self.v0_phy])
+    )
 
-    @v0.setter
-    def v0(self, value):
-        self.v0_ = value * self._unit_system[self.v0_physics]
-
-    @property
-    def r(self):
-        return self.r_ * self._unit_system[self.r_physics[0]] / self._unit_system[self.r_physics[1]]
-
-    @r.setter
-    def r(self, value):
-        self.r_ = value * self._unit_system[self.r_physics[1]] / self._unit_system[self.r_physics[0]]
+    r = property(
+        (lambda self: self.r_ * self._unit_system[self.r_phy[0]] / self._unit_system[self.r_phy[1]]),
+        lambda self, v: setattr(self, 'r_', v * self._unit_system[self.r_phy[1]] / self._unit_system[self.r_phys[0]])
+    )
 
 
 class EffortlessRelation(LinearRelation):

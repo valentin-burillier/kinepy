@@ -110,6 +110,7 @@ def fusion(graph, eq, eqs, sol_to_eqs):
 def make_sets(system, check):
     lst = list(system.sols)
     dct = dict()
+    ghosted = []
     cnt = 0
     for j in system.joints:
         if j.dof == 1:
@@ -122,7 +123,8 @@ def make_sets(system, check):
             dct[j.ghost_j2.rep] = j.ghost_j2
             j.ghost_sol.rep = len(lst)
             lst.append(j.ghost_sol)
-    return lst, dct
+            ghosted.append(j)
+    return lst, dct, ghosted
 
 
 Z = 0., 0.
@@ -170,8 +172,8 @@ def compile_relations(joint_graph, solved, queue):
 def compiler(system, mode=KINEMATICS):
     kin_instr, dyn_instr = [], []
     joints, sols = (
-        (system.dyn_solving_joints, system.dyn_solving_sols),
-        (system.kin_solving_joints, system.kin_solving_sols)
+        (system.dyn_joints, system.dyn_sols),
+        (system.kin_joints, system.kin_sols)
     )[not mode]
 
     graph = make_graph(joints, len(sols))
@@ -206,7 +208,7 @@ def compiler(system, mode=KINEMATICS):
             e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
             ref = dist[e1] > dist[e2]
 
-            kin_instr.append((SOLVE_RELATION, rel, b))
+            kin_instr.append((SOLVE_RELATION, rel, b, eqs[e1], eqs[e2]))
             dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eqs[e1], eqs[e2], ref))
 
             fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]), eqs, sol_to_eqs)
