@@ -78,6 +78,7 @@ def get_point(rev, index):
 def rotate_eq(eq, theta):
     r = rot(theta)
     for s in eq:
+        s.angle_ += theta
         mat_mul_r(r, s.origin_)
 
 
