@@ -59,13 +59,8 @@ KILOGRAM_METER_SQUARED = 1., 'Intertia'
 
 class System:
     def __init__(self, name=''):
-        self.sols, self.joints = [Solid(self, name='Ground')], []
         self.piloted, self.blocked = [], []
         self.name = name if name else 'Main system'
-
-        # Renumérotation des Sols
-        for i, s in enumerate(self.sols):
-            s.rep = i
 
         # Dictionnaires des noms
         self.named_sols = {}
@@ -89,6 +84,7 @@ class System:
             'Length': 1e-3, 'Time': 1., 'Angle': 1., 'Mass': 1., 'Force': 1., 'Inertia': 1.,
             'Acceleration': 1., 'SpringConstant': 1., 'Torque': 1.
         }
+        self.sols, self.joints = [Solid(self, name='Ground')], []
 
     def set_unit(self, u: tuple[float, str]):
         u_, phy = u
@@ -103,6 +99,10 @@ class System:
         return s
     
     def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+        if isinstance(s1, Solid):
+            s1 = s1.rep
+        if isinstance(s2, Solid):
+            s2 = s2.rep
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -120,6 +120,10 @@ class System:
         return p
 
     def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
+        if isinstance(s1, Solid):
+            s1 = s1.rep
+        if isinstance(s2, Solid):
+            s2 = s2.rep
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -135,6 +139,10 @@ class System:
         return g
     
     def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
+        if isinstance(s1, Solid):
+            s1 = s1.rep
+        if isinstance(s2, Solid):
+            s2 = s2.rep
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -151,6 +159,10 @@ class System:
         return sp
     
     def add_rectangle(self, s1, s2, angle=0., base=(0., np.pi/2)):
+        if isinstance(s1, Solid):
+            s1 = s1.rep
+        if isinstance(s2, Solid):
+            s2 = s2.rep
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]
@@ -165,6 +177,10 @@ class System:
         return t
 
     def add_3dof(self, s1, s2):
+        if isinstance(s1, Solid):
+            s1 = s1.rep
+        if isinstance(s2, Solid):
+            s2 = s2.rep
         if isinstance(s1, str):
             # Référence par le nom
             s1 = self.named_sols[s1]

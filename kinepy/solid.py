@@ -16,6 +16,7 @@ class Solid:
         self.mech_actions = []
         self.external_actions = []
 
+
     def get_point(self, point):
         point = np.array(point)
         if point.shape[0] != 2:
