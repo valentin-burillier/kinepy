@@ -1,5 +1,5 @@
 from kinepy.base_units import *
-from kinepy.geometry import rot, mat_mul_n
+from kinepy.geometry import rvec
 
 ZERO = np.zeros((2, 1))
 ZERO_F = (lambda: 0)
@@ -25,7 +25,7 @@ class Solid(metaclass=MetaUnit):
     @physics_output(LENGTH)
     @physics_input(LENGTH)
     def get_point(self, p):
-        return self.origin_ + mat_mul_n(rot(self.angle_), p)
+        return self.origin_ + rvec(self.angle_, p)
 
     @physics_input(FORCE, LENGTH)
     def add_force(self, f, p):

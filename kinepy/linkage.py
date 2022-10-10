@@ -1,5 +1,4 @@
 import numpy as np
-
 from kinepy.base_units import *
 from kinepy.solid import GhostSolid
 from kinepy.interactions import RevoluteTorque, PinSlotTangentTorque, PrismaticTangent, ZERO, ZERO_F
@@ -52,6 +51,10 @@ class RevoluteJoint(Joint):
         Joint.__init__(self, unit_system, rep, s1, s2)
         self.p1, self.p2 = p1, p2
         self.interaction = RevoluteTorque(self._unit_system, self, ZERO_F)
+
+    @physics_output(LENGTH)
+    def point(self):
+        return self.s1.origin_ + rvec(self.s1.angle_, self.p1_)
 
     def reset(self, n):
         self.force_, self.torque_ = None, None
