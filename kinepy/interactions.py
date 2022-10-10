@@ -68,7 +68,7 @@ class RevoluteTorque(Interaction):
 
 
 class PrismaticTangent(Interaction):
-    read_write = ('tangent', TANGENT, ZERO_F),
+    read_write = ('tangent', FORCE, ZERO_F),
 
     def __init__(self, unit_system, pri, f):
         Interaction.__init__(self, unit_system)
@@ -83,7 +83,7 @@ class PrismaticTangent(Interaction):
 
 
 class PinSlotTangentTorque(Interaction):
-    read_write = ('tangent', TANGENT, ZERO_F), ('torque', TORQUE, ZERO_F)
+    read_write = ('tangent', FORCE, ZERO_F), ('torque', TORQUE, ZERO_F)
 
     def __init__(self, unit_system, pin, f, t):
         Interaction.__init__(self, unit_system)

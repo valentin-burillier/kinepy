@@ -206,9 +206,9 @@ def compiler(system, mode=KINEMATICS):
                 j = (rel.j1, rel.j2)[b]
                 e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
                 ref = dist[e1] > dist[e2]
-
-                kin_instr.append((SOLVE_RELATION, rel, b, eqs[e1], eqs[e2]))
-                dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eqs[e1], eqs[e2], ref))
+                eq1, eq2 = tuple(sols[i] for i in eqs[e1]), tuple(sols[i] for i in eqs[e2])
+                kin_instr.append((SOLVE_RELATION, rel, b, eq1, eq2))
+                dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eq1, eq2, ref))
 
                 fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
                 dist = distances(graph)

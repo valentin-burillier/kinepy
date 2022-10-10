@@ -63,7 +63,7 @@ class RevoluteJoint(Joint):
 
     def set_value(self, value, eq1, eq2):
         self.angle_ = value
-        theta = value + self.s1.origin_ - self.s2.origin_
+        theta = value + self.s1.angle_ - self.s2.angle_
         rotate_eq(eq2, theta)
         move_eq(eq2, get_point(self, 0) - get_point(self, 1))
 
@@ -305,7 +305,7 @@ class GhostRevolute(Ghost):
         self.joint, self.index = joint, index
         self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
 
-    p1_ = property(lambda self: (self.joint.p1_, (0., 0.))[self.index])
+    p1_ = property(lambda self: self.joint.p1_ if not self.index else (0., 0.))
     p2_ = property(lambda self: ((0., 0.), self.joint.p2_)[self.index])
     reset = RevoluteJoint.reset
 
@@ -319,7 +319,7 @@ class GhostPrismatic(Ghost):
         self.s1, self.s2 = ((joint.s1, joint.ghost_sol), (joint.ghost_sol, joint.s2))[index]
         self.d2_ = 0.
 
-    a1_ = property(lambda self: (self.joint.a1_, self.joint.a2_)[self.index])
-    a2_ = property(lambda self: (self.joint.a1_, self.joint.a2_ - self.joint.angle_)[self.index])
+    a1_ = property(lambda self: self.joint.a1_ if not self.index else self.joint.a2_)
+    a2_ = property(lambda self: self.joint.a1_ if not self.index else self.joint.a2_ - self.joint.angle_)
     d1_ = property(lambda self: self.joint.d1_ if isinstance(self.joint, PinSlotJoint) else 0.)
     reset = PrismaticJoint.reset

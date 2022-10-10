@@ -9,6 +9,7 @@ decor_multiply = (lambda x, y: None if x is None else x * y), (lambda x, y: None
 
 class MetaUnit(type):
     def __new__(mcs, name, bases, dct):
+
         if 'read_only' in dct:
             for tag, phy, def_ in dct['read_only']:
                 dct[tag] = MetaUnit.read_only(tag, phy, isinstance(def_, FUNCTION_TYPE))
