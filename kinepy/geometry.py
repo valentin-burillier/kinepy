@@ -72,7 +72,7 @@ def get_zero(pri, index, u):
 
 def get_point(rev, index):
     s = (rev.s1, rev.s2)[index]
-    return s.origin_ + mat_mul_n2(rot(s.angle_), (rev.p1_, rev.p2_)[index])
+    return s.origin_ + rvec(s.angle_, (rev.p1_, rev.p2_)[index])
 
 
 def rotate_eq(eq, theta):

@@ -60,10 +60,11 @@ def solve_graph1(eqs, js, sgn, chain=True):
         g_chain(((G2, b2),), (eq2,))
 
     u = unit(get_angle(G2, 0))
-    x0 = dot(u, v := get_point(P0, b0) - (v1 := get_zero(G2, not b2, u) + get_zero(G2, b2, u)) - get_point(P1, b1))
+    x0 = dot(u, v := get_point(P0, b0) + (v1 := get_zero(G2, b2, u) - get_zero(G2, not b2, u)) - get_point(P1, b1))
 
     sq_z = sq_mag(get_point(P0, not b0) - get_point(P1, not b1))
-    dx = (sq_z - det(v, u) ** 2) ** -0.5 * sgn * (1, -1)[b2]
+    dx = (sq_z - det(v, u) ** 2) ** 0.5 * (sgn, -sgn)[b2]
+
     move_eq(eq2, v1 + u * (x0 + dx))
     G2.sliding_ = (x0 + dx) * (1, -1)[b2]
 

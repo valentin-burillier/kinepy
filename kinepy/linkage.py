@@ -296,13 +296,15 @@ J3DOF = ThreeDegreesOfFreedomJoint
 
 
 class Ghost:
-    pass
+    def __repr__(self):
+        return f'Ghost{self.tag}{self.index}({repr(self.joint)})'
 
 
 class GhostRevolute(Ghost):
     id_ = 1
     rep = None
     force_ = angle_ = torque_ = None
+    tag = 'R'
 
     def __init__(self, joint, index):
         self.joint, self.index = joint, index
@@ -312,10 +314,13 @@ class GhostRevolute(Ghost):
     p2_ = property(lambda self: ((0., 0.), self.joint.p2_)[self.index])
     reset = RevoluteJoint.reset
 
+
+
 class GhostPrismatic(Ghost):
     id_ = 2
     rep = None
     normal_ = tangent_ = torque_ = sliding_ = None
+    tag = 'P'
 
     def __init__(self, joint, index):
         self.joint, self.index = joint, index
