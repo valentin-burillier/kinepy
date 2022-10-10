@@ -161,10 +161,8 @@ def compile_relations(joint_graph, solved, queue):
             queue.append(j2)
             for i, (_, rel2, _) in enumerate(joint_graph[j2]):
                 if rel2 is rel:
+                    joint_graph[j2].pop(i)
                     break
-            else:
-                continue
-            joint_graph[j2].pop(i)
         joint_graph[j1] = []
     return instruction
 
@@ -200,46 +198,47 @@ def compiler(system, mode=KINEMATICS):
         dist = distances(graph)
 
     while len(graph) > 1:
-        rel_instr = compile_relations(joint_graph, solved, queue)
+        if queue:
+            rel_instr = compile_relations(joint_graph, solved, queue)
 
-        #  relation resolution
-        for rel, b in rel_instr:
-            j = (rel.j1, rel.j2)[b]
-            e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
-            ref = dist[e1] > dist[e2]
+            #  relation resolution
+            for rel, b in rel_instr:
+                j = (rel.j1, rel.j2)[b]
+                e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
+                ref = dist[e1] > dist[e2]
 
-            kin_instr.append((SOLVE_RELATION, rel, b, eqs[e1], eqs[e2]))
-            dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eqs[e1], eqs[e2], ref))
+                kin_instr.append((SOLVE_RELATION, rel, b, eqs[e1], eqs[e2]))
+                dyn_instr.insert(0, (SOLVE_RELATION, rel, b, eqs[e1], eqs[e2], ref))
 
-            fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s1.rep]), eqs, sol_to_eqs)
+                fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
+                dist = distances(graph)
+        else:
+            index, eqs_ = search_graph(graph)
+            eqs__ = tuple(tuple(sols[s] for s in eqs[i]) for i in eqs_)
+            ref = min(enumerate(eqs_), key=(lambda x: dist[x[1]]))[0]
+
+            if not SOLVED[index]:
+                raise CompilationError(f"Sorry, unable to solve the graph, sub-graph index {index}.\n"
+                                       f"See on [explanation page] for further information")
+
+            #  joints and direction (True: According to edge, False: Opposed to edge
+            js = tuple(((j_ := joints[graph[eqs_[i]][eqs_[j]][1]]), j_.s1.rep in eqs[eqs_[i]]) for i, j in EDGES[index])
+            for j, _ in js:
+                if not isinstance(j, Ghost):
+                    solved[j.rep] = True
+                    queue.append(j.rep)
+
+            sgn = SIGNS[index] if SIGNS[index] is not None else None
+            if sgn is not None and mode:
+                key = tuple(j.rep for j, _ in js)
+                print(f"Identified new signed group: graph n°{index} with joints {key}.\nChosen {sgn} as sign.")
+                system.signs[key] = sgn
+
+            kin_instr.append((SOLVE_GRAPH, system, index, eqs__, js))
+            dyn_instr.insert(0, (SOLVE_GRAPH, index, eqs__, js, ref))
+
+            fusion(graph, eqs_, eqs, sol_to_eqs)
             dist = distances(graph)
-
-        index, eqs_ = search_graph(graph)
-        eqs__ = tuple(tuple(sols[s] for s in eqs[i]) for i in eqs_)
-        ref = min(enumerate(eqs_), key=(lambda x: dist[x[1]]))[0]
-
-        if not SOLVED[index]:
-            raise CompilationError(f"Sorry, unable to solve the graph, sub-graph index {index}.\n"
-                                   f"See on [explanation page] for further information")
-
-        #  joints and direction (True: According to edge, False: Opposed to edge
-        js = tuple(((j_ := joints[graph[eqs_[i]][eqs_[j]][1]]), j_.s1.rep in eqs[eqs_[i]]) for i, j in EDGES[index])
-        for j, _ in js:
-            if not isinstance(j, Ghost):
-                solved[j.rep] = True
-                queue.append(j.rep)
-
-        sgn = SIGNS[index] if SIGNS[index] is not None else None
-        if sgn is not None and mode:
-            key = tuple(j.rep for j, _ in js)
-            print(f"Identified new signed group: graph n°{index} with joints {key}.\nChosen {sgn} as sign.")
-            system.signs[key] = sgn
-
-        kin_instr.append((SOLVE_GRAPH, system, index, eqs__, js))
-        dyn_instr.insert(0, (SOLVE_GRAPH, index, eqs__, js, ref))
-
-        fusion(graph, eqs_, eqs, sol_to_eqs)
-        dist = distances(graph)
 
     kin_instr += [(CSA, system), (SET_ORIGIN, system), (REC_GHOSTS, system)]
 

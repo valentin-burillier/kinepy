@@ -63,7 +63,7 @@ class System:
             [], [], [], [], [], [], []
         self.kin_sols = self.kin_joints = self.dyn_sols = self.dyn_joints = self.kin_ghosted = self.dyn_ghosted = None
 
-    def add_solid(self, name=0., m=0., j=0., g=(0., 0.)):
+    def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
         s = Solid(self._unit_system, len(self.sols), j, m, g, name)
         self.named_sols[s.name] = s.rep
         self.sols.append(s)
