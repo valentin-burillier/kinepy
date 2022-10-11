@@ -45,7 +45,7 @@ def solve_graph0(eqs, js, sgn):
     sq_z = sq_mag(get_point(P2, b2) - get_point(P1, b1))
     sq_a, sq_b = sq_mag(v01), sq_mag(v02)
     m = (sq_a * sq_b) ** -.5
-    alpha = np.arccos(0.5 * (sq_b + sq_a - sq_z)) * m * sgn
+    alpha = np.arccos(0.5 * (sq_b + sq_a - sq_z) * m) * sgn
     rotate_eq(eq1, np.arccos(dot(v01, v02) * m) * (2 * (det(v02, v01) > 0) - 1) + alpha)
     solve_p(P0, b0, eq1)
 
