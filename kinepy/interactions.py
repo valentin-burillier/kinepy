@@ -1,6 +1,6 @@
 from kinepy.base_units import *
-from kinepy.solid import ZERO, ZERO_F, ZERO_ARRAY_F
-from kinepy.geometry import *
+from kinepy.solid import ZERO, ZERO_F
+from kinepy.geometry import det, get_g, rvec, sq_mag, unit, get_angle, get_zero
 
 
 class MechanicalAction:
@@ -17,7 +17,7 @@ class Interaction(metaclass=MetaUnit):
     def __init__(self, unit_system):
         self._unit_system = unit_system
 
-    def set_ma(self, system):
+    def set_ma(self):
         pass
 
 
@@ -27,12 +27,11 @@ class Gravity(Interaction):
     def __init__(self, unit_system, system, g):
         Interaction.__init__(self, unit_system)
         self.g, self.system = g, system
-    """
+
     def set_ma(self):
         g = np.reshape(np.array(self.g), (2, 1))
         for s in self.system.sols:
-            s.mech_actions.append(MechanicalAction(g * s.m_, system.get_point(s.rep, s.g_), 0.))
-    """
+            s.mech_actions.append(MechanicalAction(g * s.m_, get_g(s), 0.))
 
 
 class Spring(Interaction):
@@ -44,13 +43,13 @@ class Spring(Interaction):
         self.s1, self.s2, self.p1, self.p2 = s1, s2, p1, p2
         self.l0, self.k = l0, k
 
-    def set_ma(self, system):
-        a, b = system.get_point(self.s1, self.p1), system.get_point(self.s2, self.p2)
+    def set_ma(self):
+        a, b = self.s1.origin_ + rvec(self.s2.angle_, self.p2_), self.s2.origin_ + rvec(self.s2.angle_, self.p2_)
         ab = b - a
-        l_ = mag(ab)
+        l_ = sq_mag(ab) ** .5
         f = ab * (f_ := self.k * (1 - self.l0 / l_))
-        system.sols[self.s1].mech_actions.append(MechanicalAction(f, a, 0.))
-        system.sols[self.s2].mech_actions.append(MechanicalAction(-f, b, 0.))
+        self.s1.mech_actions.append(MechanicalAction(f, a, 0.))
+        self.s2.mech_actions.append(MechanicalAction(-f, b, 0.))
         self.force_ = f_ * l_
 
 
@@ -61,10 +60,10 @@ class RevoluteTorque(Interaction):
         Interaction.__init__(self, unit_system)
         self.rev, self.torque = rev, t
 
-    def set_ma(self, system):
+    def set_ma(self):
         t = self.t()
-        system.sols[self.rev.s1].mech_actions.append(MechanicalAction(ZERO, 0., t))
-        system.sols[self.rev.s2].mech_actions.append(MechanicalAction(ZERO, 0., -t))
+        self.rev.s1.mech_actions.append(MechanicalAction(ZERO, 0., t))
+        self.rev.s2.mech_actions.append(MechanicalAction(ZERO, 0., -t))
 
 
 class PrismaticTangent(Interaction):
@@ -74,12 +73,12 @@ class PrismaticTangent(Interaction):
         Interaction.__init__(self, unit_system)
         self.pri, self.f = pri, f
 
-    def set_ma(self, system):
-        u = unit(system.get_ref(self.pri.s1) + self.pri.a1)
+    def set_ma(self):
+        u = unit(get_angle(self.pri, 0))
         f = self.f() * u
-        p = system.get_origin(self.pri.s1) + (self.pri.d1 - self.pri.d2) * z_cross(u)
-        system.sols[self.pri.s1].mech_actions.append(MechanicalAction(f, p, 0.))
-        system.sols[self.pri.s2].mech_actions.append(MechanicalAction(-f, p, 0.))
+        p = get_zero(self.pri, 0, u)
+        self.pri.s1.mech_actions.append(MechanicalAction(f, p, 0.))
+        self.pri.s2.mech_actions.append(MechanicalAction(-f, p, 0.))
 
 
 class PinSlotTangentTorque(Interaction):
@@ -89,9 +88,9 @@ class PinSlotTangentTorque(Interaction):
         Interaction.__init__(self, unit_system)
         self.pin, self.tangent, self.torque = pin, f, t
 
-    def set_ma(self, system):
-        u = unit(system.get_ref(self.pin.s1) + self.pin.a1)
+    def set_ma(self):
+        u = unit(self.pin.s1.angle_ + self.pin.a1_)
         f, t = self.f() * u, self.t()
-        p = self.pin.point
-        system.sols[self.pin.s1].mech_actions.append(MechanicalAction(f, p, t))
-        system.sols[self.pin.s2].mech_actions.append(MechanicalAction(-f, p, -t))
+        p = self.pin.s2.origin_ + rvec(self.pin.s2.angle_, self.pin.p2_)
+        self.pin.s1.mech_actions.append(MechanicalAction(f, p, t))
+        self.pin.s2.mech_actions.append(MechanicalAction(-f, p, -t))

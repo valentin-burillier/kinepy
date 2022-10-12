@@ -4,6 +4,7 @@ from kinepy.interactions import Gravity, Spring
 from kinepy.metajoints import Gear, GearRack, DistantRelation, EffortlessRelation
 from kinepy.compilation import make_sets, compiler, KINEMATICS, DYNAMICS, BOTH
 from kinepy.kinematic import KIN
+from kinepy.dynamic import DYN
 
 
 def solid_checker(f):
@@ -50,7 +51,7 @@ def single_or_list(post_call=None):
 
 
 class System:
-    inputs = None
+    inputs = dt = None
     tot = 0
 
     def __init__(self, name=''):
@@ -58,7 +59,7 @@ class System:
         self._unit_system = UnitSystem()
         self.sols = [Solid(self._unit_system, 0, 0., 0., (0., 0.), 'Ground')]
         self.named_sols = {'Ground': 0}
-        self.named_joints, self.indices, self.signs = {}, {}, {}
+        self.named_joints, self.indices, self.signs, self.tags = {}, {}, {}, {}
         self.kin_instr, self.dyn_instr, self.interactions, self.relations, self.joints, self.blocked, self.piloted = \
             [], [], [], [], [], [], []
         self.kin_sols = self.kin_joints = self.dyn_sols = self.dyn_joints = self.kin_ghosted = self.dyn_ghosted = None
@@ -150,6 +151,7 @@ class System:
             joint.reset(n)
 
     def compile(self):
+        self.signs, self.tags = {}, {}
         if not self.blocked or set(self.blocked) == set(self.piloted):
             lst, dct, g = make_sets(self, self.piloted)
             self.kin_sols = self.dyn_sols = lst
@@ -173,50 +175,19 @@ class System:
         for instr in self.kin_instr:
             KIN[instr[0]](*instr[1:])
 
-    """       
     def solve_statics(self, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
-            
-        for s in self.sols:
-            s.mech_actions = []
-            og = self.get_point(s.rep, s.g_)
-            f_tot, t_tot = np.array(((0.,), (0.,))), 0.
-            for f, t, p in s.external_actions:
-                f = f()
-                f_tot += f
-                t_tot += t() + det(self.get_point(s.rep, p) - og, f)
-            s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
-        
-        for inter in self.interactions:
-            inter.set_ma(self)
-        for instr in self.dyn_instr:
-            dyn[instr[0]](self, *instr[1:])
+        for instr in self.dyn_instr[1:]:
+            DYN[instr[0]](*instr[1:])
 
     @physics_input(TIME, '', '')
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if compute_kine:
             self.solve_kinematics(inputs)
-        dt = t/(self.input.shape[1] - 1) * self._unit_system[TIME]
-        
-        for s in self.sols:
-            s.mech_actions = []
-            og = self.get_point(s.rep, s.g_)
-            s.mech_actions.append(
-                MechanicalAction(-s.m_ * derivative2_vec(og, dt), og, -s.j_ * derivative2(s.angle_, dt))
-            )
-            f_tot, t_tot = np.array(((0.,), (0.,))), 0.
-            for f, t, p in s.external_actions:
-                f = f()
-                f_tot += f
-                t_tot += t() + det(self.get_point(s.rep, p) - og, f)
-            s.mech_actions.append(MechanicalAction(f_tot, og, t_tot))
-
-        for inter in self.interactions:
-            inter.set_ma(self)
+        self.dt = t / (self.inputs.shape[1] - 1)
         for instr in self.dyn_instr:
-            dyn[instr[0]](self, *instr[1:])
-    """
+            DYN[instr[0]](*instr[1:])
 
     def add_gravity(self, g=None):
         af = Gravity(self._unit_system, self, g)
@@ -224,7 +195,7 @@ class System:
         return af
 
     @solid_checker
-    def add_spring(self, k, l0, s1, s2, p1=(0., 0.), p2=(0, 0.)):
+    def add_spring(self, s1, s2, k, l0, p1=(0., 0.), p2=(0, 0.)):
         spr = Spring(self._unit_system, k, l0, s1, s2, p1, p2)
         self.interactions.append(spr)
         return spr

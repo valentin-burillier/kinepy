@@ -1,4 +1,5 @@
 import numpy as np
+import serial.rs485
 
 
 def rot(theta):  # rotation matrix
@@ -68,6 +69,10 @@ def get_angle(pri, index):
 def get_zero(pri, index, u):
     s = (pri.s1, pri.s2)[index]
     return s.origin_ + (pri.d1_, pri.d2_)[index] * z_cross(u)
+
+
+def get_g(sol):
+    return sol.origin_ + rvec(sol.angle_, sol.g_)
 
 
 def get_point(rev, index):

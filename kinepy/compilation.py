@@ -1,9 +1,10 @@
-from kinepy.graphs import GRAPHS, EDGES, SOLVED, SIGNS
+from kinepy.graphs import GRAPHS, EDGES, SOLVED, SIGNS, NAMES
 from kinepy.metajoints import LinearRelationBase
 from kinepy.linkage import Ghost
 
 
 SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CSA, SET_ORIGIN, REC_GHOSTS = range(6)
+SOLVE_BLOCK, _, _, COMPUTE_MA, COMPUTE_INERTIA, _ = range(6)
 
 
 class CompilationError(Exception):
@@ -168,6 +169,7 @@ def compile_relations(joint_graph, solved, queue):
 
 
 def compiler(system, mode=KINEMATICS):
+    dyn_instr: list[tuple]
     kin_instr, dyn_instr = [], []
     joints, sols = (
         (system.dyn_joints, system.dyn_sols),
@@ -192,7 +194,7 @@ def compiler(system, mode=KINEMATICS):
         e1, e2 = sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]
         eq1, eq2 = tuple(sols[s] for s in eqs[e1]), tuple(sols[s] for s in eqs[e2])
         kin_instr.append((SOLVE_PILOT, system, j, eq1, eq2))
-        dyn_instr.insert(0, (SOLVE_PILOT, j, eq1, eq2, dist[e2] < dist[e1]))
+        dyn_instr.insert(0, (SOLVE_BLOCK, j, eq1, eq2, dist[e2] < dist[e1]))
 
         fusion(graph, (sol_to_eqs[j.s1.rep], sol_to_eqs[j.s2.rep]), eqs, sol_to_eqs)
         dist = distances(graph)
@@ -218,7 +220,7 @@ def compiler(system, mode=KINEMATICS):
             ref = min(enumerate(eqs_), key=(lambda x: dist[x[1]]))[0]
 
             if not SOLVED[index]:
-                raise CompilationError(f"Sorry, unable to solve the graph, sub-graph index {index}.\n"
+                raise CompilationError(f"Sorry, unable to solve the graph {NAMES[index]} (n° {index}).\n"
                                        f"See on [explanation page] for further information")
 
             #  joints and direction (True: According to edge, False: Opposed to edge
@@ -229,10 +231,16 @@ def compiler(system, mode=KINEMATICS):
                     queue.append(j.rep)
 
             sgn = SIGNS[index] if SIGNS[index] is not None else None
+            key = tuple(j.rep for j, _ in js)
+
             if sgn is not None and mode:
-                key = tuple(j.rep for j, _ in js)
-                print(f"Identified new signed group: graph n°{index} with joints {key}.\nChosen {sgn} as sign.")
-                system.signs[key] = sgn
+                sgn_key = f'{len(kin_instr)} {NAMES[index]}'
+                print(f"Step {len(kin_instr)}: Identified new signed group: graph {NAMES[index]} "
+                      f"(n°{index}) with joints {key}.\nChosen {sgn} as sign.\nSign key: {repr(sgn_key)}.")
+                system.signs[sgn_key] = sgn
+                system.tags[key] = sgn_key
+            else:
+                system.tags[key] = ()
 
             kin_instr.append((SOLVE_GRAPH, system, index, eqs__, js))
             dyn_instr.insert(0, (SOLVE_GRAPH, index, eqs__, js, ref))
@@ -241,5 +249,6 @@ def compiler(system, mode=KINEMATICS):
             dist = distances(graph)
 
     kin_instr += [(CSA, system), (SET_ORIGIN, system), (REC_GHOSTS, system)]
+    dyn_instr = [(COMPUTE_INERTIA, system), (COMPUTE_MA, system)] + dyn_instr + [(REC_GHOSTS, system)]
 
     return (dyn_instr, kin_instr, (kin_instr, dyn_instr))[mode]

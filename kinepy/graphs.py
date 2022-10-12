@@ -116,3 +116,7 @@ SOLVED = [
 SIGNS = [
     1, 1, None, None, 1, 1, None, 1, None, None, None, None, None
 ]
+
+NAMES = (
+    'RRR', 'PRR', 'PRR', '3-RR', '2-RR-PP', '3-PR', '2-PR-RR', 'PP-RR-PR', '2-RR-PR', 'PP-PR-RP', 'RR-PR-RP', '2-PR-RP'
+)
