@@ -18,7 +18,7 @@ def set_force(rev, b, force):  # Force en rev.point(), par (s1, s2)[b] sur l'aut
     rev.force_ = force * (-1, 1)[b]
 
 
-def set_normal(pri, b, normal, torque, u): # Force normale en get_zero(pri, 0)
+def set_normal(pri, b, normal, torque, u):  # Force normale en get_zero(pri, 0)
     p = get_zero(pri, 0, u)
     n_ = normal * (-1, 1)[b]
     pri.s1.mech_actions.append(MechanicalAction(n_, p, torque * (-1, 1)[b]))
@@ -35,9 +35,9 @@ def solve_graph0(eqs, js, ref):
     m10 = tmd(get_point(P1, 0), (eq0, eq1 + eq2)[k]) * (1, -1)[k]
 
     k = (0b101 >> ref) & 1
-    m10_ = tmd(get_point(P2, b2), (eq0 + eq2, eq1)[k]) * (1, -1)[k]
+    m10_ = tmd(get_point(P2, 0), (eq0 + eq2, eq1)[k]) * (1, -1)[k]
 
-    vx, vy = get_point(P0, b0) - get_point(P1, b1), get_point(P0, b0) - get_point(P2, b2)
+    vx, vy = get_point(P0, 0) - get_point(P1, 0), get_point(P0, 0) - get_point(P2, 0)
     inv_x, inv_y = sq_mag(vx) ** -.5, sq_mag(vy) ** -.5
     vx *= inv_x
     vy *= inv_y
@@ -112,7 +112,48 @@ def solve_graph3(eqs, js, ref):
 
 
 def solve_graph4(eqs, js, ref):
-    pass
+    eq0, eq1, eq2, eq3, eq4 = eqs
+    (P0, b0), (P1, b1), (G2, b2), (P3, b3), (P4, b4), (G5, b5) = js
+
+    k = (0b10111 >> ref) & 1
+    f = trd((eq0 + eq1 + eq2 + eq4, eq3)[k]) * (1, -1)[k]
+    ux, uy = unit(get_angle(G2, 0)), unit(get_angle(G5, 0))
+    n30, n34 = dot(f, uy) / det(ux, uy) * ux, dot(f, ux) / det(uy, ux) * uy
+
+    k = (0b00010 >> ref) & 1
+    m10 = tmd(get_point(P3, 0), (eq1, eq0 + eq2 + eq3 + eq4)[k]) * (-1, 1)[k]
+    v1 = get_point(P0, 0) - get_point(P3, 0)
+    inv1 = sq_mag(v1) ** -.5
+    v1 *= inv1
+    t10 = z_cross(v1) * m10 * inv1
+
+    k = (0b00100 >> ref) & 1
+    m20 = tmd(get_point(P4, 0), (eq2, eq0 + eq1 + eq3 + eq4)[k]) * (-1, 1)[k]
+    v2 = get_point(P1, 0) - get_point(P4, 0)
+    inv2 = sq_mag(v2) ** -.5
+    v2 *= inv2
+    t20 = z_cross(v2) * m20 * inv2
+
+    k = (0b00001 >> ref) & 1
+    f = trd((eq0, eq1 + eq2 + eq3 + eq4)[k]) * (1, -1)[k] - n30 - t10 - t20
+    n10, n20 = det(f, v2) / det(v1, v2) * v1, det(f, v1) / det(v2, v1) * v2
+
+    set_force(P0, b0, n10 + t10)
+    set_force(P1, b1, n20 + t20)
+
+    k = (0b00010 >> ref) & 1
+    set_force(P3, b3, trd((eq1, eq0 + eq2 + eq3 + eq4)[k]) * (1, -1)[k])
+
+    k = (0b00100 >> ref) & 1
+    set_force(P4, b4, trd((eq2, eq0 + eq1 + eq3 + eq4)[k]) * (1, -1)[k])
+
+    k = (0b11000 >> ref) & 1
+    m30 = tmd(get_zero(G2, 0, ux), (eq3 + eq4, eq0 + eq1 + eq2)[k]) * (1, -1)[k]
+    set_normal(G2, b2, n30, m30, ux)
+
+    k = (0b01000 >> ref) & 1
+    m43 = tmd(get_zero(G5, 0, uy), (eq3, eq0 + eq1 + eq2 + eq4)[k]) * (-1, 1)[k]
+    set_normal(G5, b5, -n34, m43, uy)
 
 
 def solve_graph5(eqs, js, ref):
@@ -159,7 +200,7 @@ def solve_graph(index, eqs, js, ref):
 
 
 def solve_relation(rel, b, eq1, eq2, ref):
-    pass
+    rel.rel_block(b, eq1, eq2, ref)
 
 
 def compute_inertia(system):

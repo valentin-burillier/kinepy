@@ -63,10 +63,10 @@ def solve_graph1(eqs, js, sgn, chain=True):
     x0 = dot(u, v := get_point(P0, b0) + (v1 := get_zero(G2, b2, u) - get_zero(G2, not b2, u)) - get_point(P1, b1))
 
     sq_z = sq_mag(get_point(P0, not b0) - get_point(P1, not b1))
-    dx = (sq_z - det(v, u) ** 2) ** 0.5 * (sgn, -sgn)[b2]
+    dx = (sq_z - det(v, u) ** 2) ** 0.5 * (-sgn, sgn)[b2]
 
-    move_eq(eq2, v1 + u * (x0 + dx))
-    G2.sliding_ = (x0 + dx) * (1, -1)[b2]
+    move_eq(eq2, -v1 + u * (x0 + dx))
+    G2.sliding_ = (x0 + dx) * (-1, 1)[b2]
 
     pp_grouping(eq0, (P0, not b0), (P1, not b1), sq_z)
 

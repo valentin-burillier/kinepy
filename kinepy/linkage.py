@@ -86,11 +86,11 @@ class RevoluteJoint(Joint):
     def get_value(self):
         return self.angle_
 
-    def get_effort(self):
+    def _get_effort(self):
         return self.torque_
 
-    def __add_effort__(self, value):
-        p = self.__get_point0()
+    def _add_effort(self, value):
+        p = get_point(self, 0)
         self.system.sols[self.s1].mech_actions.append(MechanicalAction(ZERO, p, value))
         self.system.sols[self.s2].mech_actions.append(MechanicalAction(ZERO, p, -value))
 
@@ -141,10 +141,10 @@ class PrismaticJoint(Joint):
     def get_value(self):
         return self.sliding_
 
-    def get_effort(self):
+    def _get_effort(self):
         return self.tangent_
 
-    def __add_effort__(self, value):
+    def _add_effort(self, value):
         f_21 = value * self.__get_unit__(0)
         p = self.system.get_origin(self.s1) + self.d1_ * z_cross(self.__get_unit__(0))
         self.system.sols[self.s1].mech_actions.append(MechanicalAction(f_21, p, 0.))

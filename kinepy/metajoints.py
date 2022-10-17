@@ -10,8 +10,8 @@ class LinearRelationBase(metaclass=MetaUnit):
         v = self.j1.get_value() * self.r_ + self.v0_ if j_index else (self.j2.get_value() - self.v0_) / self.r_
         return (self.j1, self.j2)[j_index].set_value(v, eq1, eq2)
 
-    def rel_block(self, j_index, eq1, eq2):
-        (self.j1, self.j2)[j_index].block(eq1, eq2)
+    def rel_block(self, j_index, eq1, eq2, ref):
+        (self.j1, self.j2)[j_index].block(eq1, eq2, ref)
 
 
 class LinearRelation(LinearRelationBase):
@@ -37,8 +37,8 @@ class EffortlessRelation(LinearRelation):
 
 class DistantRelation(LinearRelation):
     """
-    def rel_block(self, j_index, eq1s1, eq2s2):
-        LinearRelation.rel_block(self, j_index, eq1s1, eq2s2)
+    def rel_block(self, j_index, eq1, eq2, ref):
+        LinearRelationBase.rel_block(self, j_index, eq1s1, eq2s2)
         add_effort(
             (self.j2, self.j1)[j_index],
             -self.r_ ** (2 * j_index - 1) * ((self.j1, self.j2)[j_index].get_effort())
@@ -56,7 +56,7 @@ class GearRelation(LinearRelationBase):
 
 class Gear(GearRelation):
     """
-    def rel_block(self, j_index, eq1s1, eq2s2):
+    def rel_block(self, j_index, eq1, eq2, ref):
         (_, s1), (eq2, s2) = eq1s1, eq2s2
         j1, j2 = (self.j1, self.j2)[::(1, -1)[j_index]]
 
