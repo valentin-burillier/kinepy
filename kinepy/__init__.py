@@ -18,6 +18,7 @@ def solid_checker(f):
         if isinstance(s2, int):
             s2 = self.sols[s2]
         return f(self, s1, s2, *args, **kwargs)
+    g.__doc__ = f.__doc__
     return g
 
 
@@ -32,6 +33,7 @@ def joint_checker(f):
         if isinstance(j1, int):
             j2 = self.joints[j2]
         return f(self, j1, j2, *args, **kwargs)
+    g.__doc__ = f.__doc__
     return g
 
 
@@ -46,16 +48,26 @@ def single_or_list(post_call=None):
                     f(self, arg)
             if post_call is not None:
                 post_call(self)
+        g.__doc__ = f.__doc__
         return g
     return decor
 
 
 class System:
+    """
+    Planar mechanism model
+    """
     inputs = dt = None
     tot = 0
 
-    def __init__(self, name=''):
-        self.name = name if name else 'Main system'
+    def __init__(self, name='Main system'):
+        """
+        Initialises a System
+
+        Parameters:
+         - name: str, name of the system, 'Main system' by default
+        """
+        self.name = name
         self._unit_system = UnitSystem()
         self.sols = [Solid(self._unit_system, 0, 0., 0., (0., 0.), 'Ground')]
         self.named_sols = {'Ground': 0}
@@ -65,6 +77,17 @@ class System:
         self.kin_sols = self.kin_joints = self.dyn_sols = self.dyn_joints = self.kin_ghosted = self.dyn_ghosted = None
 
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
+        """
+        Adds a solid to the system
+
+        Parameters:
+         - name, str: name of the solid, generic name of type 'Solid {i}' by default
+         - m, float: mass of the solid, 0 by default
+         - j, float: moment of inertia, 0 by default
+         - g, tuple[float, float]: local position of the center of gravity, (0., 0.) by default
+
+        Returns: Solid
+        """
         s = Solid(self._unit_system, len(self.sols), j, m, g, name)
         self.named_sols[s.name] = s.rep
         self.sols.append(s)
@@ -72,6 +95,17 @@ class System:
 
     @solid_checker
     def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+        """
+        Adds a revolute joint to the system
+
+        Parameters:
+         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - p1, tuple[float, float]: local position of the joint in s1
+         - p2, tuple[float, float]: local position of the joint in s2
+
+        Returns: RevoluteJoint
+        """
         p = RevoluteJoint(self._unit_system, len(self.joints), s1, s2, p1, p2)
         print(f'Added linkage {p}')
         self.named_joints[p.name] = p.rep
@@ -81,6 +115,19 @@ class System:
 
     @solid_checker
     def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
+        """
+        Adds a prismatic joint to the system
+
+        Parameters:
+         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - a1, float: local direction of the axis of the joint in s1
+         - a2, float: local direction of the axis of the joint in s2
+         - d1, float: algebraic distance from the reference of s1 to the axis of the joint
+         - d2, float: algebraic distance from the reference of s2 to the axis of the joint
+
+        Returns: PrismaticJoint
+        """
         g = PrismaticJoint(self._unit_system, len(self.joints), s1, s2, a1, d1, a2, d2)
         print(f'Added linkage {g}')
         self.named_joints[g.name] = g.rep
