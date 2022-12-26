@@ -167,6 +167,10 @@ class PinSlotJoint(Joint):
         self.ghost_sol = GhostSolid()
         self.ghost_j1, self.ghost_j2 = GhostPrismatic(self, 0), GhostRevolute(self, 1)
 
+    @physics_output(LENGTH)
+    def point(self):
+        return self.s2.origin_ + rvec(self.s2.angle_, self.p2_)
+
     def reset(self, n):
         self.normal_, self.tangent_, self.torque_ = None, None, None
         self.sliding_ = np.zeros((n,))
