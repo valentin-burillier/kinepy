@@ -9,9 +9,21 @@ En lui-même ce groupe est hyperstatique, cependant en tant qu'état intermédia
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/213764345-5df7d27e-c186-4968-9b56-f044e0624727.svg">
 </p>
+<p align="center">Fig 1 - Représentation de 2 pivots dans 2 référentiels différents</p>
 
 On doit vérifier:
-$$ $$
+
+$$ \lVert\vec{V_1}\lVert = \lVert\vec{V_2}\lVert = A $$
+
+Ensuite, on obtient par le produit scalaire
+
+```math
+\begin{align}
+    \vec{V_1} \cdot \vec{V_2} &= A^2 \cdot \cos \alpha \\
+    \Leftrightarrow \lvert \alpha \lvert &= \cos^{-1} \frac{\vec{V_1} \cdot \vec{V_2}}{A^2}
+\end{align}
+```
+
 
 ### P-Chain
 
