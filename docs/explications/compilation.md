@@ -62,71 +62,70 @@ Inertie (si dynamique) + cinématique[::-1]
 
 # Inventaire des groupes Assur identifiés par kinepy
 
-
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833440-20233a5a-d9b6-4e36-816e-dfa08279a892.svg">
 </p>
-<figcaption align="center">Fig 1 - Schéma cinématique et graphe du groupe Assur RRR</figcaption> 
+<p align="center">Fig 1 - Schéma cinématique et graphe du groupe Assur RRR</p> 
 
 
 <p align="center">
-    <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833434-f354ef88-d5ca-4c4e-a12e-0da1a91e91ae.svg">
+    <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833434-f354ef88-d5ca-4c4e-a12e-0da1a91e91ae.svg" >
 </p>
-<figcaption align="center">Fig 2 - Schéma cinématique et graphe du groupe Assur RRP</figcaption>
+<p align="center">Fig 2 - Schéma cinématique et graphe du groupe Assur RRP</p>
 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833426-806d4ee1-256f-4b03-8def-7981018277df.svg">
 </p>
-<figcaption align="center">Fig 3 - Schéma cinématique et graphe du groupe Assur PPR</figcaption>
+<p align="center">Fig 3 - Schéma cinématique et graphe du groupe Assur PPR</p>
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833424-f443d051-61bf-4aba-9e33-a4a340e1fa27.svg">
 </p>
-<figcaption align="center">Fig 4 - Schéma cinématique et graphe du groupe Assur 3-RR</figcaption>
+<p align="center">Fig 4 - Schéma cinématique et graphe du groupe Assur 3-RR</p>
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833448-fa52e8f7-c5cb-495f-bb86-4392d5af8cdb.svg">
 </p>
-<figcaption align="center">Fig 5 - Schéma cinématique et graphe du groupe Assur 2-RR-PP</figcaption> 
+<p align="center">Fig 5 - Schéma cinématique et graphe du groupe Assur 2-RR-PP</p> 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833450-2be1f2df-3037-46e9-a1c0-d8fcfd465413.svg">
 </p>
-<figcaption align="center">Fig 6 - Schéma cinématique et graphe du groupe Assur 3-PR</figcaption> 
+<p align="center">Fig 6 - Schéma cinématique et graphe du groupe Assur 3-PR</p> 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833446-c6d99b87-787d-4313-97b2-bbd40be7359b.svg">
 </p>
-<figcaption align="center">Fig 7 - Schéma cinématique et graphe du groupe Assur 2-PR-RR</figcaption>
+<p align="center">Fig 7 - Schéma cinématique et graphe du groupe Assur 2-PR-RR</p>
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833431-9784618b-0ffa-4aed-9f0e-5f9447fb4cbd.svg">
 </p>
-<figcaption align="center">Fig 8 - Schéma cinématique et graphe du groupe Assur PP-PR-RR</figcaption> 
+<p align="center">Fig 8 - Schéma cinématique et graphe du groupe Assur PP-PR-RR</p> 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833449-1d2fb8a0-d805-4ecf-bba7-84e3311b281a.svg">
 </p>
-<figcaption align="center">Fig 9 - Schéma cinématique et graphe du groupe Assur 2-RR-PR</figcaption> 
+<p align="center">Fig 9 - Schéma cinématique et graphe du groupe Assur 2-RR-PR</p> 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833429-bab1fbda-894a-4dfd-90a9-6084b9d8056a.svg">
 </p>
-<figcaption align="center">Fig 10 - Schéma cinématique et graphe du groupe Assur PP-PR-RP</figcaption> 
+<p align="center">Fig 10 - Schéma cinématique et graphe du groupe Assur PP-PR-RP</p> 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833444-c9628f7d-71c6-442d-8824-2b1d80f321aa.svg">
 </p>
-<figcaption align="center">Fig 11 - Schéma cinématique et graphe du groupe Assur 2-PR-PP</figcaption>
+<p align="center">Fig 11 - Schéma cinématique et graphe du groupe Assur 2-PR-PP</p>
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833436-cb702767-aa21-4c11-89fc-4f184b607a01.svg">
 </p>
-<figcaption align="center">Fig 12 - Schéma cinématique et graphe du groupe Assur RR-PR-RP</figcaption>
+<p align="center">Fig 12 - Schéma cinématique et graphe du groupe Assur RR-PR-RP</p>
 
 
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833442-844cb4f8-8128-46a3-a727-99088a9994b9.svg">
 </p>
-<figcaption align="center">Fig 13 - Schéma cinématique et graphe du groupe Assur 2-PR-RP</figcaption> 
+<p align="center">Fig 13 - Schéma cinématique et graphe du groupe Assur 2-PR-RP</p> 
