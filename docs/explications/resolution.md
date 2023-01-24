@@ -44,6 +44,33 @@ $$
 \det(\vec{v}\,\vec{w}) = (\vec{v}\wedge\vec{w})\cdot\vec{z} = v_x\cdot w_y - v_y\cdot w_x
 $$
 
+
+## Structures des solides
+Un solide est représenté par:
+ - un vecteur $\vec{o}$ répresentant la position de son origine dans le référentiel de sa classe
+ - un angle $a$ représentant l'orientation du solide dans le référentiel de sa classe
+
+Déplacer l'origine d'une classe S0 sur un point $\vec{p}$ exprimé dans cette même classe revient à $\forall S \in$ S0
+
+$$
+\vec{o}_S \gets \vec{o}_S - \vec{p}
+$$
+
+Tourner une classe S0 d'un angle $\theta$ revient à $\forall S \in$ S0
+
+$$
+\begin{align}
+\vec{o}_S &\gets R(\theta)\cdot \vec{o}_S \\
+a_S &\gets a_S + \theta
+\end{align}
+$$
+
+Placer l'origine d'une classe S0 sur un point $\vec{p}$ exprimé dans une classe S1 revient à $\forall S \in$ S0
+
+$$
+\vec{o}_S \gets \vec{0}_S + \vec{p}
+$$
+
 ## Cinématique
 
 ### RR
@@ -53,7 +80,7 @@ En lui-même ce groupe est hyperstatique, cependant en tant qu'état intermédia
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/213764345-5df7d27e-c186-4968-9b56-f044e0624727.svg">
 </p>
-<p align="center">Fig 1 - Représentation de 2 pivots à travers 2 référentiels</p>
+<p align="center">Fig 1 - 2 classes (S1 et S2) liées par 2 pivots</p>
 
 On doit vérifier:
 
@@ -71,6 +98,10 @@ De plus on a
 
 $$ \text{sign}\ \alpha = \text{sign} \ \text{det}(\vec{V_2} \, \vec{V_1}) $$
 
+On peut donc unir les 2 classes de la manière suivante:
+ - Déplacement l'origine de S2 sur $R_{0,2}$
+ - Rotation de la classe S2 de l'angle $\alpha$ 
+ - Placement de l'origine de S2 sur $R_{0,1}$
 
 ### P-Chain
 
