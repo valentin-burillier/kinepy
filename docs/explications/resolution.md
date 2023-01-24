@@ -126,7 +126,8 @@ Une glissière détermine l'orientation relative de solides, on en déduit donc 
 
 ## Cinématique
 
-Al-Kashi
+Al-Kashi\
+PP
 
 ## Dynamique
 
@@ -138,6 +139,8 @@ Al-Kashi
 
 ## Cinématique
 
+Calcul précis\
+RR
 
 ## Dynamique
 
@@ -149,10 +152,12 @@ Al-Kashi
 <p align="center">Fig 3 - Schéma cinématique et graphe du groupe Assur PPR</p>
 
 ## Cinématique
+Après l'application de l'opération P-chain, S2 et S3 ont leur orientation relative résolue.
+Donc R est résolu, on peut unir S2 et S3:
+ - On déplace l'origine de S2 sur R dans S2
+ - On place l'origine de S2 sur R dans S3
 
-P-Chain\
-Placement du R\
-PP
+Pour ajouter S1, on résout PP entre S1 et S2 $\cup$ S3
 
 ## Dynamique
 
@@ -180,7 +185,7 @@ Non Résolu
 
 P-Chain\
 Al_Kashi\
-RR + RR + PP
+RR + PP
 
 ## Dynamique
 
@@ -194,8 +199,10 @@ RR + RR + PP
 ## Cinématique
 
 P-Chain\
-Trick chelou
-
+Calcul précis\
+R résolus\
+PP\
+P résolu
 
 ## Dynamique
 
@@ -223,7 +230,8 @@ Non Résolu
 
 P-Chain\
 R résolu\
-RR
+RRP\
+PP
 
 ## Dynamique
 
