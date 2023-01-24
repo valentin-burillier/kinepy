@@ -41,7 +41,7 @@ $$
 Le déterminant $\det$
 
 $$
-\det(\vec{v}\,\vec{w}) = (\vec{v}\wedge\vec{w})\cdot\vec{z} = v_x\cdot w_y - v_y\cdot w_x
+\det(\vec{v}\,\vec{w}) = (\vec{v}\wedge\vec{w})\cdot\vec{z} = (\vec{z} \wedge \vec{v})\cdot \vec{w} = v_x\cdot w_y - v_y\cdot w_x
 $$
 
 
