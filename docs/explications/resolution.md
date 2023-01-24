@@ -110,6 +110,8 @@ De même que RR, ce groupe est hyperstatique et permet de séquencer la résolut
 
 ### P-Chain
 
+Une glissière détermine l'orientation relative de solides, on en déduit donc que les parties connexes en P ont leurs orientations relatives résolues:
+
 
 
 ## Dynamique
