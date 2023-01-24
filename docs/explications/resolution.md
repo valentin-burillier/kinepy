@@ -1,5 +1,49 @@
 # Outils de résolutions
 
+## Notations
+Le problème est dans le plan $(O,\vec{x},\vec{y})$. Cependant on se permettra quelques facilités de l'espace à 3 dimensions, notamment le produit vectoriel avec le vecteur $\vec{z}$ pour caractériser les rotations et le déterminant
+
+Matrice de rotation d'un angle $\theta$
+
+$$ R(\theta) = 
+\begin{pmatrix}
+    \cos\theta & -\sin\theta\ \\
+    \sin\theta & \cos \theta\
+\end{pmatrix} 
+$$
+
+En particulier pour tout vecteur $\vec{v}$ :
+
+$$
+R(\frac{\pi}{2}) \cdot \vec{v} = \vec{z} \wedge \vec{v} = 
+\begin{pmatrix}
+    - v_y \\
+    v_x
+\end{pmatrix}
+$$
+
+On utlisera que
+
+$$
+R(\theta)\cdot\vec{v} = \cos\theta\cdot\vec{v} + \sin\theta\cdot\vec{z}\wedge\vec{v}
+$$
+
+
+L'application signe $\text{sign}$
+
+$$ \text{sign}(x) = 
+\begin{cases}
+    \ 1& \text{ si } x \geq 0 \\
+    -1& \text{ sinon}
+\end{cases}
+$$
+
+Le déterminant $\det$
+
+$$
+\det(\vec{v}\,\vec{w}) = (\vec{v}\wedge\vec{w})\cdot\vec{z} = v_x\cdot w_y - v_y\cdot w_x
+$$
+
 ## Cinématique
 
 ### RR
@@ -9,20 +53,23 @@ En lui-même ce groupe est hyperstatique, cependant en tant qu'état intermédia
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/213764345-5df7d27e-c186-4968-9b56-f044e0624727.svg">
 </p>
-<p align="center">Fig 1 - Représentation de 2 pivots dans 2 référentiels différents</p>
+<p align="center">Fig 1 - Représentation de 2 pivots à travers 2 référentiels</p>
 
 On doit vérifier:
 
-$$ \lVert\vec{V_1}\lVert = \lVert\vec{V_2}\lVert = A $$
+$$ \lVert\vec{V_1}\lVert\  = \lVert\vec{V_2}\lVert\ = A $$
 
 Ensuite, on obtient par le produit scalaire
 
 ```math
 \begin{align}
-    \vec{V_1} \cdot \vec{V_2} &= A^2 \cdot \cos \alpha \\
-    \Leftrightarrow \lvert \alpha \lvert &= \cos^{-1} \frac{\vec{V_1} \cdot \vec{V_2}}{A^2}
+    \vec{V_1} \cdot \vec{V_2}\  &= A^2 \cdot \cos \alpha \\
+    \Leftrightarrow \lvert \alpha \lvert &= \text{Arccos} \frac{\vec{V_1} \cdot \vec{V_2}}{A^2}
 \end{align}
 ```
+De plus on a
+
+$$ \text{sign}\ \alpha = \text{sign} \ \text{det}(\vec{V_2} \, \vec{V_1}) $$
 
 
 ### P-Chain
@@ -38,7 +85,7 @@ Ensuite, on obtient par le produit scalaire
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833440-20233a5a-d9b6-4e36-816e-dfa08279a892.svg">
 </p>
-<figcaption align="center">Fig 1 - Schéma cinématique et graphe du groupe Assur RRR</figcaption> 
+<p align="center">Fig 1 - Schéma cinématique et graphe du groupe Assur RRR</p> 
 
 ## Cinématique
 
@@ -50,7 +97,7 @@ Al-Kashi
 <p align="center">
     <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833434-f354ef88-d5ca-4c4e-a12e-0da1a91e91ae.svg">
 </p>
-<figcaption align="center">Fig 2 - Schéma cinématique et graphe du groupe Assur RRP</figcaption>
+<p align="center">Fig 2 - Schéma cinématique et graphe du groupe Assur RRP</p>
 
 ## Cinématique
 
