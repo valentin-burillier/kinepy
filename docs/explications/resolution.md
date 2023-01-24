@@ -103,9 +103,13 @@ On peut donc unir les 2 classes de la manière suivante:
  - Rotation de la classe S2 de l'angle $\alpha$ 
  - Placement de l'origine de S2 sur $R_{0,1}$
 
-### P-Chain
 
 ### PP
+
+De même que RR, ce groupe est hyperstatique et permet de séquencer la résolution
+
+### P-Chain
+
 
 
 ## Dynamique
