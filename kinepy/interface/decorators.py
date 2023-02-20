@@ -85,11 +85,11 @@ def to_function(f):
 
 
 def physics_input(*phy):
-    def decor(f):
-        cnt = f.__code__.co_argcount
-        f_args = f.__code__.co_varnames[1:cnt]
-        defaults = f.__defaults__ if f.__defaults__ is not None else ()
-        shift = cnt - len(defaults)
+    def decor(method):
+        cnt = method.__code__.co_argcount
+        f_args = method.__code__.co_varnames[1:cnt]
+        defaults = method.__defaults__ if method.__defaults__ is not None else ()
+        shift = cnt - 1 - len(defaults)
 
         def g(self, *args, **kwargs):
             if len(args) + len(kwargs) > cnt:
@@ -106,9 +106,9 @@ def physics_input(*phy):
                     n_args.append(kwargs[arg] * self._unit_system[phy[index]])
                 else:
                     n_args.append(kwargs[arg])
-            return f(self, *n_args)
+            return method(self, *n_args)
 
-        g.__doc__ = f.__doc__
+        g.__doc__ = method.__doc__
         return g
     return decor
 
