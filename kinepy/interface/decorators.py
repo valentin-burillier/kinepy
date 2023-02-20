@@ -93,7 +93,7 @@ def physics_input(*phy):
 
         def g(self, *args, **kwargs):
             if len(args) + len(kwargs) > cnt:
-                raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt} were expected")
+                raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
 
             n_args = [value * self._unit_system[unit] if unit else value for value, unit in zip(args, phy)]
 
