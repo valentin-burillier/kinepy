@@ -88,7 +88,7 @@ def physics_input(*phy):
     def decor(f):
         cnt = f.__code__.co_argcount
         f_args = f.__code__.co_varnames[1:cnt]
-        defaults = f.__defaults__
+        defaults = f.__defaults__ if f.__defaults__ is not None else ()
         shift = cnt - len(defaults)
 
         def g(self, *args, **kwargs):
