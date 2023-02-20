@@ -16,7 +16,7 @@ class MetaUnit(type):
     def __new__(mcs, name, bases, dct: dict):
 
         if 'read_only' in dct:
-            for tag, phy, def_ in dct['read_only']:
+            for tag, phy in dct['read_only']:
                 dct[tag] = MetaUnit.read_only(tag, phy)
         if 'read_write' in dct:
             for tag, phy in dct['read_write']:

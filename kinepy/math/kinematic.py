@@ -5,8 +5,8 @@ from kinepy.math.geometry import get_angle, rotate_eq, get_point, move_eq, unit,
 
 def solve_p(p, b, eq):
     move_eq(eq, get_point(p, not b) - get_point(p, b))
-    p.angle_ = p.s2.angle_ - p.s1.angle_
-    make_continuous(p.angle_)
+    p.angle = p.s2.angle - p.s1.angle
+    make_continuous(p.angle)
 
 
 def pp_grouping(eq1, p0, p1, sq_z):
@@ -16,8 +16,8 @@ def pp_grouping(eq1, p0, p1, sq_z):
     alpha = np.arccos(dot(v1, v2) / sq_z) * (2 * (det(v1, v2) > 0) - 1)
     rotate_eq(eq1, alpha)
     solve_p(P0, b0, eq1)
-    P1.angle_ = P1.s2.angle_ - P1.s1.angle_
-    make_continuous(P1.angle_)
+    P1.angle = P1.s2.angle - P1.s1.angle
+    make_continuous(P1.angle)
 
 
 def gg_grouping(eq1, g0, g1):
@@ -28,7 +28,7 @@ def gg_grouping(eq1, g0, g1):
     v2 = get_zero(G1, b1, u2) - get_zero(G1, not b1, u2)
     vec = (det(v1, u1) * u2 + det(u2, v2) * u1) / coeff
     move_eq(eq1, vec)
-    G0.sliding_, G1.sliding_ = dot(u1, v1 + vec) * (-1, 1)[b0], dot(u2, v2 + vec) * (-1, 1)[b1]
+    G0.sliding, G1.sliding = dot(u1, v1 + vec) * (-1, 1)[b0], dot(u2, v2 + vec) * (-1, 1)[b1]
 
 
 def g_chain(gs, eqs):
@@ -65,7 +65,7 @@ def solve_graph1(eqs, js, sgn, chain=True):
     dx = (sq_z - det(v, u) ** 2) ** 0.5 * (-sgn, sgn)[b2]
 
     move_eq(eq2, -v1 + u * (x0 + dx))
-    G2.sliding_ = (x0 + dx) * (-1, 1)[b2]
+    G2.sliding = (x0 + dx) * (-1, 1)[b2]
 
     pp_grouping(eq0, (P0, not b0), (P1, not b1), sq_z)
 
@@ -76,8 +76,8 @@ def solve_graph2(eqs, js, sgn=None):
 
     g_chain(((G0, not b0), (G1, b1)), (eq0, eq2))
     move_eq(eq2, get_point(P2, not b2) - get_point(P2, b2))
-    P2.angle_ = P2.s2.angle_ - P2.s1.angle_
-    make_continuous(P2.angle_)
+    P2.angle = P2.s2.angle - P2.s1.angle
+    make_continuous(P2.angle)
 
     gg_grouping(eq1 + eq2, (G0, b0), (G1, b1))
 
@@ -110,25 +110,34 @@ def solve_graph5(eqs, js, sgn):
     g_chain(((G3, b3), (G4, not b4)), (eq4, eq2))
     g_chain(((G5, not b5),), (eq3,))
 
-    u1, u2, u3 = unit(get_angle(G3, b3)), unit(get_angle(G4, b4)), unit(get_angle(G5, b5))
-    c1, c2 = det(u1, u2), det(u1, u3)
+    u1, u2, u3 = unit(get_angle(G3, 0)), unit(get_angle(G4, 0)), unit(get_angle(G5, 0))
+    c0, c1 = det(u1, u2), det(u3, u2)
 
-    k0 = det(get_zero(G5, b5, u3) - get_zero(G3, b3, u1), u3) * c1 - \
-        det(get_zero(G4, b4, u2) - get_zero(G3, b3, u1), u2) * c2
+    p1, p2, p3 = (
+        get_point(P0, b0) - get_zero(G3, not b3, u1) + get_zero(G3, b3, u1),
+        get_point(P1, b1) - get_zero(G4, not b4, u2) + get_zero(G4, b4, u2),
+        get_point(P2, b2) - get_zero(G5, not b5, u3) + get_zero(G5, b5, u3)
+    )
 
-    a = get_point(P0, not b0)
-    ab, ac = get_point(P1, not b1) - a, get_point(P2, not b2) - a
-    coeff1 = dot(ac, u3) * c1 - dot(ab, u2) * c2
-    coeff2 = det(ac, u3) * c1 - det(ab, u2) * c2
-    inv_z = (coeff1 ** 2 + coeff2 ** 2) ** -.5
+    k0 = det(u1, p2 - p1) * c1 + c0 * det(u3, p3 - p2)
 
-    rotate_eq(eq0, np.arccos(k0 * inv_z) * sgn - np.arccos(coeff2 * inv_z) * (2 * (coeff1 > 0) - 1))
+    p1, p2, p3 = (
+        get_point(P0, not b0),
+        get_point(P1, not b1),
+        get_point(P2, not b2),
+    )
+
+    v0, v1 = (p2 - p1) * c1, (p3 - p2) * c0
+
+    x, y = det(u1, v0) + det(u3, v1), dot(u1, v0) + dot(u3, v1)
+    inv_mag = (x * x + y * y) ** -.5
+
+    rotate_eq(eq0, sgn * np.arccos(k0 * inv_mag) + np.arccos(x * inv_mag) * (2 * (0 < y) - 1))
     solve_p(P0, b0, eq1)
     solve_p(P1, b1, eq2)
     solve_p(P2, b2, eq3)
-
     gg_grouping(eq4, (G3, b3), (G4, b4))
-    G5.sliding_ = dot(u3, get_zero(G5, 1, u3) - get_zero(G5, 0, u3))
+    G5.sliding = dot(u3, get_zero(G5, 1, u3) - get_zero(G5, 0, u3))
 
 
 def solve_graph6(eqs, js, sgn=None):
@@ -141,8 +150,8 @@ def solve_graph7(eqs, js, sgn):
 
     g_chain(((G2, not b2), (G0, b0), (G3, b3)), (eq0, eq1, eq0))
     move_eq(eq4, get_point(P5, not b5) - get_point(P5, b5))
-    P5.angle_ = P5.s2.angle_ - P5.s1.angle_
-    make_continuous(P5.angle_)
+    P5.angle = P5.s2.angle - P5.s1.angle
+    make_continuous(P5.angle)
 
     solve_graph1((eq2, eq0, eq4 + eq3), ((P1, not b1), (P4, b4), (G2, b2)), sgn, False)
     gg_grouping(eq1, (G0, b0), (G3, not b3))

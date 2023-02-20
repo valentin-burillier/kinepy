@@ -120,8 +120,7 @@ Une glissière détermine l'orientation relative de solides, on en déduit donc 
 
 # RRR
 <p align="center">
-    <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833440-20233a5a-d9b6-4e36-816e-dfa08279a892.svg">
-</p>
+    <img width="80%" src="https://user-images.githubusercontent.com/89185062/212833440-20233a5a-d9b6-4e36-816e-dfa08279a892.svg"></p>
 <p align="center">Fig 1 - Schéma cinématique et graphe du groupe Assur RRR</p> 
 
 ## Cinématique
