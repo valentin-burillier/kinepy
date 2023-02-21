@@ -4,7 +4,7 @@ from kinepy.math.geometry import np, det
 class Solid:
     rep = angle = origin = trd = g_tmd = og = None
 
-    def __init__(self, name, g, m, j):
+    def __init__(self,  m, j, g, name):
         self.name = name
         self.j, self.m, self.g = j, m, g
 
