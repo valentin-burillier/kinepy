@@ -80,8 +80,8 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
 
 def direct_input(a, b, t, n, v_max=None):
     v = (b - a)/t
-    if v_max is not None and v > v_max: # triangle
-        print('vitesse trop grande')
+    if v_max is not None and abs(v) > v_max: # triangle
+        print('speed too high')
         return
     return np.linspace(a, b, n)
 
@@ -91,7 +91,7 @@ def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
     if v_max is None or abs(v) <= v_max: # triangle
         acc = 4*(b - a)/t**2
         if a_max is not None and abs(acc) > a_max:
-            print('accélération trop grande')
+            print('too much acceleration')
             return
         T = np.linspace(0, t, n)
         l_acc = a + acc/2*T[:n//2]**2
@@ -99,7 +99,7 @@ def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
         return np.r_[l_acc, l_dec]
     
     if v_max*t < abs(b - a):
-        print('le trapèze est impossible')
+        print('input not possible')
         return
     # trapèze
     v = np.sign(v)*v_max
@@ -107,7 +107,7 @@ def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
     acc = v/t_inf
     print(acc)
     if a_max is not None and abs(acc) > a_max:
-        print('accélération trop grande')
+        print('too much acceleration')
         return
     T = np.linspace(0, t, n)
     i = int(t_inf/t*n)
@@ -121,20 +121,20 @@ def sinusoidal_input(a, b, t, n, v_max=None, a_max=None):
     if v_max is None or abs(v) <= v_max: # triangle
         acc = np.pi*2*(b - a)/t**2
         if a_max is not None and acc <= a_max:
-            print('accélération trop grande')
+            print('too much acceleration')
             return
         T = np.linspace(0, t, n)
         return a + v/2*(T - t/(2*np.pi)*np.sin(2*np.pi/t*T))
     
     if v_max*t < abs(b - a):
-        print('le trapèze est impossible')
+        print('input not possible')
         return
     # trapèze
     v = np.sign(v)*v_max
     t_inf = t - (b - a)/v
     acc = v/t_inf*np.pi/2
     if a_max is not None and abs(acc) > a_max:
-        print('accélération trop grande')
+        print('too much acceleration')
         return
     T = np.linspace(0, t, n)
     i = int(t_inf/t*n)
