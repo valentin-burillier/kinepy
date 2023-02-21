@@ -143,14 +143,13 @@ def sinusoidal_input(a, b, t, n, v_max=None, a_max=None):
     l_dec = v/2*(T[-i:] - t + t_inf + t_inf/np.pi*np.sin(np.pi/t_inf*(T[-i:] - t + t_inf))) + v*(t - 2*t_inf) + a + v/2*t_inf
     return np.r_[l_acc, l_plateau, l_dec]
 
+j_parallelepiped = lambda L, l, e, m : m/12*(L**2 + l**2 + e**2)
 
-j_parallepipede = lambda L, l, e, m : m/12*(L**2 + l**2 + e**2)
+j_bar = lambda L, r, m : m/4*(r**2 + L**2/3)
 
-j_barre = lambda L, r, m : m/4*(r**2 + L**2/3)
+j_cylinder = lambda r, e, m : m*r**2/2
 
-j_cylindre = lambda r, e, m : m*r**2/2
-
-j_boule = lambda r, m : 2/5*m*r**2
+j_ball = lambda r, m : 2/5*m*r**2
 
 def make_continuous(L):
     l0 = 0
