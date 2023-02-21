@@ -78,6 +78,80 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     
     return anim
 
+def direct_input(a, b, t, n, v_max=None):
+    v = (b - a)/t
+    if v_max is not None and v > v_max: # triangle
+        print('vitesse trop grande')
+        return
+    return np.linspace(a, b, n)
+
+
+def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
+    v = 2*(b - a)/t
+    if v_max is None or abs(v) <= v_max: # triangle
+        acc = 4*(b - a)/t**2
+        if a_max is not None and abs(acc) > a_max:
+            print('accélération trop grande')
+            return
+        T = np.linspace(0, t, n)
+        l_acc = a + acc/2*T[:n//2]**2
+        l_dec = 2*a - b + acc*T[n//2:]*(t - T[n//2:]/2)
+        return np.r_[l_acc, l_dec]
+    
+    if v_max*t < abs(b - a):
+        print('le trapèze est impossible')
+        return
+    # trapèze
+    v = np.sign(v)*v_max
+    t_inf = t - (b - a)/v
+    acc = v/t_inf
+    print(acc)
+    if a_max is not None and abs(acc) > a_max:
+        print('accélération trop grande')
+        return
+    T = np.linspace(0, t, n)
+    i = int(t_inf/t*n)
+    l_acc = a + acc/2*T[:i]**2
+    l_plateau = v*(T[i:-i] - t_inf) + a + acc/2*t_inf**2
+    l_dec = acc*T[-i:]*(t - T[-i:]/2) + v*(t - 2*t_inf) + a + acc*(t_inf**2 - t**2/2)       
+    return np.r_[l_acc, l_plateau, l_dec]
+
+def sinusoidal_input(a, b, t, n, v_max=None, a_max=None):
+    v = 2*(b - a)/t
+    if v_max is None or abs(v) <= v_max: # triangle
+        acc = np.pi*2*(b - a)/t**2
+        if a_max is not None and acc <= a_max:
+            print('accélération trop grande')
+            return
+        T = np.linspace(0, t, n)
+        return a + v/2*(T - t/(2*np.pi)*np.sin(2*np.pi/t*T))
+    
+    if v_max*t < abs(b - a):
+        print('le trapèze est impossible')
+        return
+    # trapèze
+    v = np.sign(v)*v_max
+    t_inf = t - (b - a)/v
+    acc = v/t_inf*np.pi/2
+    if a_max is not None and abs(acc) > a_max:
+        print('accélération trop grande')
+        return
+    T = np.linspace(0, t, n)
+    i = int(t_inf/t*n)
+    l_acc = a + v/2*(T[:i] - t_inf/np.pi*np.sin(np.pi/t_inf*T[:i]))
+    l_plateau = v*(T[i:-i] - t_inf) + a + v/2*t_inf
+    l_dec = v/2*(T[-i:] - t + t_inf + t_inf/np.pi*np.sin(np.pi/t_inf*(T[-i:] - t + t_inf))) + v*(t - 2*t_inf) + a + v/2*t_inf
+    return np.r_[l_acc, l_plateau, l_dec]
+
+
+j_parallepipede = lambda L, l, e, m : m/12*(L**2 + l**2 + e**2)
+
+j_barre = lambda L, r, m : m/4*(r**2 + L**2/3)
+
+j_cylindre = lambda r, e, m : m*r**2/2
+
+j_boule = lambda r, m : 2/5*m*r**2
+
 def make_continuous(L):
     l0 = 0
     for i, l in enumerate(L):
