@@ -114,7 +114,7 @@ def physics_input(*phy):
 
 
 def add_joint(self, cls, s1, s2, *args):
-    joint = cls(self._unit_system, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
+    joint = cls(self._unit_system, s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
     self._object.joints.append(joint)
     self._object.interactions.append(joint.interaction)
     self.named_joints[repr(joint)] = joint
