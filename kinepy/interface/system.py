@@ -48,7 +48,7 @@ class System:
 
         Returns: RevoluteJoint
         """
-        add_joint(self, RevoluteJoint, s1, s2, p1, p2)
+        return add_joint(self, RevoluteJoint, s1, s2, p1, p2)
 
     @solid_checker
     @physics_input('', '', ANGLE, LENGTH, ANGLE, LENGTH)
@@ -66,7 +66,7 @@ class System:
 
         Returns: PrismaticJoint
         """
-        add_joint(self, PrismaticJoint, s1, s2, a1, d1, a2, d2)
+        return add_joint(self, PrismaticJoint, s1, s2, a1, d1, a2, d2)
 
     @solid_checker
     @physics_input('', '', ANGLE, LENGTH, LENGTH)
@@ -83,7 +83,7 @@ class System:
 
         Returns: PinSlotJoint
         """
-        add_joint(self, PinslotJoint, s1, s2, a1, d1, p2)
+        return add_joint(self, PinslotJoint, s1, s2, a1, d1, p2)
 
     @solid_checker
     @physics_input('', '', ANGLE, ANGLE, LENGTH, LENGTH)
@@ -101,7 +101,7 @@ class System:
 
         Returns: RectangularJoint
         """
-        add_joint(self, RectangularJoint, s1, s2, angle, a1, a2, p1, p2)
+        return add_joint(self, RectangularJoint, s1, s2, angle, a1, a2, p1, p2)
 
     @solid_checker
     @physics_input('', '', LENGTH, LENGTH)
@@ -117,7 +117,7 @@ class System:
 
         Returns: ThreeDegreesOfFreedomJoint
         """
-        add_joint(self, J3DOF, s1, s2, p1, p2)
+        return add_joint(self, J3DOF, s1, s2, p1, p2)
 
     @physics_input(ACCELERATION)
     def add_gravity(self, g=G):
