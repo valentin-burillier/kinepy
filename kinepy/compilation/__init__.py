@@ -62,7 +62,7 @@ def solve_relation(relation, direction, sol_to_vertex, sols, eqs, kin_instr, dyn
     vertex1, vertex2 = sol_to_vertex[joint.s1.rep], sol_to_vertex[joint.s2.rep]
     eq1, eq2 = get_eq(vertex1, sols, eqs), get_eq(vertex2, sols, eqs)
 
-    kin_instr.append((SOLVE_RELATION, system, relation, direction, eq1, eq2))
+    kin_instr.append((SOLVE_RELATION, relation, direction, eq1, eq2))
     dyn_instr.insert(0, (SOLVE_RELATION, relation, direction, eq1, eq2, dist[vertex2] < dist[vertex1]))
 
     vertices_fusion(joint_graph, (min(vertex1, vertex2), max(vertex1, vertex2)), eqs, sol_to_vertex)
@@ -91,7 +91,7 @@ def compiler(system, mode):
         joint = system.joints[joint.rep]
         solve_piloted_joint(joint, sol_to_vertex, sols, eqs, dyn_instr, dist, joint_graph, eq_order)
         dist = distances(joint_graph)
-    kin_instr.append((SOLVE_PILOT, tuple(eq_order)))
+    kin_instr.append((SOLVE_PILOT, system, tuple(eq_order)))
 
     # until there is only one class
     while len(joint_graph) > 1:
