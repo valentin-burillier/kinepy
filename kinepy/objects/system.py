@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.compilation import *
 from kinepy.math.kinematic import KIN
 from kinepy.math.dynamic import DYN
@@ -44,7 +46,7 @@ class System:
             self.dyn_sols, self.dyn_joints, self.dyn_ghosted = make_sets(self, blocked)
             self.kin_instr, self.dyn_instr = compiler(self, KINEMATICS), compiler(self, DYNAMICS)
 
-    def solve_kinematics(self, inputs):
+    def solve_kinematics(self, inputs: np.ndarray):
         self.reset(inputs.shape[1])
         self.inputs = inputs
         for instr in self.kin_instr:

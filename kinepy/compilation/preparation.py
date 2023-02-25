@@ -36,6 +36,6 @@ def make_relation_graph(relations, n):
     relation_graph = [[] for _ in range(n)]
     for rel in relations:
         j1, j2 = rel.j1.rep, rel.j2.rep
-        relation_graph[j1].append((j2, rel, True))
-        relation_graph[j2].append((j1, rel, False))
+        relation_graph[j1].append((rel.j2, rel, True))
+        relation_graph[j2].append((rel.j1, rel, False))
     return relation_graph

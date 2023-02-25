@@ -45,8 +45,9 @@ def joint_checker(f):
 
 def dfs(a):
     if hasattr(a, '__iter__'):
-        for i in dfs(a):
-            yield i
+        for item in a:
+            for i in dfs(item):
+                yield i
     else:
         yield a
 
@@ -59,6 +60,8 @@ def single_or_list(post_call=None):
                     arg = get_object(self.named_joints[arg])
                 if isinstance(arg, int):
                     arg = self._object.joints[arg]
+                if hasattr(arg, '_object'):
+                    arg = get_object(arg)
                 f(self, arg)
             if post_call is not None:
                 post_call(self)
@@ -122,9 +125,8 @@ def physics_input(*phy):
 
 
 def add_joint(self, cls, s1, s2, *args):
-    # print(f'Adding joint\n{self._object.sols}, {s2}, {id(s2)}, {id(self._object.sols[1])}')
     joint = cls(self._unit_system, s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
-    self._object.joints.append(joint)
+    self._object.joints.append(get_object(joint))
     self._object.interactions.append(joint.interaction)
     self.named_joints[repr(joint)] = joint
     return joint

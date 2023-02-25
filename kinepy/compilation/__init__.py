@@ -32,19 +32,19 @@ def get_eq(vertex, sols, eqs):
 def manage_relations(relation_graph, solved_joints, joint_queue):
     while joint_queue:
         joint1 = joint_queue.pop(0)
-        for joint2, relation, direction in relation_graph[joint1]:
-            if solved_joints[joint2]:
+        for joint2, relation, direction in relation_graph[joint1.rep]:
+            if solved_joints[joint2.rep]:
                 raise CompilationError("Encountered hyperstatic relation scheme")
-            solved_joints[joint2] = True
-            joint_queue.append(joint2.rep)
+            solved_joints[joint2.rep] = True
+            joint_queue.append(joint2)
 
-            for i, (_, rel2, _) in enumerate(relation_graph[joint2]):
+            for i, (_, rel2, _) in enumerate(relation_graph[joint2.rep]):
                 if rel2 is relation:
-                    relation_graph[joint2].pop(i)
+                    relation_graph[joint2.rep].pop(i)
                     break
 
             yield relation, direction
-        relation_graph[joint1] = []
+        relation_graph[joint1.rep] = []
 
 
 def solve_piloted_joint(joint, sol_to_vertex, sols, eqs, dyn_instr, dist, joint_graph, eq_order):
@@ -87,8 +87,8 @@ def compiler(system, mode):
     # piloted/blocked joints are solved
     eq_order = []
     for joint in joint_queue:
-        solved_joints[joint] = True
-        joint = system.joints[joint]
+        solved_joints[joint.rep] = True
+        joint = system.joints[joint.rep]
         solve_piloted_joint(joint, sol_to_vertex, sols, eqs, dyn_instr, dist, joint_graph, eq_order)
         dist = distances(joint_graph)
     kin_instr.append((SOLVE_PILOT, tuple(eq_order)))
@@ -121,7 +121,7 @@ def compiler(system, mode):
             key.append(joint.rep)
             if not isinstance(joint, (GhostRevolute, GhostPrismatic)):
                 solved_joints[joint.rep] = True
-                joint_queue.append(joint.rep)
+                joint_queue.append(joint)
 
         sgn = SIGNS[index]
         key, concerned_joints = tuple(key), tuple(concerned_joints)

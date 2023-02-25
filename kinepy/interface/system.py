@@ -2,7 +2,8 @@ from kinepy.units import *
 import kinepy.objects as obj
 from kinepy.interface.solid import Solid
 from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinslotJoint, RectangularJoint, J3DOF
-from kinepy.interface.decorators import physics_input, add_joint, solid_checker, single_or_list, joint_checker
+from kinepy.interface.decorators import physics_input, add_joint, solid_checker, single_or_list, joint_checker, \
+    get_object
 from kinepy.interface.relations import Gear, GearRack, DistantRelation, EffortlessRelation
 
 
@@ -29,7 +30,7 @@ class System:
         """
         name = name if name else f"Solid{len(self._object.sols)}"
         s = Solid(self._unit_system, m, j, g, f'{name} | {len(self._object.sols)}')  # noqa
-        self._object.sols.append(s)
+        self._object.sols.append(get_object(s))
         # print(s._object, id(s._object))
         self.named_sols[name] = s
         self._object.interactions.append(s.external_actions)
@@ -136,12 +137,12 @@ class System:
     @joint_checker
     @physics_input('', '', ADIMENSIONNED, ANGLE, ANGLE)
     def add_gear(self, rev1, rev2, r, v0=0., pressure_angle=np.pi / 9):
-        if not isinstance(rev1, RevoluteJoint):
+        if not isinstance(rev1, obj.RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
-        if not isinstance(rev2, RevoluteJoint):
+        if not isinstance(rev2, obj.RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
         g = Gear(self._unit_system, rev1, rev2, r, v0, pressure_angle) # noqa
-        self._object.relations.append(g)
+        self._object.relations.append(get_object(g))
         return g
 
     @joint_checker
@@ -152,7 +153,7 @@ class System:
         if not isinstance(pri, obj.PrismaticJoint):
             raise TypeError('Joint 2 must be a PrismaticJoint')
         gr = GearRack(self, rev, pri, r, v0, pressure_angle)  # noqa
-        self._object.relations.append(gr)
+        self._object.relations.append(get_object(gr))
         return gr
 
     @joint_checker
@@ -160,7 +161,7 @@ class System:
         if j1.dof != 1 or j2.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
         er = EffortlessRelation(self, j1, j2, r, v0)  # noqa
-        self._object.relations.append(er)
+        self._object.relations.append(get_object(er))
         return er
 
     @joint_checker
@@ -168,7 +169,7 @@ class System:
         if j1.dof != 1 or j2.dof != 1:
             raise TypeError('Joints must have 1 degree of freedom')
         dr = DistantRelation(self, j1, j2, r, v0)  # noqa
-        self._object.relations.append(dr)
+        self._object.relations.append(get_object(dr))
         return dr
 
     def show_input(self):
@@ -193,9 +194,9 @@ class System:
         if inputs is None:
             return self._object.solve_kinematics(self._object.inputs)
         inputs = np.array(inputs)
-        if np.ndim == 1:
+        if inputs.ndim == 1:
             inputs = inputs[np.newaxis, :]
-        for vec, phy in zip(inputs, (p for joint in self._object.piloted for p in joint.input)):
+        for vec, phy in zip(inputs, (p for joint in self._object.piloted for p in joint.inputs)):
             vec *= self._unit_system[phy]
         self._object.solve_kinematics(inputs)
 

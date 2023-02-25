@@ -61,7 +61,7 @@ class PrismaticJoint(Joint):
     normal = tangent = torque = sliding = None
 
     def __init__(self, s1, s2, a1, d1, a2, d2, name):
-        Joint.__init__(self, name, s1, s2)
+        Joint.__init__(self, s1, s2, name)
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
     
     def reset(self, n):
