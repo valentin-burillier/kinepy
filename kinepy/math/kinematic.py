@@ -48,7 +48,7 @@ def solve_graph0(eqs, js, sgn):
     rotate_eq(eq1, np.arccos(dot(v01, v02) * m) * (2 * (det(v02, v01) > 0) - 1) + alpha)
     solve_p(P0, b0, eq1)
 
-    pp_grouping(eq2, (P1, b0), (P2, b0), sq_z)
+    pp_grouping(eq2, (P1, b1), (P2, b2), sq_z)
 
 
 def solve_graph1(eqs, js, sgn, chain=True):

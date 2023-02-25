@@ -46,43 +46,43 @@ s16 = sys.add_solid(name='Bûche')
 
 
 
-R1, R2 = 43.6, 15
+R1, R2 = 43.6, 15.
 #R1, R2 = 50, 31 # max
 #R1, R2 = 14, 14 # min
 
-r1 = sys.add_revolute(0, 1, p1=(197.4, 68.9))
-r2 = sys.add_revolute(0, 3, p1=(78.2, 45.))
-r3 = sys.add_revolute(1, 2, p1=(R1, 0.))
-r4 = sys.add_revolute(2, 3, p1=(182., 0.), p2=(195., 0.))
+r0 = sys.add_revolute(0, 1, p1=(197.4, 68.9))
+r1 = sys.add_revolute(0, 3, p1=(78.2, 45.))
+r2 = sys.add_revolute(1, 2, p1=(R1, 0.))
+r3 = sys.add_revolute(2, 3, p1=(182., 0.), p2=(195., 0.))
 
-r6 = sys.add_revolute(0, 5, p1=(250., 68.9))
-r7 = sys.add_revolute(0, 7, p1=(70., 50.))
-r8 = sys.add_revolute(5, 6, p1=(R2, 0))
-r9 = sys.add_revolute(6, 7, p1=(200., 0), p2=(212., 0))
+r5 = sys.add_revolute(0, 5, p1=(250., 68.9))
+r6 = sys.add_revolute(0, 7, p1=(70., 50.))
+r7 = sys.add_revolute(5, 6, p1=(R2, 0))
+r8 = sys.add_revolute(6, 7, p1=(200., 0), p2=(212., 0))
 
-r10 = sys.add_revolute(6, 8, p1=(200. + 80., 0))
-r11 = sys.add_revolute(8, 9, p1=(82.1, 0))
-r12 = sys.add_revolute(0, 9, p1=(50, 125), p2=(130, 0))
+r9 = sys.add_revolute(6, 8, p1=(200. + 80., 0))
+r10 = sys.add_revolute(8, 9, p1=(82.1, 0))
+r11 = sys.add_revolute(0, 9, p1=(50, 125), p2=(130, 0))
 
-cuisse, tibia = 64, 67
-r13 = sys.add_revolute(0, 11, p1=(40., 150.))
-r14 = sys.add_revolute(0, 13, p1=(185., 150.))
-r15 = sys.add_revolute(11, 10, p1=(tibia, 0))
-r16 = sys.add_revolute(13, 12, p1=(tibia, 0))
-r17 = sys.add_revolute(10, 8, p1=(cuisse, 0), p2=(82.1, 0))
-r18 = sys.add_revolute(12, 8, p1=(cuisse, 0), p2=(82.1, 0))
+cuisse, tibia = 64., 67.
+r12 = pied_g = sys.add_revolute(0, 11, p1=(40., 150.))
+r13 = pied_d = sys.add_revolute(0, 13, p1=(185., 150.))
+r14 = genou_g = sys.add_revolute(11, 10, p1=(tibia, 0))
+r15 = genou_d = sys.add_revolute(13, 12, p1=(tibia, 0))
+r16 = hanche_g = sys.add_revolute(10, 8, p1=(cuisse, 0), p2=(82.1, 0))
+r17 = hanche_d = sys.add_revolute(12, 8, p1=(cuisse, 0), p2=(82.1, 0))
 
-r19 = sys.add_revolute(2, 4, p1=(182+42.7, 0))
+r18 = sys.add_revolute(2, 4, p1=(182 + 42.7, 0))
 p = sys.add_prismatic(16, 4, d1=23.4)
-r20 = sys.add_revolute(0, 16, p1=(262., 237. - 30))
+r19 = sys.add_revolute(0, 16, p1=(262., 237. - 30))
 
-r21 = sys.add_revolute(8, 14, p1=(19, 0))
-r22 = sys.add_revolute(14, 15, p1=(45, 0))
-r23 = sys.add_revolute(4, 15, p2=(43, 0))
+r20 = sys.add_revolute(8, 14, p1=(19, 0))
+r21 = sys.add_revolute(14, 15, p1=(45, 0))
+r22 = sys.add_revolute(4, 15, p2=(43, 0))
 
-sys.add_gear(r1, r6, r=1, v0=-0.5)
+sys.add_gear(r0, r5, r=1, v0=-0.5)
 
-sys.pilot(r1)
+sys.pilot(r0)
 sys.compile()
 
 #sys.signs = {(1, 2, 3): 1, (5, 6, 7): 1, (10, 8, 9): -1, (11, 15, 13): -1, (12, 16, 14): -1, (19, 17, 18) : -1}
@@ -98,20 +98,24 @@ P = s4.get_point((270, 0))
 
 #%%
 
-anim = t.animate([[r1.point, r3.point, r4.point, r2.point], [r4.point, r19.point, P],
-                  [r6.point, r8.point, r9.point, r7.point],
-                  [r8.point, r10.point, r11.point, r12.point],
-                  [r13.point, r15.point, r17.point, r16.point, r14.point],
-                  [r21.point, r22.point, r23.point]], anim_time=2)
+# print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5)
+
+
+anim = t.animate([
+    [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion
+    [r5.point, r7.point, r8.point, r6.point], [r7.point, r9.point, r10.point, r11.point],  # body motion
+    [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
+    [r20.point, r21.point, r22.point]  # bras
+], anim_time=2)
 # display(True)
-anim.save('anim.gif')
+
 plt.show()
 #%%
 
-anim = t.animate([[r19.point, P],
-                  [r10.point, r11.point],
-                  [r13.point, r15.point, r17.point, r16.point, r14.point],
-                  [r21.point, r22.point, r23.point]], anim_time=1)
-
+anim = t.animate([[r18.point, P],
+                  [r9.point, r10.point],
+                  [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
+                  [r20.point, r21.point, r22.point]], anim_time=1)
+# plt.show()
 # display(False)
 
