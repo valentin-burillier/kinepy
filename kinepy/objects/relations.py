@@ -3,7 +3,7 @@ class LinearRelationBase:
     v0 = r = j1 = j2 = None
 
     def rel_pilot(self, j_index, eq1, eq2):
-        v = self.j1.get_value() * self.r + self.v0 if j_index else (self.j2.get_value() - self.v0) / self.r
+        v = (self.j1.get_value() * self.r + self.v0) if j_index else (self.j2.get_value() - self.v0) / self.r
         (self.j1, self.j2)[j_index].set_value(v, eq1, eq2)
 
     def rel_block(self, j_index, eq1, eq2, ref):

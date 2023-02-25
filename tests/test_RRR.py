@@ -19,6 +19,6 @@ s.solve_kinematics(((0.,),))
 print('Origins', *(sol.origin[:, 0] for sol in (s0, s1, s2)), sep='\n', end='\n\n')
 print('Angles', *(sol.angle[0] for sol in (s0, s1, s2)), sep='\n', end='\n\n')
 
-animate(((r0.point, r1.point, r2.point),))
-print('Points', *(p[:, 0] for p in (r0.point, r1.point, r2.point)), sep='\n', end='\n\n')
+anim = animate(((r0.point, r1.point, r2.point, r0.point),), anim_time=2)
+print('Points', *(p[:, :] for p in (r0.point, r1.point, r2.point)), sep='\n', end='\n\n')
 plt.show()

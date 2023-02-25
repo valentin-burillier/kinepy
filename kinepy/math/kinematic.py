@@ -13,7 +13,7 @@ def pp_grouping(eq1, p0, p1, sq_z):
     (P0, b0), (P1, b1) = p0, p1
     v1 = get_point(P1, b1) - get_point(P0, b0)
     v2 = get_point(P1, not b1) - get_point(P0, not b0)
-    alpha = np.arccos(dot(v1, v2) / sq_z) * (2 * (det(v1, v2) > 0) - 1)
+    alpha = np.arccos(np.maximum(-1, np.minimum(1., dot(v1, v2) / sq_z))) * (2 * (det(v1, v2) > 0) - 1)
     rotate_eq(eq1, alpha)
     solve_p(P0, b0, eq1)
     P1.angle = P1.s2.angle - P1.s1.angle

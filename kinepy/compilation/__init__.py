@@ -82,7 +82,7 @@ def compiler(system, mode):
 
     dist = distances(joint_graph)
 
-    joint_queue = (system.blocked, system.piloted)[not not mode]
+    joint_queue = list((system.blocked, system.piloted)[not not mode])
 
     # piloted/blocked joints are solved
     eq_order = []
