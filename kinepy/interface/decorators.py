@@ -9,12 +9,16 @@ def solid_checker(f):
     def g(self, s1, s2, *args, **kwargs):
         if isinstance(s1, str):
             s1 = get_object(self.named_sols[s1])
-        elif isinstance(s1, int):
+        if isinstance(s1, int):
             s1 = self._object.sols[s1]
+        if hasattr(s1, '_object'):
+            s1 = get_object(s1)
         if isinstance(s2, str):
             s2 = get_object(self.named_sols[s2])
-        elif isinstance(s2, int):
+        if isinstance(s2, int):
             s2 = self._object.sols[s2]
+        if hasattr(s2, '_object'):
+            s2 = get_object(s2)
         return f(self, s1, s2, *args, **kwargs)
     g.__doc__ = f.__doc__
     return g
@@ -26,10 +30,14 @@ def joint_checker(f):
             j1 = get_object(self.named_joints[j1])
         if isinstance(j1, int):
             j1 = self._object.joints[j1]
+        if hasattr(j1, '_object'):
+            j1 = get_object(j1)
         if isinstance(j1, str):
             j2 = get_object(self.named_joints[j2])
         if isinstance(j1, int):
             j2 = self._object.joints[j2]
+        if hasattr(j2, '_object'):
+            j2 = get_object(j2)
         return f(self, j1, j2, *args, **kwargs)
     g.__doc__ = f.__doc__
     return g
@@ -114,6 +122,7 @@ def physics_input(*phy):
 
 
 def add_joint(self, cls, s1, s2, *args):
+    # print(f'Adding joint\n{self._object.sols}, {s2}, {id(s2)}, {id(self._object.sols[1])}')
     joint = cls(self._unit_system, s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
     self._object.joints.append(joint)
     self._object.interactions.append(joint.interaction)

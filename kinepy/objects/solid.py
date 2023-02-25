@@ -20,3 +20,6 @@ class Solid:
 
     def babar(self, point):
         return self.g_tmd + det(self.og - point, self.trd)
+
+    def __repr__(self):
+        return self.name

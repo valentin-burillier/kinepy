@@ -30,6 +30,7 @@ class System:
         name = name if name else f"Solid{len(self._object.sols)}"
         s = Solid(self._unit_system, m, j, g, f'{name} | {len(self._object.sols)}')  # noqa
         self._object.sols.append(s)
+        # print(s._object, id(s._object))
         self.named_sols[name] = s
         self._object.interactions.append(s.external_actions)
         return s
@@ -135,9 +136,9 @@ class System:
     @joint_checker
     @physics_input('', '', ADIMENSIONNED, ANGLE, ANGLE)
     def add_gear(self, rev1, rev2, r, v0=0., pressure_angle=np.pi / 9):
-        if not isinstance(rev1, obj.RevoluteJoint):
+        if not isinstance(rev1, RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
-        if not isinstance(rev2, obj.RevoluteJoint):
+        if not isinstance(rev2, RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
         g = Gear(self._unit_system, rev1, rev2, r, v0, pressure_angle) # noqa
         self._object.relations.append(g)
