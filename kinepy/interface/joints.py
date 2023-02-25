@@ -17,7 +17,7 @@ class RevoluteJoint(obj.RevoluteJoint, metaclass=MetaUnit):
     def set_torque(self, t):
         self.interaction.torque = t
 
-    point = property(lambda self: self._object.s2.origin + rvec(self._object.s2.angle, self.p2) / self._unit_system[LENGTH])
+    point = property(lambda self: self._object.s2.origin / self._unit_system[LENGTH] + rvec(self._object.s2.angle, self.p2))
 
 
 class PrismaticJoint(obj.PrismaticJoint, metaclass=MetaUnit):

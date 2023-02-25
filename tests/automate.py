@@ -87,7 +87,7 @@ sys.pilot(r1)
 sys.compile()
 
 #sys.signs = {(1, 2, 3): 1, (5, 6, 7): 1, (10, 8, 9): -1, (11, 15, 13): -1, (12, 16, 14): -1, (19, 17, 18) : -1}
-sys.signs = {(1, 2, 3): 1, (5, 6, 7): 1, (10, 8, 9): -1, (11, 15, 13): -1, (12, 16, 14): -1, (19, 17, 18): -1, (22, 20, 21): 1}
+sys.signs = {'2 RRR': -1, '3 RRR': -1, '4 RRR': 1, '6 RRR': 1, '5 RRR': -1, '7 RRP': -1, '8 RRR': 1}
 
 a = np.linspace(0, 2*np.pi, 101)
 
@@ -96,6 +96,9 @@ a = np.linspace(0, 2*np.pi, 101)
 sys.solve_kinematics(a)
 P = s4.get_point((270, 0))
 
+for s in sys.named_sols.values():
+    print(s, s.origin)
+
 #%%
 
 anim = t.animate([[r1.point, r3.point, r4.point, r2.point], [r4.point, r19.point, P],
@@ -103,13 +106,15 @@ anim = t.animate([[r1.point, r3.point, r4.point, r2.point], [r4.point, r19.point
                   [r8.point, r10.point, r11.point, r12.point],
                   [r13.point, r15.point, r17.point, r16.point, r14.point],
                   [r21.point, r22.point, r23.point]], anim_time=2)
-display(True)
-
+# display(True)
+# anim.save('anim.gif')
+plt.show()
 #%%
 
 anim = t.animate([[r19.point, P],
                   [r10.point, r11.point],
                   [r13.point, r15.point, r17.point, r16.point, r14.point],
                   [r21.point, r22.point, r23.point]], anim_time=1)
-display(False)
+plt.show()
+# display(False)
 
