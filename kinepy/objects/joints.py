@@ -1,7 +1,7 @@
 from kinepy.units import ANGLE, LENGTH
 from kinepy.objects.solid import Solid
 from kinepy.math.geometry import np, rotate_eq, move_eq, get_point, rvec, unit, get_angle, get_zero, det, dot, z_cross,\
-    ZERO
+    ZERO_POINT
 from kinepy.math.dynamic import trd, tmd
 
 
@@ -102,8 +102,8 @@ class GhostRevolute(Joint):
         s1, s2 = (master.s1, master.ghost_sol)[index], (master.ghost_sol, master.s2)[index]
         Joint.__init__(self, s1, s2, name)
 
-    p1 = property(lambda self: ZERO if self.index else self.master.p1)
-    p2 = property(lambda self: ZERO if not self.index else self.master.p2)
+    p1 = property(lambda self: ZERO_POINT if self.index else self.master.p1)
+    p2 = property(lambda self: ZERO_POINT if not self.index else self.master.p2)
 
     reset = RevoluteJoint.reset
 

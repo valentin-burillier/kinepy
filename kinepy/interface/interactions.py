@@ -1,6 +1,6 @@
 import kinepy.objects as obj
 from kinepy.interface.metaclass import *
-from kinepy.math.geometry import ZERO, unit, get_angle, get_zero, rvec
+from kinepy.math.geometry import ZERO_21, unit, get_angle, get_zero, rvec
 from kinepy.interface.decorators import get_object
 
 
@@ -44,8 +44,8 @@ class RevoluteTorque:
 
     def set_ma(self, _):
         t = self._torque()
-        self.rev.s1.add_mech_action(ZERO, 0., t)
-        self.rev.s2.add_mech_action(ZERO, 0., -t)
+        self.rev.s1.add_mech_action(ZERO_21, 0., t)
+        self.rev.s2.add_mech_action(ZERO_21, 0., -t)
 
 
 class PrismaticTangent:

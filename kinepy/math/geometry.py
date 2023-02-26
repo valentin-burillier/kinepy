@@ -1,8 +1,9 @@
 import numpy as np
 
-ZERO = np.zeros((2, 1))
+ZERO_POINT = np.zeros((2,))
+ZERO_21 = np.zeros((2, 1))
 ZERO_F = (lambda: 0)
-ZERO_ARRAY_F = (lambda: ZERO)
+ZERO_ARRAY_F = (lambda: ZERO_21)
 
 
 def rot(theta):  # rotation matrix
