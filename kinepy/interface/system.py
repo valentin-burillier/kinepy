@@ -28,8 +28,8 @@ class System:
 
         Returns: Solid
         """
-        name = name if name else f"Solid{len(self._object.sols)}"
-        s = Solid(self._unit_system, m, j, g, f'{name} | {len(self._object.sols)}')  # noqa
+        name = name if name else f"Solid_{len(self._object.sols)}"
+        s = Solid(self._unit_system, m, j, g, name)  # noqa
         self._object.sols.append(get_object(s))
         # print(s._object, id(s._object))
         self.named_sols[name] = s
@@ -210,3 +210,9 @@ class System:
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_dynamics(t)
+    
+    def bill_of_materials(self):
+        print('N°\t| Names')
+        print('----+------')
+        for sol in sys._object.sols:
+            print(sol)
