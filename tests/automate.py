@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import kinepy.tools as t
 import kinepy as k
+from kinepy.math.geometry import unit
 
 
 #%%
@@ -40,16 +41,28 @@ s14 = sys.add_solid(name='Bras')
 s15 = sys.add_solid(name='Avant-bras')
 
 # scie
-# s16 = sys.add_solid(name='Bûche')  # à enlever
+# s16 = sys.add_solid(name='Bûche')  # R+P
+
+settings = 'Loic'
+if settings == 'Valentin':
+    R1, R2 = 43.6, 15
+    dx_bras, dy_bras = 0, 0
+    saw = 270
+    dx_buche = 0
+elif settings == 'Loic':
+    R1, R2 = 32, 15.
+    dx_bras, dy_bras = 40, -10
+    saw = 150
+    dx_buche = -40
+else:
+    raise ValueError('Unknown settings')
+
+# R1, R2 = 50, 31  # max
+# R1, R2 = 14, 14  # min
 
 
-
-R1, R2 = 43.6, 15.
-#R1, R2 = 50, 31 # max
-#R1, R2 = 14, 14 # min
-
-r0 = sys.add_revolute(0, 1, p1=(197.4, 68.9))
-r1 = sys.add_revolute(0, 3, p1=(78.2, 45.))
+r0 = sys.add_revolute(0, 1, p1=(197.4 + dx_bras, 68.9 + dy_bras))
+r1 = sys.add_revolute(0, 3, p1=(78.2 + dx_bras, 45. + dy_bras))
 r2 = sys.add_revolute(1, 2, p1=(R1, 0.))
 r3 = sys.add_revolute(2, 3, p1=(182., 0.), p2=(195., 0.))
 
@@ -71,9 +84,9 @@ r16 = hanche_g = sys.add_revolute(10, 8, p1=(cuisse, 0), p2=(82.1, 0))
 r17 = hanche_d = sys.add_revolute(12, 8, p1=(cuisse, 0), p2=(82.1, 0))
 
 r18 = sys.add_revolute(2, 4, p1=(182 + 42.7, 0))
-ps = sys.add_pin_slot(4, 0, d1=-23.4, p2=(262., 237. - 30))  # à mettre
-# p = sys.add_prismatic(16, 4, d1=23.4)  # à enlever
-# r19 = sys.add_revolute(0, 16, p1=(262., 237. - 30))  # à enlever
+ps = sys.add_pin_slot(4, 0, d1=-23.4, p2=(262. + dx_buche, 237. - 30))  # PS
+# p = sys.add_prismatic(16, 4, d1=23.4)  # R+P
+# r19 = sys.add_revolute(0, 16, p1=(262. + dx_buche, 237. - 30))  # R+P
 
 r20 = sys.add_revolute(8, 14, p1=(19, 0))
 r21 = sys.add_revolute(14, 15, p1=(45, 0))
@@ -95,7 +108,7 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 #%%
 
 sys.solve_kinematics(a)
-P = s4.get_point((270, 0))
+P = s4.get_point((saw, 0))
 
 #%%
 
@@ -111,6 +124,8 @@ anim = t.animate([
     [r20.point, r21.point, r22.point]  # bras
 ], anim_time=2)
 #  anim.save('anim.gif')
+circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
+plt.plot(*circle)
 plt.show()
 #%%
 
@@ -118,4 +133,5 @@ anim = t.animate([[r18.point, P],
                   [r9.point, r10.point],
                   [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
                   [r20.point, r21.point, r22.point]], anim_time=1)
-
+plt.plot(*circle)
+plt.show()
