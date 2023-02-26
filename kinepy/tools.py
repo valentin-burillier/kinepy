@@ -105,7 +105,6 @@ def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     v = np.sign(v)*v_max
     t_inf = t - (b - a)/v
     acc = v/t_inf
-    print(acc)
     if a_max is not None and abs(acc) > a_max:
         print('too much acceleration')
         return
