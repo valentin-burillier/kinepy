@@ -214,5 +214,5 @@ class System:
     def bill_of_materials(self):
         print('N°\t| Names')
         print('----+------')
-        for sol in sys._object.sols:
-            print(sol)
+        for s in self._object.sols:
+            print(s)
