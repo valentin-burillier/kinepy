@@ -40,9 +40,7 @@ s14 = sys.add_solid(name='Bras')
 s15 = sys.add_solid(name='Avant-bras')
 
 # scie
-s16 = sys.add_solid(name='Bûche')
-
-
+s16 = sys.add_solid(name='Bûche') # à enlever
 
 
 
@@ -73,8 +71,9 @@ r16 = hanche_g = sys.add_revolute(10, 8, p1=(cuisse, 0), p2=(82.1, 0))
 r17 = hanche_d = sys.add_revolute(12, 8, p1=(cuisse, 0), p2=(82.1, 0))
 
 r18 = sys.add_revolute(2, 4, p1=(182 + 42.7, 0))
-p = sys.add_prismatic(16, 4, d1=23.4)
-r19 = sys.add_revolute(0, 16, p1=(262., 237. - 30))
+# ps = sys.add_pin_slot(4, 0, d1=-23.4, p2=(262., 237. - 30)) # à mettre 
+p = sys.add_prismatic(16, 4, d1=23.4) # à enlever
+r19 = sys.add_revolute(0, 16, p1=(262., 237. - 30)) # à enlever
 
 r20 = sys.add_revolute(8, 14, p1=(19, 0))
 r21 = sys.add_revolute(14, 15, p1=(45, 0))
@@ -85,20 +84,20 @@ sys.add_gear(r0, r5, r=1, v0=-0.5)
 sys.pilot(r0)
 sys.compile()
 
-#sys.signs = {(1, 2, 3): 1, (5, 6, 7): 1, (10, 8, 9): -1, (11, 15, 13): -1, (12, 16, 14): -1, (19, 17, 18) : -1}
 sys._object.signs = {'2 RRR': -1, '3 RRR': -1, '4 RRR': 1, '5 RRR': -1, '6 RRR': 1, '7 RRP': -1, '8 RRR': -1}
 
-a = np.linspace(0, 2*np.pi, 101)
+a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 
 #%%
 
 sys.solve_kinematics(a)
 P = s4.get_point((270, 0))
 
-
 #%%
 
-# print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5)
+# print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5) # sais tu que tu un outils norm dans tools ?
+# je supp que non, voici un tuto :
+# print(t.norm(genou_d.point - pied_d.point))
 
 
 anim = t.animate([
@@ -107,7 +106,6 @@ anim = t.animate([
     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
     [r20.point, r21.point, r22.point]  # bras
 ], anim_time=2)
-# display(True)
 
 plt.show()
 #%%
@@ -116,6 +114,4 @@ anim = t.animate([[r18.point, P],
                   [r9.point, r10.point],
                   [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
                   [r20.point, r21.point, r22.point]], anim_time=1)
-# plt.show()
-# display(False)
 
