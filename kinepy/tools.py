@@ -78,7 +78,7 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     
     return anim
 
-def direct_input(a, b, t, n, v_max=None):
+def direct_input(a, b, t, n=101, v_max=None):
     v = (b - a)/t
     if v_max is not None and abs(v) > v_max: # triangle
         print('speed too high')
@@ -86,7 +86,7 @@ def direct_input(a, b, t, n, v_max=None):
     return np.linspace(a, b, n)
 
 
-def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
+def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     v = 2*(b - a)/t
     if v_max is None or abs(v) <= v_max: # triangle
         acc = 4*(b - a)/t**2
@@ -116,7 +116,7 @@ def trapezoidal_input(a, b, t, n, v_max=None, a_max=None):
     l_dec = acc*T[-i:]*(t - T[-i:]/2) + v*(t - 2*t_inf) + a + acc*(t_inf**2 - t**2/2)       
     return np.r_[l_acc, l_plateau, l_dec]
 
-def sinusoidal_input(a, b, t, n, v_max=None, a_max=None):
+def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     v = 2*(b - a)/t
     if v_max is None or abs(v) <= v_max: # triangle
         acc = np.pi*2*(b - a)/t**2
