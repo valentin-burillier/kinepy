@@ -1,4 +1,6 @@
-# kinepy
+<p align="center" width="100%">
+    <img width="60%" src="https://user-images.githubusercontent.com/93446869/221908877-fce492bb-dabb-494b-8fa5-a1efb28f3dd9.svg">
+</p>
 
 Not comfortable with French ? go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
 
@@ -11,7 +13,6 @@ Elle permet de simuler rapidement et précisément un mécanisme complexe consti
 - La masse des solides est constante
 - Les liaisons sont parfaites
 - Le système est isostatique, le schéma cinématique doit être minimal
-- Le système est composé uniquement de dyades (groupe Assur d'ordre 1)
 - Le référentiel global associé au bâti est galiléen
 - Le système est soumis un champ de forces uniformes (ou nul)
 
