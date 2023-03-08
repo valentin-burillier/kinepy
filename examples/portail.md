@@ -1,15 +1,21 @@
 # Contexte
 
-[Photo de la maquette étudier et du système réel]
+<p align="center" width="100%">
+    <img width="49%" src="https://user-images.githubusercontent.com/93446869/223734176-ae956846-59bd-44b2-a14b-dd517efcbeed.png">
+    <img width="49%" src="https://user-images.githubusercontent.com/93446869/223734890-fcff47ed-5140-4896-be7a-25bd33f583ed.png">
+</p>
+
+[mettre photo plus joli]
 
 Blablabla les portails c'est cool
 
 # Problématique
 
 CDCF :
-- tps ouverture
+- tps ouverture : 16s max
 - vitesse max du moteur / portail
-- accélération max moteur / portail
+- accélération max moteur / portail : effort max d'écrasement à 2m : 15daN
+![image](https://user-images.githubusercontent.com/93446869/223728104-c150f146-7376-46ac-9efa-73116fc2d7b5.png)
 
 On cherche à visualiser l'impact du changement de longueur entre les liaisons sur la cinématique du système ? On déterminera la loi E/S entre la rotation du moteur et la rotation du ventail.
 
@@ -23,10 +29,16 @@ Cette 2ième analyse permettra de dimensionner un limiteur couple
 
 On considère le schéma cinématique suivant :
 
-[Shéma]
+<p align="center" width="100%">
+    <img width="90%" src="https://user-images.githubusercontent.com/93446869/223725368-50edffd9-aeda-49db-a1df-86e51a61c6cd.svg">
+</p>
 
 On se place dans les hypothèses de KinePy.
-Les masses et inerties des pièces sont négligées à part celle du ventail que l'on modélise comme un paralépipède rectangle.
+Les masses et inerties des pièces sont négligées à part celle du ventail que l'on modélise comme un paralépipède rectangle. Ca masse est de 50kg.
+
+<p align="center" width="100%">
+    <img width="40%" src="https://user-images.githubusercontent.com/93446869/223732186-56afdc37-f414-4eec-a17f-aa9e1f99aad8.svg">
+</p>
 
 ```python
 import numpy as np
@@ -46,9 +58,7 @@ s3 = sys.add_solid(name='Bielle')
 On néglige les frottements au niveau des liaisons mise à part celle du portail par rapport au bâti que l'on modélise comme un couple de frotement sec.
 
 ```python
-sys = k.System()
-
-s1 = sys.add_solid(name='ventail', m=50, j=,  g=(f/2, 0))
+s1 = sys.add_solid(name='ventail', m=50, j=t.j_parallepiped(),  g=(f/2, 0))
 s2 = sys.add_solid(name='bras')
 s3 = sys.add_solid(name='bielle')
 
@@ -98,6 +108,8 @@ plt.ylabel('Angle de rotation du ventail')
 
 En faisant varier les longueurs interliaisons on change la cinématique du mécanisme.
 
+![image](https://user-images.githubusercontent.com/93446869/223717059-57af9460-fbac-423c-98d3-245b0ca5fd62.png)
+
 [Code variation + plot]
 
 [Ccl]
@@ -129,3 +141,9 @@ On obtient ensuite l'énergie consommé durant l'ouverture en réalisant l'inté
 [Code + courbe puissance]
 
 [Ccl]
+
+# Code complet
+
+```python
+
+```
