@@ -3,81 +3,90 @@ import numpy as np
 #  ------------------------------------------------ Length units -------------------------------------------------------
 
 LENGTH = 'Length'
-MILLIMETER = 1e-3
-METER = 1.
-CENTIMETER = 1e-2
-INCH = 2.54e-2
+MILLIMETER = np.array(1e-3), 'mm'
+METER = np.array(1.), 'm'
+CENTIMETER = np.array(1e-2), 'cm'
+INCH = np.array(2.54e-2), 'in'
 
 #  ----------------------------------------------- Time units ----------------------------------------------------------
 
 TIME = 'Time'
-SECOND = 1.
-MILLISECOND = 1e-3
-MINUTE = 60.
+SECOND = np.array(1.), 's'
+MILLISECOND = np.array(1e-3), 'ms'
+MINUTE = np.array(60.), 'min'
 
 # ------------------------------------------------ Angle units ---------------------------------------------------------
 
 ANGLE = 'Angle'
-RADIAN = 1.
-DEGREE = np.pi / 180
+RADIAN = np.array(1.), 'rad'
+DEGREE = np.array(np.pi / 180), '°'
 
 # ----------------------------------------------- Acceleration units ---------------------------------------------------
 
 ACCELERATION = 'Acceleration'
-METER_PER_SQUARE_SECOND = 1.
-G = 9.8067
+METER_PER_SQUARE_SECOND = np.array(1.), 'm/s²'
+G = np.array(9.8067), 'G'
 
 # ---------------------------------------------- Force units -----------------------------------------------------------
 
 FORCE = 'Force'
-NEWTON = 1.
-DECANEWTON = 10.
-MILLINEWTON = 1e-3
+NEWTON = np.array(1.), 'N'
+DECANEWTON = np.array(10.), 'daN'
+MILLINEWTON = np.array(1e-3), 'mN'
 
 # --------------------------------------------- Mass units -------------------------------------------------------------
 
 MASS = 'Mass'
-KILOGRAM = 1.
-GRAM = 1e-3
-POUND = 2.20462
+KILOGRAM = np.array(1.), 'kg'
+GRAM = np.array(1e-3), 'g'
+POUND = np.array(2.20462), 'lb'
 
 # -------------------------------------------- Torque units ------------------------------------------------------------
 
 TORQUE = 'Torque'
-NEWTON_METER = 1.
-MILLINEWTON_METER = 1e-3
+NEWTON_METER = np.array(1.), 'Nm'
+MILLINEWTON_METER = np.array(1e-3), 'mNm'
 
 # -------------------------------------------- Spring constant units ---------------------------------------------------
 
 SPRING_CONSTANT = 'SpingConstant'
-NEWTON_PER_METER = 1.,
+NEWTON_PER_METER = np.array(1.), 'N/m'
 
 # --------------------------------------------- Inertia units ----------------------------------------------------------
 
 INERTIA = 'Inertia'
-KILOGRAM_METER_SQUARED = 1.
+KILOGRAM_METER_SQUARED = np.array(1.), 'kg.m²'
+
+# --------------------------------------------- Adimensionned ----------------------------------------------------------
 
 ADIMENSIONNED = 'Adimensionned'
+NO_UNIT = np.array(1.), 'No Unit'
+PERCENT = np.array(.01), '%'
 
 
 class UnitSystem:
     def __init__(self):
         self.dct = {
-            LENGTH: np.array(1e-3),
-            ANGLE: np.array(1.),
-            TIME: np.array(1.),
-            ACCELERATION: np.array(1.),
-            FORCE: np.array(1.),
-            MASS: np.array(1.),
-            TORQUE: np.array(1.),
-            SPRING_CONSTANT: np.array(1.),
-            INERTIA: np.array(1.),
-            ADIMENSIONNED: np.array(1)
+            LENGTH: MILLIMETER,
+            ANGLE: RADIAN,
+            TIME: SECOND,
+            ACCELERATION: KILOGRAM_METER_SQUARED,
+            FORCE: NEWTON,
+            MASS: KILOGRAM,
+            TORQUE: NEWTON_METER,
+            SPRING_CONSTANT: NEWTON_PER_METER,
+            INERTIA: KILOGRAM_METER_SQUARED,
+            ADIMENSIONNED: NO_UNIT
         }
 
     def __getitem__(self, item):
         return self.dct[item]
 
-    def set(self, phy, unit):
-        self.dct[phy] = np.array(unit)
+    def set(self, phy, value, unit: str):
+        self.dct[phy] = np.array(value), unit
 
+    def __repr__(self):
+        return '\n'.join('{phy}: {unit}'.format(phy=phy, unit=unit) for phy, (value, unit) in self.dct.items())
+
+
+PHYSICAL_QUANTITIES = LENGTH, TIME, ANGLE, ACCELERATION, FORCE, MASS, TORQUE, SPRING_CONSTANT, INERTIA, ADIMENSIONNED

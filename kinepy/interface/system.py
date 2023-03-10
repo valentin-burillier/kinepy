@@ -189,6 +189,15 @@ class System:
         print('Current input order:')
         print(f"({'; '.join(m for joint in self._object.piloted for m in joint.input_mode())})")
 
+    def show_units(self):
+        print('Currently used units:')
+        print(self._unit_system)
+
+    def set_unit(self, phy, value, name='Unnamed unit'):
+        if isinstance(value, tuple):
+            value, unit = value
+        self._unit_system.set(phy, value, unit)
+
     @single_or_list(show_input)
     def pilot(self, joint):
         self._object.piloted.append(joint)
@@ -226,7 +235,7 @@ class System:
         if inputs.ndim == 1:
             inputs = inputs[np.newaxis, :]
         for vec, phy in zip(inputs, (p for joint in self._object.piloted for p in joint.inputs)):
-            vec *= self._unit_system[phy]
+            vec *= self._unit_system[phy][0]
         self._object.solve_kinematics(inputs)
 
     def solve_statics(self, compute_kine=True, inputs=None):
@@ -239,7 +248,7 @@ class System:
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if not self._compile_done:
             self.compile()
-        t /= self._unit_system[TIME]
+        t /= self._unit_system[TIME][0]
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_dynamics(t)
@@ -249,3 +258,10 @@ class System:
         print('----+------')
         for i, s in enumerate(self._object.sols):
             print(f'{i}\t| {s}')
+
+
+System.set_unit.__doc__ = f"""Changes the unit
+phy is the physical quantity anmong {', '.join(PHYSICAL_QUANTITIES)}
+value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
+name is the name of your unit
+You can use units imported from units.py"""

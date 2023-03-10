@@ -80,7 +80,7 @@ FUNCTION_TYPE = type(lambda: None)
 def physics_output(phy):
     def decor(f):
         def g(self, *args, **kwargs):
-            return f(self, *args, **kwargs) / self._unit_system[phy]
+            return f(self, *args, **kwargs) / self._unit_system[phy][0]
         return g
     return decor
 
@@ -106,7 +106,7 @@ def physics_input(*phy):
             if len(args) + len(kwargs) > cnt:
                 raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
 
-            n_args = [value * self._unit_system[unit] if unit else value for value, unit in zip(args, phy)]
+            n_args = [value * self._unit_system[unit][0] if unit else value for value, unit in zip(args, phy)]
 
             for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
                 if arg not in kwargs:
@@ -114,7 +114,7 @@ def physics_input(*phy):
                         raise TypeError(f"Value axpected for {arg}, index {index}")
                     n_args.append(defaults[index - shift])
                 elif phy[index]:
-                    n_args.append(kwargs[arg] * self._unit_system[phy[index]])
+                    n_args.append(kwargs[arg] * self._unit_system[phy[index]][0])
                 else:
                     n_args.append(kwargs[arg])
             return method(self, *n_args)
