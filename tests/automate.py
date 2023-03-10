@@ -62,6 +62,7 @@ else:
 
 
 r0 = sys.add_revolute(0, 1, p1=(197.4 + dx_bras, 68.9 + dy_bras))
+r0.p1 = 197.4, 68.9
 r1 = sys.add_revolute(0, 3, p1=(78.2 + dx_bras, 45. + dy_bras))
 r2 = sys.add_revolute(1, 2, p1=(R1, 0.))
 r3 = sys.add_revolute(2, 3, p1=(182., 0.), p2=(195., 0.))
@@ -123,9 +124,9 @@ anim = t.animate([
     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
     [r20.point, r21.point, r22.point]  # bras
 ], anim_time=2)
-#  anim.save('anim.gif')
 circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
 plt.plot(*circle)
+anim.save('anim.gif')
 plt.show()
 #%%
 
