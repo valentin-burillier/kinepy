@@ -93,6 +93,10 @@ def compiler(system, mode):
         dist = distances(joint_graph)
     kin_instr.append((SOLVE_PILOT, system, tuple(eq_order)))
 
+    if mode:
+        print("Compiling\n")
+        print("Step 1: Solving piloted joints\n")
+
     # until there is only one class
     while len(joint_graph) > 1:
 
@@ -128,11 +132,14 @@ def compiler(system, mode):
 
         if sgn and mode:
             sgn_key = f'{len(kin_instr)} {NAMES[index]}'
-            print(f"Step {len(kin_instr)}: Identified new signed group: graph {NAMES[index]} "
-                  f"(n°{index}) with joints {key}.\nChosen {sgn} as sign.\nSign key: {repr(sgn_key)}.\n")
+            print(f"Step {len(kin_instr)}: Identified new signed group from graph {NAMES[index]} "
+                  f"(n°{index}) with joints {', '.join(repr(joints[i]) for i in key)}.\nChosen {sgn} as sign.\n"
+                  f"Sign key: {sgn_key}.\n")
             system.signs[sgn_key] = sgn
             system.tags[key] = sgn_key
-        else:
+        elif mode:
+            print(f"Step {len(kin_instr)}: Solving new group from graph {NAMES[index]} "
+                  f"(n°{index}) with joints {', '.join(joints[i] for i in key)}.\nChosen {sgn} as sign.\n")
             system.tags[key] = ()
 
         kin_instr.append((SOLVE_GRAPH, system, index, concerned_eqs, concerned_joints))

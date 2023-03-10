@@ -62,8 +62,6 @@ else:
 # R1, R2 = 50, 31  # max
 # R1, R2 = 14, 14  # min
 
-help(sys.set_unit)
-
 r0 = sys.add_revolute(0, 1, p1=(197.4 + dx_bras, 68.9 + dy_bras))
 r1 = sys.add_revolute(0, 3, p1=(78.2 + dx_bras, 45. + dy_bras))
 r2 = sys.add_revolute(1, 2, p1=(R1, 0.))

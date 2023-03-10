@@ -215,6 +215,7 @@ class System:
         if not self._compiled:
             self._object.compile()
             self._compiled = True
+            print(f"Current signs :\n {self._object.signs}")
         
     def change_signs(self, signs):
         if isinstance(signs, (int, float)):
