@@ -52,22 +52,20 @@ def dfs(a):
         yield a
 
 
-def single_or_list(post_call=None):
-    def decor(f):
-        def g(self, *args):
-            for arg in dfs(args):
-                if isinstance(arg, str):
-                    arg = get_object(self.named_joints[arg])
-                if isinstance(arg, int):
-                    arg = self._object.joints[arg]
-                if hasattr(arg, '_object'):
-                    arg = get_object(arg)
-                f(self, arg)
-            if post_call is not None:
-                post_call(self)
-        g.__doc__ = f.__doc__
-        return g
-    return decor
+def multiple_joints(f):
+    def g(self, *args):
+        n_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                arg = get_object(self.named_joints[arg])
+            if isinstance(arg, int):
+                arg = self._object.joints[arg]
+            if hasattr(arg, '_object'):
+                arg = get_object(arg)
+            n_args.append(arg)
+        f(self, *n_args)
+    g.__doc__ = f.__doc__
+    return g
 
 
 decor_divide = (lambda x, y: None if x is None else x / y), (lambda x, y: None if x is None else (lambda: x() / y))

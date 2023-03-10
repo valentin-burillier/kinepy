@@ -2,7 +2,7 @@ from kinepy.units import *
 import kinepy.objects as obj
 from kinepy.interface.solid import Solid
 from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinslotJoint, RectangularJoint, J3DOF
-from kinepy.interface.decorators import physics_input, add_joint, solid_checker, single_or_list, joint_checker, \
+from kinepy.interface.decorators import physics_input, add_joint, solid_checker, multiple_joints, joint_checker, \
     get_object
 from kinepy.interface.relations import Gear, GearRack, DistantRelation, EffortlessRelation
 
@@ -13,7 +13,7 @@ class System:
         self._unit_system = UnitSystem()
         self.named_joints, self.named_sols = {}, {}
         self.ground = self.add_solid('Ground', 0., 0., (0., 0.))
-        self._compile_done = False
+        self._compiled = False
 
     @physics_input('', MASS, INERTIA, LENGTH)
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
@@ -34,7 +34,7 @@ class System:
         # print(s._object, id(s._object))
         self.named_sols[name] = s
         self._object.interactions.append(s.external_actions)
-        self._compile_done = False
+        self._compiled = False
         return s
 
     @solid_checker
@@ -51,7 +51,7 @@ class System:
 
         Returns: RevoluteJoint
         """
-        self._compile_done = False
+        self._compiled = False
         return add_joint(self, RevoluteJoint, s1, s2, p1, p2)
 
     @solid_checker
@@ -70,7 +70,7 @@ class System:
 
         Returns: PrismaticJoint
         """
-        self._compile_done = False
+        self._compiled = False
         return add_joint(self, PrismaticJoint, s1, s2, a1, d1, a2, d2)
 
     @solid_checker
@@ -88,7 +88,7 @@ class System:
 
         Returns: PinSlotJoint
         """
-        self._compile_done = False
+        self._compiled = False
         return add_joint(self, PinslotJoint, s1, s2, a1, d1, p2)
 
     @solid_checker
@@ -107,7 +107,7 @@ class System:
 
         Returns: RectangularJoint
         """
-        self._compile_done = False
+        self._compiled = False
         return add_joint(self, RectangularJoint, s1, s2, angle, a1, a2, p1, p2)
 
     @solid_checker
@@ -124,7 +124,7 @@ class System:
 
         Returns: ThreeDegreesOfFreedomJoint
         """
-        self._compile_done = False
+        self._compiled = False
         return add_joint(self, J3DOF, s1, s2, p1, p2)
 
     @physics_input(ACCELERATION)
@@ -149,7 +149,7 @@ class System:
             raise TypeError('Joints must be RevoluteJoints')
         g = Gear(self._unit_system, rev1, rev2, r, v0, pressure_angle) # noqa
         self._object.relations.append(get_object(g))
-        self._compile_done = False
+        self._compiled = False
         return g
 
     @joint_checker
@@ -161,7 +161,7 @@ class System:
             raise TypeError('Joint 2 must be a PrismaticJoint')
         gr = GearRack(self, rev, pri, r, v0, pressure_angle)  # noqa
         self._object.relations.append(get_object(gr))
-        self._compile_done = False
+        self._compiled = False
         return gr
 
     @joint_checker
@@ -170,7 +170,7 @@ class System:
             raise TypeError('Joints must have 1 degree of freedom')
         er = EffortlessRelation(self, j1, j2, r, v0)  # noqa
         self._object.relations.append(get_object(er))
-        self._compile_done = False
+        self._compiled = False
         return er
 
     @joint_checker
@@ -179,7 +179,7 @@ class System:
             raise TypeError('Joints must have 1 degree of freedom')
         dr = DistantRelation(self, j1, j2, r, v0)  # noqa
         self._object.relations.append(get_object(dr))
-        self._compile_done = False
+        self._compiled = False
         return dr
 
     def show_input(self):
@@ -193,41 +193,51 @@ class System:
         print('Currently used units:')
         print(self._unit_system)
 
-    def set_unit(self, phy, value, name='Unnamed unit'):
+    def set_unit(self, phy, value, unit='Unnamed unit'):
         if isinstance(value, tuple):
             value, unit = value
         self._unit_system.set(phy, value, unit)
 
-    @single_or_list(show_input)
-    def pilot(self, joint):
-        self._object.piloted.append(joint)
-        self._compile_done = False
+    @multiple_joints
+    def pilot(self, *joints):
+        """sets given joints as kinematic entry points for the mechanism"""
+        self._object.piloted = list(joints)
+        self._compiled = False
+        self.show_input()
 
-    @single_or_list()
-    def block(self, joint):
-        self._object.blocked.append(joint)
-        self._compile_done = False
+    @multiple_joints
+    def block(self, *joints):
+        """sets given joints as blocked"""
+        self._object.blocked = list(joints)
+        self._compiled = False
 
     def compile(self):
-        if not self._compile_done:
+        if not self._compiled:
             self._object.compile()
-            self._compile_done = True
+            self._compiled = True
         
     def change_signs(self, signs):
-        if isinstance(signs, int):
+        if isinstance(signs, (int, float)):
             signs = [signs]
         # vérif si ya que des 1 et -1
         if isinstance(signs, dict):
+            if any(x not in (-1, 1, -1., 1.) for x in signs.values()):
+                raise ValueError('Signs can be either 1 or -1, int or float')
             for cycle in signs.keys():
-                if cycle in self._object.signs: # sinon marche pas
+                if cycle in self._object.signs:  # sinon marche pas
                     self._object.signs[cycle] = signs[cycle]
+                else:
+                    print(f'\033[93mWarning : {cycle} is not recognised as a sign key\033[0m')
         else:
-            if len(self._object.signs) == len(signs): # sinon marche pas
-                for i, cycle in enumerate(self._object.signs.keys()):
-                    self._object.signs[cycle] = signs[i]
+            if any(x not in (-1, 1, -1., 1.) for x in signs):
+                raise ValueError('Signs can be either 1 or -1, int or float')
+            if len(self._object.signs) != len(signs):  # sinon marche pas
+                raise ValueError('Number of signs does not match')
+            for i, cycle in enumerate(self._object.signs.keys()):
+                self._object.signs[cycle] = signs[i]
 
     def solve_kinematics(self, inputs=None):
-        if not self._compile_done:
+        if not self._compiled:
             self.compile()
         if inputs is None:
             return self._object.solve_kinematics(self._object.inputs)
@@ -239,14 +249,14 @@ class System:
         self._object.solve_kinematics(inputs)
 
     def solve_statics(self, compute_kine=True, inputs=None):
-        if not self._compile_done:
+        if not self._compiled:
             self.compile()
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_statics()
 
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
-        if not self._compile_done:
+        if not self._compiled:
             self.compile()
         t /= self._unit_system[TIME][0]
         if compute_kine:
@@ -255,7 +265,7 @@ class System:
     
     def bill_of_materials(self):
         print('N°\t| Names')
-        print('----+------')
+        print('-----------')
         for i, s in enumerate(self._object.sols):
             print(f'{i}\t| {s}')
 
