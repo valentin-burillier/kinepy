@@ -130,16 +130,17 @@ def compiler(system, mode):
         sgn = SIGNS[index]
         key, concerned_joints = tuple(key), tuple(concerned_joints)
 
+        js = set(j.master if isinstance(j, (GhostRevolute, GhostPrismatic)) else j for j in (joints[i] for i in key))
         if sgn and mode:
             sgn_key = f'{len(kin_instr)} {NAMES[index]}'
             print(f"Step {len(kin_instr)}: Identified new signed group from graph {NAMES[index]} "
-                  f"(n°{index}) with joints {', '.join(repr(joints[i]) for i in key)}.\nChosen {sgn} as sign.\n"
+                  f"(n°{index}) with joints {', '.join(repr(j) for j in js)}.\nChosen {sgn} as sign.\n"
                   f"Sign key: {sgn_key}.\n")
             system.signs[sgn_key] = sgn
             system.tags[key] = sgn_key
         elif mode:
             print(f"Step {len(kin_instr)}: Solving new group from graph {NAMES[index]} "
-                  f"(n°{index}) with joints {', '.join(joints[i] for i in key)}.\nChosen {sgn} as sign.\n")
+                  f"(n°{index}) with joints {', '.join(repr(j) for j in js)}.\nChosen {sgn} as sign.\n")
             system.tags[key] = ()
 
         kin_instr.append((SOLVE_GRAPH, system, index, concerned_eqs, concerned_joints))
