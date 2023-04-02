@@ -55,21 +55,24 @@ sys.compile()
 sys.change_signs(-1)
 
 b_ = t.sinusoidal_input(b_min, b_max, 5, 101, v_max=0.5)
+
 sys.solve_kinematics(b_)
-# sys.solve_dynamics(5, inputs=b_)
+sys.solve_dynamics(5, inputs=b_)
 H = s1.get_point((d, 0))
 P = s1.get_point((f, 0))
 
+
 VP = t.get_speed(P, 5)
-
+VP = np.concatenate((VP, [[0.], [0.]]), axis=1)
+print(VP.shape, P.shape)
 #%%
-
+#
 anim = t.animate([[r1.point, H, r2.point, r4.point, r3.point], [H, P]], list_vectors=[(P, VP)], vector_scale=0.5)
-
+# plt.show()
 #%%
 
 plt.plot(t.norm(VP)/1000)
-
+plt.show()
 
 
 

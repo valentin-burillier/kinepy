@@ -205,7 +205,7 @@ def compute_inertia(system):
 
 
 def compute_ma(system):
-    for inter in system.interations:
+    for inter in system.interactions:
         inter.set_ma(system)
 
 

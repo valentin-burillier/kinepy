@@ -44,8 +44,8 @@ class RevoluteTorque:
 
     def set_ma(self, _):
         t = self._torque()
-        self.rev.s1.add_mech_action(ZERO_21, 0., t)
-        self.rev.s2.add_mech_action(ZERO_21, 0., -t)
+        get_object(self.rev).s1.add_mech_action(ZERO_21, 0., t)
+        get_object(self.rev).s2.add_mech_action(ZERO_21, 0., -t)
 
 
 class PrismaticTangent:
@@ -63,8 +63,8 @@ class PrismaticTangent:
         u = unit(get_angle(self.pri, 0))
         f = self._tangent() * u
         p = get_zero(self.pri, 0, u)
-        self.pri.s1.add_mech_action(f, p, 0.)
-        self.pri.s2.add_mech_action(-f, p, 0.)
+        get_object(self.pri).s1.add_mech_action(f, p, 0.)
+        get_object(self.pri).s2.add_mech_action(-f, p, 0.)
 
 
 class PinSlotTangentTorque:
