@@ -80,7 +80,7 @@ class UnitSystem:
         }
 
     def __getitem__(self, item):
-        return self.dct[item]
+        return self.dct[item][0]
 
     def set(self, phy, value, unit: str):
         self.dct[phy] = np.array(value), unit

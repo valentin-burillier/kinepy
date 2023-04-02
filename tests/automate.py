@@ -45,7 +45,7 @@ s15 = sys.add_solid(name='Avant-bras')
 # scie
 # s16 = sys.add_solid(name='Bûche')  # R+P
 
-settings = 'Valentin'
+settings = 'Loic'
 if settings == 'Valentin':
     R1, R2 = 43.6, 15
     dx_bras, dy_bras = 0, 0
@@ -129,9 +129,9 @@ plt.plot(*circle)
 plt.show()
 #%%
 
-anim = t.animate([[r18.point, P],
-                  [r9.point, r10.point],
-                  [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
-                  [r20.point, r21.point, r22.point]], anim_time=1)
-plt.plot(*circle)
-plt.show()
+# anim = t.animate([[r18.point, P],
+#                   [r9.point, r10.point],
+#                   [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
+#                   [r20.point, r21.point, r22.point]], anim_time=1)
+# plt.plot(*circle)
+# plt.show()

@@ -246,7 +246,7 @@ class System:
         if inputs.ndim == 1:
             inputs = inputs[np.newaxis, :]
         for vec, phy in zip(inputs, (p for joint in self._object.piloted for p in joint.inputs)):
-            vec *= self._unit_system[phy][0]
+            vec *= self._unit_system[phy]
         self._object.solve_kinematics(inputs)
 
     def solve_statics(self, compute_kine=True, inputs=None):
@@ -259,7 +259,7 @@ class System:
     def solve_dynamics(self, t, compute_kine=True, inputs=None):
         if not self._compiled:
             self.compile()
-        t /= self._unit_system[TIME][0]
+        t /= self._unit_system[TIME]
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_dynamics(t)

@@ -37,13 +37,13 @@ class MetaUnit(type):
     @staticmethod
     def read_only(tag, phy):
         return property(
-            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy][0])
+            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy])
         )
 
     @staticmethod
     def read_write(tag, phy):
         return property(
-            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy][0]),
-            (lambda self, value: self._object.__setattr__(f'{tag}', value * self._unit_system[phy][0])
+            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy]),
+            (lambda self, value: self._object.__setattr__(f'{tag}', value * self._unit_system[phy])
              if value is not None else None)
         )

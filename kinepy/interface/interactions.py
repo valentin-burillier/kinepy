@@ -20,8 +20,8 @@ class SolidExternal:
 
     def append(self, force, torque, point):
         self.externals.append((
-            (lambda: force * self._unit_system[FORCE][0]),
-            (lambda: torque * self._unit_system[TORQUE][0]),
+            (lambda: force * self._unit_system[FORCE]),
+            (lambda: torque * self._unit_system[TORQUE]),
             point
         ))
 
@@ -38,8 +38,8 @@ class RevoluteTorque:
         self.rev, self._torque = rev, t
 
     torque = property(
-        (lambda self: (lambda: self._torque() / self._unit_system[FORCE][0])),
-        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE][0])))
+        (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
+        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE])))
     )
 
     def set_ma(self, _):
@@ -55,8 +55,8 @@ class PrismaticTangent:
         self.pri, self._tangent = pri, f
 
     tangent = property(
-        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE][0])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE][0])))
+        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
+        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE])))
     )
 
     def set_ma(self, _):
@@ -81,11 +81,11 @@ class PinSlotTangentTorque:
         self.pin.s2.add_mech_action(-f, p, -t)
 
     tangent = property(
-        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE][0])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE][0])))
+        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
+        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE])))
     )
 
     torque = property(
-        (lambda self: (lambda: self._torque() / self._unit_system[FORCE][0])),
-        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE][0])))
+        (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
+        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE])))
     )

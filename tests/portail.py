@@ -64,11 +64,10 @@ P = s1.get_point((f, 0))
 
 VP = t.get_speed(P, 5)
 VP = np.concatenate((VP, [[0.], [0.]]), axis=1)
-print(VP.shape, P.shape)
 #%%
 #
 anim = t.animate([[r1.point, H, r2.point, r4.point, r3.point], [H, P]], list_vectors=[(P, VP)], vector_scale=0.5)
-# plt.show()
+plt.show()
 #%%
 
 plt.plot(t.norm(VP)/1000)
