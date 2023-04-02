@@ -199,8 +199,7 @@ def solve_graph12(eqs, js, sgn=None):
 #  ---------------------------------------------------------------------------------------------------------------------
 
 
-def solve_graph(system, index, eqs, js):
-    key = tuple(j.rep for j, _ in js)
+def solve_graph(system, index, eqs, js, key):
     SOLVE_GRAPHS[index](eqs, js, system.signs.get(system.tags[key], None))
 
 

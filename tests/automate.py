@@ -45,7 +45,7 @@ s15 = sys.add_solid(name='Avant-bras')
 # scie
 # s16 = sys.add_solid(name='Bûche')  # R+P
 
-settings = 'Loic'
+settings = 'Valentin'
 if settings == 'Valentin':
     R1, R2 = 43.6, 15
     dx_bras, dy_bras = 0, 0
@@ -100,9 +100,9 @@ sys.compile()
 
 
 # en mode R+P
-# sys._object.signs = {'2 RRR': -1, '3 RRR': -1, '4 RRR': 1, '5 RRR': -1, '6 RRR': 1, '7 RRP': -1, '8 RRR': -1}
+# sys._object.signs = {'3 RRR': -1, '4 RRR': -1, '5 RRR': 1, '6 RRR': -1, '7 RRR': 1, '8 RRP': -1, '9 RRR': -1}
 # en mode PS
-sys._object.signs = {'2 RRR': -1, '3 RRR': -1, '4 RRR': 1, '5 RRR': -1, '6 RRR': 1, '7 RRP': 1, '8 RRR': -1}
+sys._object.signs = {'3 RRR': -1, '4 RRR': -1, '5 RRR': 1, '6 RRR': -1, '7 RRR': 1, '8 RRP': 1, '9 RRR': -1}
 
 a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 
@@ -116,7 +116,6 @@ P = s4.get_point((saw, 0))
 # print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5) # sais tu que tu as un outils norm dans tools ?
 # je supp que non, voici un tuto :
 # print(t.norm(genou_d.point - pied_d.point))
-
 
 anim = t.animate([
     [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion

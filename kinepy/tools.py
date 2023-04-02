@@ -8,6 +8,7 @@ global C
 # C = cm.get_cmap('coolwarm') # plasma, coolwarm, bwr, rainbow, OrRd
 C = mcol.LinearSegmentedColormap.from_list("", ["cyan", "r"])
 
+
 def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, vector_scale=0.1, magnitude_vector='proportionnal'):
     """
     magnitude_vector : 'proportionnal', 'log', 'unitary'

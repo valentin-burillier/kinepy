@@ -1,3 +1,6 @@
+from kinepy.math.dynamic import group_tmd, group_trd, set_force
+from kinepy.math.geometry import get_point, sq_mag, z_cross, np
+
 
 class LinearRelationBase:
     v0 = r = j1 = j2 = None
@@ -31,6 +34,7 @@ class DistantRelation(LinearRelation):
 
 
 class GearRelation(LinearRelationBase):
+    common_eq = None, None
 
     def __init__(self, j1, j2, r, v0, pa):
         self.j1, self.j2, self.r, self.v0 = j1, j2, r, v0
@@ -38,36 +42,16 @@ class GearRelation(LinearRelationBase):
 
 
 class Gear(GearRelation):
-    """
-    def rel_block(self, j_index, eq1, eq2, ref):
-        (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = (self.j1, self.j2)[::(1, -1)[j_index]]
-
-        # indices du solide commun
-        i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
-        r = (self.r * (-2 * (i1 ^ i2) + 1)) ** (1, -1)[j_index]
-
-        # s2 est-il le solide en commun
-        c = s2 == (j1.s1, j1.s2)[i1]
-
-        a, b = j1.point, j2.point
-        d = mag(b - a)
-        theta = angle2(b - a, 1 / d)
-        rad = r * d / (r - 1)
-
-        m_12 = tmd(self.system, a, eq2)
-        n_12 = m_12 / rad
-        t_12 = np.abs(n_12) * np.tan(self.pressure_angle_) * (2 * ((rad < 0) ^ c) - 1)
-        f_12 = mat_mul_n(rot(theta), (t_12, n_12))
-        f_s12 = trd(self.system, eq2) - f_12
-
-        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_s12, a, 0.))
-        self.system.sols[s2].mech_actions.append(MechanicalAction(f_s12, a, 0.))
-
-        p = a + rad * unit(theta)
-        self.system.sols[(s1, (j2.s1, j2.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_12, p, 0.))
-        self.system.sols[((j2.s1, j2.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_12, p, 0.))
-    """
+    def rel_block(self, direction, eq0, eq1, ref):
+        joint = (self.j1, self.j2)[not direction]
+        vec = get_point(self.j2, 0) - get_point(self.j1, 0)
+        r = self.r / (self.r - 1)
+        vec = get_point(self.j1, 0) + r * vec - get_point(joint, 0)
+        mag = sq_mag(vec) ** .5
+        t10 = group_tmd((eq0, eq1), (0,), ref, get_point(joint, 0)) / mag
+        vec /= mag
+        f10 = z_cross(vec) * t10 - abs(t10) * np.tan(self.pressure_angle) * vec
+        set_force(joint, True, f10)
 
 
 class GearRack(GearRelation):
