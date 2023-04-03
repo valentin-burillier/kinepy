@@ -39,7 +39,7 @@ class RevoluteTorque:
 
     torque = property(
         (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE])))
+        (lambda self, value: setattr(self, '_torque', (lambda: value() * self._unit_system[FORCE])))
     )
 
     def set_ma(self, _):
@@ -56,7 +56,7 @@ class PrismaticTangent:
 
     tangent = property(
         (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE])))
+        (lambda self, value: setattr(self, '_tangent', (lambda: value() * self._unit_system[FORCE])))
     )
 
     def set_ma(self, _):
@@ -82,10 +82,10 @@ class PinSlotTangentTorque:
 
     tangent = property(
         (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: self._tangent() * self._unit_system[FORCE])))
+        (lambda self, value: setattr(self, '_tangent', (lambda: value() * self._unit_system[FORCE])))
     )
 
     torque = property(
         (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_torque', (lambda: self._torque() * self._unit_system[FORCE])))
+        (lambda self, value: setattr(self, '_torque', (lambda: value() * self._unit_system[FORCE])))
     )
