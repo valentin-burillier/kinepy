@@ -17,7 +17,6 @@ def set_force(rev, b, force):  # Force en rev.point(), par (s1, s2)[b] sur l'aut
     rev.force = force * (-1, 1)[b]
 
 
-
 def set_normal(pri, b, normal, torque, u):  # Force normale en get_zero(pri, 0)
     p = get_zero(pri, 0, u)
     n_ = normal * (-1, 1)[b]

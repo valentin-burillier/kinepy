@@ -93,10 +93,14 @@ r20 = sys.add_revolute(8, 14, p1=(19, 0))
 r21 = sys.add_revolute(14, 15, p1=(45, 0))
 r22 = sys.add_revolute(4, 15, p2=(43, 0))
 
-sys.add_gear(r0, r5, r=1, v0=-0.5)
+gear = sys.add_gear(r0, r5, r=1, v0=-0.5)
+print(f'{gear._object.common_eq = }')
+
 
 sys.pilot(r0)
 sys.compile()
+
+print(f'{gear._object.common_eq = }')
 
 
 # en mode R+P

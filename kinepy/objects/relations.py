@@ -34,7 +34,7 @@ class DistantRelation(LinearRelation):
 
 
 class GearRelation(LinearRelationBase):
-    common_eq = None, None
+    common_eq = False, False
 
     def __init__(self, j1, j2, r, v0, pa):
         self.j1, self.j2, self.r, self.v0 = j1, j2, r, v0
@@ -43,75 +43,26 @@ class GearRelation(LinearRelationBase):
 
 class Gear(GearRelation):
     def rel_block(self, direction, eq0, eq1, ref):
-        joint = (self.j1, self.j2)[not direction]
-        vec = get_point(self.j2, 0) - get_point(self.j1, 0)
-        r = self.r / (self.r - 1)
-        vec = get_point(self.j1, 0) + r * vec - get_point(joint, 0)
-        mag = sq_mag(vec) ** .5
-        t10 = group_tmd((eq0, eq1), (0,), ref, get_point(joint, 0)) / mag
-        vec /= mag
-        f10 = z_cross(vec) * t10 - abs(t10) * np.tan(self.pressure_angle) * vec
-        set_force(joint, True, f10)
+        eff_r = (self.r, -self.r)[self.common_eq[0] ^ self.common_eq[1]]
+        p1, p2 = get_point(self.j1, 0), get_point(self.j2, 0)
+        vec = p2 - p1
+        radius = eff_r ** (1, 0)[direction] / (eff_r - 1)
+
+        # compute force at gear contact
+        t_10 = group_tmd((eq0, eq1), (0,), ref, (p1, p2)[direction]) / radius
+        n_10 = np.tan(self.pressure_angle) * abs(t_10)
+        f_10 = (vec * n_10 * (1, -1)[radius > 0] + z_cross(vec) * t_10) / sq_mag(vec)
+
+        # add the force to gears
+        contact_point = p1 + vec * eff_r / (eff_r - 1)
+        j1, j2 = ((self.j2, self.j1), (self.j1, self.j2))[direction]
+        (j2.s1, j2.s2)[not self.common_eq[direction]].add_mech_action(f_10, contact_point, 0.)
+        (j1.s1, j1.s2)[not self.common_eq[not direction]].add_mech_action(-f_10, contact_point, 0.)
+
+        # RevoluteJoint force
+        set_force(j2, True, group_trd((eq1, eq0), (0,), ref))
 
 
 class GearRack(GearRelation):
-    """
-    def _rel_block1(self, eq1s1, eq2s2):
-        (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = self.j1, self.j2
-
-        # indices du solide commun
-        i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
-        r = self.r * (2 * (i1 ^ i2) - 1)
-
-        # s2 est-il le solide en commun
-        c = s2 == (j2.s1, j2.s2)[i1]
-
-        f_12 = trd(self.system, eq2)
-        u = get_unit(j2, 0)
-        p = j1.point + r * z_cross(u)
-        tangent_12 = dot(f_12, u)
-        normal_12 = np.tan(self.pressure_angle_) * np.abs(tangent_12) * (2 * (r > 0) - 1) * (-2 * c + 1)
-        f_1_2 = u * tangent_12 + z_cross(u) * normal_12
-
-        self.system.sols[(s1, (j1.s1, j1.s2)[not i2])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
-        self.system.sols[((j1.s1, j1.s2)[not i2], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
-
-        p = self.system.get_origin(s1)
-        mp_12 = tmd(self.system, p, eq2)
-
-        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12 + f_1_2, p, -mp_12))
-        self.system.sols[s2].mech_actions.append(MechanicalAction(f_12 - f_1_2, p, mp_12))
-    """
-
-    """
-    def _rel_block0(self, eq1s1, eq2s2):
-        (_, s1), (eq2, s2) = eq1s1, eq2s2
-        j1, j2 = self.j1, self.j2
-
-        # indices du solide commun
-        i1, i2 = (j1.s2 == j2.s1) or (j1.s2 == j2.s2),  (j1.s1 == j2.s2) or (j1.s2 == j2.s2)
-
-        # s2 est-il le solide en commun
-        c = s2 == (j1.s1, j1.s2)[i2]
-        r = self.r * (2 * (i1 ^ i2) - 1)
-
-        u = get_unit(j2, 0)
-        p = j1.point
-        m_12 = tmd(self.system, p, eq2)
-        tangent_12 = -m_12 / r
-        normal_12 = np.tan(self.pressure_angle) * np.abs(tangent_12) * (2 * (r > 0) - 1) * (2 * c - 1)
-        f_1_2 = u * tangent_12 + z_cross(u) * normal_12
-
-        f_12 = trd(self.system, eq2) - f_1_2
-        self.system.sols[s1].mech_actions.append(MechanicalAction(-f_12 + f_1_2, p, 0))
-        self.system.sols[s2].mech_actions.append(MechanicalAction(f_12 - f_1_2, p, 0))
-
-        p = p + r * z_cross(u)
-
-        self.system.sols[(s1, (j2.s1, j2.s2)[not i1])[not c]].mech_actions.append(MechanicalAction(-f_1_2, p, 0.))
-        self.system.sols[((j2.s1, j2.s2)[not i1], s2)[not c]].mech_actions.append(MechanicalAction(f_1_2, p, 0.))
-
-    def rel_block(self, j_index, eq1s1, eq2s2):
-        (self._rel_block0, self._rel_block1)[j_index](eq1s1, eq2s2)
-    """
+    def rel_block(self, direction, eq0, eq1, ref):
+        pass

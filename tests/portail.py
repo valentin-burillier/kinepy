@@ -55,7 +55,7 @@ sys.compile()
 sys.change_signs(-1)
 
 b_ = t.sinusoidal_input(b_min, b_max, 5, 101, v_max=0.5)
-
+b_ = np.concatenate((b_, b_[::-1]))
 sys.solve_kinematics(b_)
 r2.set_torque(-1)
 sys.solve_dynamics(5, inputs=b_)
