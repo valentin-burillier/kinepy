@@ -1,5 +1,6 @@
 from kinepy.math.dynamic import group_tmd, group_trd, set_force, set_normal
-from kinepy.math.geometry import get_point, sq_mag, z_cross, np, unit, get_angle, dot, get_zero
+from kinepy.math.geometry import get_point, sq_mag, z_cross, np, unit, get_angle, dot, get_zero, ZERO_21
+from kinepy.objects.joints import RevoluteJoint, PrismaticJoint
 
 
 class LinearRelationBase:
@@ -25,7 +26,7 @@ class EffortlessRelation(LinearRelation):
 class DistantRelation(LinearRelation):
     def rel_block(self, direction, eq0, eq1, ref):
         LinearRelationBase.rel_block(self, direction, eq0, eq1, ref)
-        # à compléter
+        (self.j1, self.j2)[not direction].put_effort((self.j1, self.j2)[direction] * self.r ** (-1, 1)[direction])
 
 
 class GearRelation(LinearRelationBase):

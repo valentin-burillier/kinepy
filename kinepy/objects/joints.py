@@ -1,7 +1,7 @@
 from kinepy.units import ANGLE, LENGTH
 from kinepy.objects.solid import Solid
 from kinepy.math.geometry import np, rotate_eq, move_eq, get_point, rvec, unit, get_angle, get_zero, det, dot, z_cross,\
-    ZERO_POINT
+    ZERO_POINT, ZERO_21
 from kinepy.math.dynamic import trd, tmd
 
 
@@ -55,6 +55,14 @@ class RevoluteJoint(Joint):
         self.s2.add_mech_action(-f_21, p, -m_21)
         self.force, self.torque = f_21, m_21
 
+    def put_effort(self, value):
+        p = get_point(self, 0)
+        self.s1.add_mech_action(ZERO_21, p, value)
+        self.s2.add_mech_action(ZERO_21, p, -value)
+
+    def get_effort(self):
+        return self.torque
+
 
 class PrismaticJoint(Joint):
     id_, tag, dof, inputs = 2, 'Pri', 1, (LENGTH,)
@@ -70,6 +78,9 @@ class PrismaticJoint(Joint):
 
     def pilot(self, eq1, eq2, value):
         return self.set_value(value, eq1, eq2)
+
+    def get_value(self):
+        return self.sliding
 
     def set_value(self, value, _, eq2):
         self.sliding = value
@@ -88,9 +99,14 @@ class PrismaticJoint(Joint):
         self.s2.add_mech_action(-f_21, p, -m_21)
         self.torque, self.tangent, self.normal = m_21, dot(f_21, u), det(u, f_21)
 
-    def get_value(self):
-        return self.sliding
+    def put_effort(self, value):
+        u = unit(get_angle(self, 0))
+        n, p = z_cross(u) * value, get_zero(self, 0, u)
+        self.s1.add_mech_action(n, p, 0.)
+        self.s2.add_mech_action(-n, p, 0.)
 
+    def get_effort(self):
+        return self.normal
 
 class GhostRevolute(Joint):
     id_, tag = RevoluteJoint.id_, 'GhostRev'
