@@ -32,7 +32,7 @@ class RevoluteJoint(Joint):
         self.p1, self.p2 = p1, p2
 
     def reset(self, n):
-        self.force, self.torque = None, None
+        self.force, self.torque = np.zeros((2, n)), np.zeros((n,))
         self.angle = np.zeros((n,), float)
 
     def pilot(self, eq1, eq2, value):
@@ -65,7 +65,7 @@ class PrismaticJoint(Joint):
         self.a1, self.a2, self.d1, self.d2 = a1, a2, d1, d2
     
     def reset(self, n):
-        self.normal, self.tangent, self.torque = None, None, None
+        self.normal, self.tangent, self.torque = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))
         self.sliding = np.zeros((n,), float)
 
     def pilot(self, eq1, eq2, value):
@@ -138,7 +138,7 @@ class PinSlotJoint(Joint):
         self.ghost_j2 = GhostRevolute(self, 1, f'{self.name}-1')
 
     def reset(self, n):
-        self.normal, self.tangent, self.torque = None, None, None
+        self.normal, self.tangent, self.torque = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))
         self.sliding = np.zeros((n,))
         self.angle = np.zeros((n,))
         self.ghost_sol.reset(n)

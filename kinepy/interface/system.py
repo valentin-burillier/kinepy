@@ -16,7 +16,7 @@ class System:
         self._compiled = False
 
     @physics_input('', MASS, INERTIA, LENGTH)
-    def add_solid(self, name='', m=0., j=0., g=(0., 0.)):
+    def add_solid(self, name='', m=0., j=0., g=(0., 0.)) -> Solid:
         """
         Adds a solid to the system
 
@@ -39,7 +39,7 @@ class System:
 
     @solid_checker
     @physics_input('', '', LENGTH, LENGTH)
-    def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+    def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)) -> RevoluteJoint:
         """
         Adds a revolute joint to the system
 
@@ -56,7 +56,7 @@ class System:
 
     @solid_checker
     @physics_input('', '', ANGLE, LENGTH, ANGLE, LENGTH)
-    def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.):
+    def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.) -> PrismaticJoint:
         """
         Adds a prismatic joint to the system
 
@@ -75,7 +75,7 @@ class System:
 
     @solid_checker
     @physics_input('', '', ANGLE, LENGTH, LENGTH)
-    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)):
+    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)) -> PinslotJoint:
         """
         Adds a pin slot joint to the system
 
@@ -93,7 +93,7 @@ class System:
 
     @solid_checker
     @physics_input('', '', ANGLE, ANGLE, LENGTH, LENGTH)
-    def add_rectangle(self, s1, s2, angle=0., a1=0., a2=np.pi * .5, p1=(0., 0.), p2=(0., 0.)):
+    def add_rectangle(self, s1, s2, angle=0., a1=0., a2=np.pi * .5, p1=(0., 0.), p2=(0., 0.)) -> RectangularJoint:
         """
         Adds a rectangle joint to the system
 
@@ -112,7 +112,7 @@ class System:
 
     @solid_checker
     @physics_input('', '', LENGTH, LENGTH)
-    def add_3dof(self, s1, s2, p1=(0., 0.), p2=(0., 0.)):
+    def add_3dof(self, s1, s2, p1=(0., 0.), p2=(0., 0.)) -> J3DOF:
         """
         Adds a 3 degrees of freedom joint to the system
 

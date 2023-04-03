@@ -57,11 +57,14 @@ sys.change_signs(-1)
 b_ = t.sinusoidal_input(b_min, b_max, 5, 101, v_max=0.5)
 
 sys.solve_kinematics(b_)
-r1.set_torque(-1)
+r2.set_torque(-1)
 sys.solve_dynamics(5, inputs=b_)
 H = s1.get_point((d, 0))
 P = s1.get_point((f, 0))
 r1.force
+r2.force
+r4.force
+r3.torque
 
 
 VP = t.get_speed(P, 5)
