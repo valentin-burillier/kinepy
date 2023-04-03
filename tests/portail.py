@@ -60,7 +60,7 @@ sys.solve_kinematics(b_)
 sys.solve_dynamics(5, inputs=b_)
 H = s1.get_point((d, 0))
 P = s1.get_point((f, 0))
-
+r1.force
 
 VP = t.get_speed(P, 5)
 VP = np.concatenate((VP, [[0.], [0.]]), axis=1)

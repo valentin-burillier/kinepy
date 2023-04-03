@@ -14,7 +14,8 @@ def set_force(rev, b, force):  # Force en rev.point(), par (s1, s2)[b] sur l'aut
     p = get_point(rev, 0)
     rev.s1.add_mech_action(force * (-1, 1)[b], p, 0.)
     rev.s2.add_mech_action(force * (1, -1)[b], p, 0.)
-    rev.force_ = force * (-1, 1)[b]
+    rev.force = force * (-1, 1)[b]
+
 
 
 def set_normal(pri, b, normal, torque, u):  # Force normale en get_zero(pri, 0)
@@ -22,8 +23,8 @@ def set_normal(pri, b, normal, torque, u):  # Force normale en get_zero(pri, 0)
     n_ = normal * (-1, 1)[b]
     pri.s1.add_mech_action(n_, p, torque * (-1, 1)[b])
     pri.s2.add_mech_action(-n_, p, torque * (1, -1)[b])
-    pri.normal_ = det(u, n_)
-    pri.torque_ = torque * (-1, 1)[b]
+    pri.normal = det(u, n_)
+    pri.torque = torque * (-1, 1)[b]
 
 
 def group_tmd(eqs, indexes, ref, point):
