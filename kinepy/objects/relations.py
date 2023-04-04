@@ -31,19 +31,21 @@ class DistantRelation(LinearRelation):
 
 class GearRelation(LinearRelationBase):
     common_eq = False, False
+    contact_point = contact_force = None
+    tmp = tmp2 = tmp3 = tmp4 = None
 
     def __init__(self, j1, j2, r, v0, pa):
         self.j1, self.j2, self.r, self.v0 = j1, j2, r, v0
         self.pressure_angle = pa
 
     def _solve_contact(self, direction, radius, vec, contact_point, t_10):
-        n_10 = np.tan(self.pressure_angle) * abs(t_10)
-        f_10 = (vec * n_10 * (1, -1)[radius > 0] + z_cross(vec) * t_10)
+        self.tmp2 = n_10 = np.tan(self.pressure_angle) * abs(t_10) * (1, -1)[(radius < 0) ^ self.common_eq[direction]]
+        self.contact_force = f_10 = (vec * n_10 + z_cross(vec) * t_10)
 
         # add the force to gears
         j1, j2 = ((self.j2, self.j1), (self.j1, self.j2))[direction]
-        (j2.s1, j2.s2)[not self.common_eq[direction]].add_mech_action(f_10, contact_point, 0.)
-        (j1.s1, j1.s2)[not self.common_eq[not direction]].add_mech_action(-f_10, contact_point, 0.)
+        (j2.s1, j2.s2)[not self.common_eq[direction]].add_mech_action(-f_10, contact_point, 0.)
+        (j1.s1, j1.s2)[not self.common_eq[not direction]].add_mech_action(f_10, contact_point, 0.)
 
 
 class Gear(GearRelation):
@@ -52,20 +54,23 @@ class Gear(GearRelation):
         p1, p2 = get_point(self.j1, 0), get_point(self.j2, 0)
         vec = p2 - p1
         radius = eff_r ** (1, 0)[direction] / (eff_r - 1)
-        contact_point = p1 + vec * eff_r / (eff_r - 1)
-        t_10 = group_tmd((eq0, eq1), (0,), ref, (p1, p2)[direction]) / radius
+        self.contact_point = contact_point = p1 + vec * eff_r / (eff_r - 1)
+        self.tmp = t_10 = group_tmd((eq0, eq1), (0,), ref, (p1, p2)[direction]) / radius
 
+        self.tmp4 = group_trd((eq0, eq1), (0,), ref)
         self._solve_contact(direction, radius, vec / sq_mag(vec), contact_point, t_10)
+        self.tmp4 += self.contact_force
 
         # RevoluteJoint force
-        set_force((self.j1, self.j2)[direction], True, group_trd((eq1, eq0), (0,), ref))
+        self.tmp3 = group_trd((eq0, eq1), (0,), ref)
+        set_force((self.j1, self.j2)[direction], True, group_trd((eq0, eq1), (0,), ref))
 
 
 class GearRack(GearRelation):
     def rel_block(self, direction, eq0, eq1, ref):
         eff_r = self.r * (1, -1)[self.common_eq[0] ^ self.common_eq[1]]
         v = -z_cross(u := unit(get_angle(self.j2, 0)))
-        contact_point = get_point(self.j1, 0) + v * eff_r
+        self.contact_point = contact_point = get_point(self.j1, 0) + v * eff_r
         if not direction:
             t_10 = group_tmd((eq0, eq1), (0,), ref, get_point(self.j1, 0)) / eff_r
             self._solve_contact(direction, eff_r, v, contact_point, t_10)
