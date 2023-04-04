@@ -26,12 +26,12 @@ class Solid(obj.Solid, metaclass=MetaUnit):
         if isinstance(f, np.ndarray) and len(f) == 2:
             if f.shape == (2,):
                 f = f.reshape((2, 1))
-            self.external_actions.append((lambda: f), ZERO_F, p)
+            self.external_actions.append((lambda: f * self._unit_system[FORCE]), ZERO_F, p)
         elif isinstance(f, FUNCTION_TYPE):
-            self.external_actions.append(f, ZERO_F, p)
+            self.external_actions.append((lambda: f() * self._unit_system[FORCE]), ZERO_F, p)
 
     def add_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.external_actions.append(ZERO_ARRAY_F, (lambda: t), self._object.g)
+            self.external_actions.append(ZERO_ARRAY_F, (lambda: t * self._unit_system[TORQUE]), self._object.g)
         elif isinstance(t, FUNCTION_TYPE):
-            self.external_actions.append(ZERO_ARRAY_F, t, self._object.g)
+            self.external_actions.append(ZERO_ARRAY_F, (lambda: t() * self._unit_system[TORQUE]), self._object.g)

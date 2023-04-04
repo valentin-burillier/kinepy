@@ -13,11 +13,11 @@ print(k)
 
 #%%
 
-n, T = 1001, 5
+n, T = 101, 5
 
 sys = k.System()
 
-R1, R2 = 2, 4
+R1, R2 = -1, 4
 
 s1 = sys.add_solid('Roue 1')
 s2 = sys.add_solid('Roue 2')
@@ -31,8 +31,8 @@ sys.pilot(r1)
 
 sys.compile()
 
-r2.set_torque(10)
-s2.add_torque(10)
+s1.add_torque(.1)
+s1.add_torque(-.1)
 s2.add_force(np.ones(n)*np.array([[0], [-10]]), (-R2, 0))
 
 
@@ -44,8 +44,8 @@ P1 = s1.get_point((R1, 0))
 P2 = s2.get_point((-R2, 0))
 
 #%%
-
-anim = t.animate([P1, r1.point, r2.point, P2], list_vectors=[(r1.point, r1.force), (r2.point, r2.force)], vector_scale=0.001)
+anim = t.animate([P1, r1.point, r2.point, P2], list_vectors=[(r1.point, r1.force), (r2.point, r2.force), (s2.get_point((-R2, 0)), np.ones(n)*np.array([[0], [-10]]))], vector_scale=0.1)
+# anim.save('anim.gif')
 plt.show()
 #%%
 
