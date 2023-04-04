@@ -4,6 +4,11 @@ from matplotlib import animation
 from matplotlib import cm
 import matplotlib.colors as mcol
 
+from kinepy.units import *
+from kinepy.interface.decorators import physics_input, physics_output
+
+
+
 global C
 # C = cm.get_cmap('coolwarm') # plasma, coolwarm, bwr, rainbow, OrRd
 C = mcol.LinearSegmentedColormap.from_list("", ["cyan", "r"])
@@ -143,22 +148,29 @@ def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     l_dec = v/2*(T[-i:] - t + t_inf + t_inf/np.pi*np.sin(np.pi/t_inf*(T[-i:] - t + t_inf))) + v*(t - 2*t_inf) + a + v/2*t_inf
     return np.r_[l_acc, l_plateau, l_dec]
 
-j_parallelepiped = lambda L, l, e, m : m/12*(L**2 + l**2 + e**2)
+class j:
+    def __init__(self):
+        self._unit_system = UnitSystem()
 
-j_bar = lambda L, r, m : m/4*(r**2 + L**2/3)
+    @physics_output(INERTIA)
+    @physics_input(LENGTH, LENGTH, LENGTH, MASS)
+    def parallelepiped(self, L, l, e, m):
+        return m/12*(L**2 + l**2 + e**2)
+    
+    @physics_output(INERTIA)
+    @physics_input(LENGTH, LENGTH, MASS)
+    def bar(self, L, r, m):
+        return m/4*(r**2 + L**2/3)
 
-j_cylinder = lambda r, e, m : m*r**2/2
-
-j_ball = lambda r, m : 2/5*m*r**2
-
-def make_continuous(L):
-    l0 = 0
-    for i, l in enumerate(L):
-        if not np.isnan(L[i]):
-            k = (l - l0 + np.pi)//(2*np.pi)
-            L[i] -= k*2*np.pi
-            l0 = L[i]
-    return L
+    @physics_output(INERTIA)
+    @physics_input(LENGTH, LENGTH, MASS)
+    def cylinder(self, r, e, m):
+        return m*r**2/2
+    
+    @physics_output(INERTIA)
+    @physics_input(LENGTH, LENGTH, MASS)
+    def ball(self, r, m):
+        return 2/5*m*r**2
 
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
@@ -166,20 +178,12 @@ def distance(p1, p2):
 def norm(v):
     return np.linalg.norm(v, axis=0)
 
-def to_cartesian(r, a):
-    return (r*np.cos(a), r*np.sin(a))
-
 def get_speed(p, t):
     if len(p.shape) == 1:    
-        return np.diff(p)/t*(len(p) - 1)
-    return np.diff(p, axis=1)/t*(p.shape[1] - 1)
-
-def get_speed_accurate(p, t):
-    if len(p.shape) == 1:    
-        return (p[2:] - p[:-2])/(2*t/(len(p) - 1))
-    return (p[:, 2:] - p[:, :-2])/(2*t/(p.shape[1] - 1))
+        return np.diff(p, append=np.nan)/t*len(p)
+    return np.diff(p, axis=1, append=np.nan)/t*p.shape[1]
 
 def get_acceleration(p, t):
     if len(p.shape) == 1:    
-        return np.diff(p, 2)/(t/(len(p) - 1))**2
-    return np.diff(p, 2, axis=1)/(t/(p.shape[1] - 1))**2
+        return np.diff(p, 2, append=np.nan, prepend=np.nan)/(t/len(p))**2
+    return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
