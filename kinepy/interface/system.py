@@ -249,14 +249,14 @@ class System:
             vec *= self._unit_system[phy]
         self._object.solve_kinematics(inputs)
 
-    def solve_statics(self, compute_kine=True, inputs=None):
+    def solve_statics(self, inputs=None, compute_kine=True):
         if not self._compiled:
             self.compile()
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_statics()
 
-    def solve_dynamics(self, t, compute_kine=True, inputs=None):
+    def solve_dynamics(self, inputs=None, t=10, compute_kine=True):
         if not self._compiled:
             self.compile()
         t /= self._unit_system[TIME]
@@ -266,7 +266,7 @@ class System:
     
     def bill_of_materials(self):
         print('N°\t| Names')
-        print('-----------')
+        print('----+------')
         for i, s in enumerate(self._object.sols):
             print(f'{i}\t| {s}')
 
