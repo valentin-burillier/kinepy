@@ -31,6 +31,7 @@ sys.pilot(r1)
 
 sys.compile()
 
+print(gear._object.common_eq)
 s2.add_force(np.ones(n)*np.array([[0], [-10]]), (-R2, 0))
 
 
@@ -41,9 +42,9 @@ sys.solve_dynamics(a)
 P1 = s1.get_point((R1, 0))
 P2 = s2.get_point((-R2, 0))
 
-# plt.plot(gear._object.tmp)
+plt.plot(gear._object.tmp)
 # plt.plot(gear._object.tmp2)
-# plt.show()
+plt.show()
 #
 # anim = t.animate([[np.ones((2, n), float) * ((5,), (5,))], [np.ones((2, n), float) * ((-5,), (-5,))]], [np.zeros((2, n)), gear._object.tmp4], vector_scale=.3)
 # plt.show()

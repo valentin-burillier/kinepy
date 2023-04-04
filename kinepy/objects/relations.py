@@ -40,7 +40,7 @@ class GearRelation(LinearRelationBase):
 
     def _solve_contact(self, direction, radius, vec, contact_point, t_10):
         self.tmp2 = n_10 = np.tan(self.pressure_angle) * abs(t_10) * (1, -1)[(radius < 0) ^ self.common_eq[direction]]
-        self.contact_force = f_10 = (vec * n_10 + z_cross(vec) * t_10)
+        self.contact_force = f_10 = vec * n_10 - z_cross(vec) * t_10
 
         # add the force to gears
         j1, j2 = ((self.j2, self.j1), (self.j1, self.j2))[direction]
@@ -54,12 +54,11 @@ class Gear(GearRelation):
         p1, p2 = get_point(self.j1, 0), get_point(self.j2, 0)
         vec = p2 - p1
         radius = eff_r ** (1, 0)[direction] / (eff_r - 1)
+        print(f'{radius = }')
         self.contact_point = contact_point = p1 + vec * eff_r / (eff_r - 1)
         self.tmp = t_10 = group_tmd((eq0, eq1), (0,), ref, (p1, p2)[direction]) / radius
 
-        self.tmp4 = group_trd((eq0, eq1), (0,), ref)
         self._solve_contact(direction, radius, vec / sq_mag(vec), contact_point, t_10)
-        self.tmp4 += self.contact_force
 
         # RevoluteJoint force
         self.tmp3 = group_trd((eq0, eq1), (0,), ref)
