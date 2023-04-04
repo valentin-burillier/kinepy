@@ -27,12 +27,19 @@ ACCELERATION = 'Acceleration'
 METER_PER_SQUARE_SECOND = np.array(1.), 'm/s²'
 G = np.array(9.8067), 'G'
 
+# ----------------------------------------------- Speed units ---------------------------------------------------
+
+SPEED = 'Speed'
+METER_PER_SECOND = np.array(1.), 'm/s'
+KILOMETRE_PER_HOUR = np.array(1/3.6), 'km/h'
+
 # ---------------------------------------------- Force units -----------------------------------------------------------
 
 FORCE = 'Force'
 NEWTON = np.array(1.), 'N'
 DECANEWTON = np.array(10.), 'daN'
 MILLINEWTON = np.array(1e-3), 'mN'
+KILONEWTON = np.array(1e3), 'kN'
 
 # --------------------------------------------- Mass units -------------------------------------------------------------
 
@@ -49,7 +56,7 @@ MILLINEWTON_METER = np.array(1e-3), 'mNm'
 
 # -------------------------------------------- Spring constant units ---------------------------------------------------
 
-SPRING_CONSTANT = 'SpingConstant'
+SPRING_CONSTANT = 'SpringConstant'
 NEWTON_PER_METER = np.array(1.), 'N/m'
 
 # --------------------------------------------- Inertia units ----------------------------------------------------------
@@ -71,6 +78,7 @@ class UnitSystem:
             ANGLE: RADIAN,
             TIME: SECOND,
             ACCELERATION: KILOGRAM_METER_SQUARED,
+            SPEED: METER_PER_SECOND,
             FORCE: NEWTON,
             MASS: KILOGRAM,
             TORQUE: NEWTON_METER,
@@ -86,7 +94,7 @@ class UnitSystem:
         self.dct[phy] = np.array(value), unit
 
     def __repr__(self):
-        return '\n'.join('{phy}: {unit}'.format(phy=phy, unit=unit) for phy, (value, unit) in self.dct.items())
+        return '\n'.join('{phy:14} : {unit}'.format(phy=phy, unit=unit) for phy, (value, unit) in self.dct.items())
 
 
 PHYSICAL_QUANTITIES = LENGTH, TIME, ANGLE, ACCELERATION, FORCE, MASS, TORQUE, SPRING_CONSTANT, INERTIA, ADIMENSIONNED
