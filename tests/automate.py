@@ -4,7 +4,7 @@ Created on Mon Dec 26 15:52:35 2022
 """
 
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 import kinepy.tools as t
 import kinepy as k
@@ -121,21 +121,21 @@ P = s4.get_point((saw, 0))
 # je supp que non, voici un tuto :
 # print(t.norm(genou_d.point - pied_d.point))
 
-anim = t.animate([
-    [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion
-    [r5.point, r7.point, r8.point, r6.point], [r7.point, r9.point, r10.point, r11.point],  # body motion
-    [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
-    [r20.point, r21.point, r22.point]  # bras
-], anim_time=2)
+# anim = t.animate([
+#     [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion
+#     [r5.point, r7.point, r8.point, r6.point], [r7.point, r9.point, r10.point, r11.point],  # body motion
+#     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
+#     [r20.point, r21.point, r22.point]  # bras
+# ], anim_time=2)
 circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
-plt.plot(*circle)
-# anim.save('anim.gif')
-plt.show()
-#%%
-
-# anim = t.animate([[r18.point, P],
-#                   [r9.point, r10.point],
-#                   [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
-#                   [r20.point, r21.point, r22.point]], anim_time=1)
 # plt.plot(*circle)
+# # anim.save('anim.gif')
 # plt.show()
+# #%%
+
+anim = t.animate([[r18.point, P],
+                  [r9.point, r10.point],
+                  [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
+                  [r20.point, r21.point, r22.point]], anim_time=1)
+plt.plot(*circle)
+plt.show()

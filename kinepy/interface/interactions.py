@@ -20,8 +20,8 @@ class SolidExternal:
 
     def append(self, force, torque, point):
         self.externals.append((
-            (lambda: force * self._unit_system[FORCE]),
-            (lambda: torque * self._unit_system[TORQUE]),
+            (lambda: force() * self._unit_system[FORCE]),
+            (lambda: torque() * self._unit_system[TORQUE]),
             point
         ))
 
