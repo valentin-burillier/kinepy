@@ -26,9 +26,10 @@ def set_normal(pri, b, normal, torque, u):  # Force normale en get_zero(pri, 0)
     pri.torque = torque * (-1, 1)[b]
 
 
-def group_tmd(eqs, indexes, ref, point):
+def group_tmd(eqs, indices, ref, point):
+    # gets the sum of unknown values in the tmd of eqs described by indices
     key = 0
-    for index in indexes:
+    for index in indices:
         key |= 1 << index
     mask = (key >> ref) & 1
     eq = sum((e for i, e in enumerate(eqs) if ((key >> i) & 1) ^ mask), ())

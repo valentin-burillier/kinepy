@@ -16,7 +16,7 @@ class Solid:
 
     def add_mech_action(self, force, point, torque):
         self.trd += force
-        self.g_tmd += det(self.og - point, force) + torque
+        self.g_tmd += torque + det(point - self.og, force)
 
     def babar(self, point):
         return self.g_tmd + det(self.og - point, self.trd)

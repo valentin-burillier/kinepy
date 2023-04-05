@@ -28,8 +28,10 @@ class DistantRelation(obj.DistantRelation, EffortlessRelation):
 
 
 class Gear(obj.Gear, metaclass=MetaUnit):
+    read_only = ('contact_force', FORCE), ('contact_point', LENGTH)
     read_write = ('pressure_angle', ANGLE), ('v0', ANGLE), ('r', ADIMENSIONNED)
 
 
 class GearRack(obj.GearRack, metaclass=MetaUnit):
+    read_only = ('contact_force', FORCE), ('contact_point', LENGTH)
     read_write = ('v0', LENGTH), ('r', LENGTH)
