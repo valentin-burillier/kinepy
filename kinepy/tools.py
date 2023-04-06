@@ -172,16 +172,20 @@ class j:
     def ball(self, r, m):
         return 2/5*m*r**2
 
+
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
+
 
 def norm(v):
     return np.linalg.norm(v, axis=0)
 
+
 def get_speed(p, t):
     if len(p.shape) == 1:    
-        return np.diff(p, append=np.nan)/t*len(p)
-    return np.diff(p, axis=1, append=np.nan)/t*p.shape[1]
+        return np.diff(p, append=np.nan)*len(p)/t
+    return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
+
 
 def get_acceleration(p, t):
     if len(p.shape) == 1:    

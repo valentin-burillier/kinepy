@@ -32,6 +32,7 @@ class DistantRelation(LinearRelation):
 class GearRelation(LinearRelationBase):
     common_eq = False, False
     contact_point = contact_force = None
+    tmp = None
 
     def __init__(self, j1, j2, r, v0, pa):
         self.j1, self.j2, self.r, self.v0 = j1, j2, r, v0

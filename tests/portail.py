@@ -64,10 +64,11 @@ VP = t.get_speed(P, T)
 
 time = np.linspace(0, T, n)
 v = t.get_speed(b_, T)
-plt.plot(time, -r3.torque*v)
-
+plt.plot(time, -r3.torque * v)
+plt.show()
 print(np.sum((-r3.torque*v)[1:-1])*T)#/n) # calcule de l'énergie nécessaire
 
 #%%
 
-anim = t.animate([[r1.point, H, r2.point, r4.point, r3.point], [H, P]], list_vectors=[(P, VP)], vector_scale=0.5)
+# anim = t.animate([[r1.point, H, r2.point, r4.point, r3.point], [H, P]], list_vectors=[(P, VP)], vector_scale=0.5)
+# plt.show()

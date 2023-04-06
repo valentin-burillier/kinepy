@@ -263,7 +263,7 @@ class Compiler:
                 self.relation_graph[joint2.rep] = [
                     adj for adj in self.relation_graph[joint2.rep] if not (adj[1] is relation)
                 ]
-                yield (joint1, joint2)[direction], relation, direction
+                yield joint2, relation, direction
             self.relation_graph[joint1.rep] = []
 
     def _manage_relations(self, solids, delay_allowed, mode):

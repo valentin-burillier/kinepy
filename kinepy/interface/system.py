@@ -259,20 +259,20 @@ class System:
     def solve_dynamics(self, inputs=None, t=10, compute_kine=True):
         if not self._compiled:
             self.compile()
-        t /= self._unit_system[TIME]
+        t *= self._unit_system[TIME]
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_dynamics(t)
     
     def bill_of_materials(self):
         print('N°\t| Names')
-        print('----+------')
+        print('-----------')
         for i, s in enumerate(self._object.sols):
             print(f'{i}\t| {s}')
 
 
 System.set_unit.__doc__ = f"""Changes the unit
-phy is the physical quantity anmong {', '.join(PHYSICAL_QUANTITIES)}
+phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
 value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
 name is the name of your unit
 You can use units imported from units.py"""

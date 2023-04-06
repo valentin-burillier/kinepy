@@ -32,22 +32,23 @@ sys.pilot(r2) # normalement r1.force = 0
 sys.compile()
 
 F = np.ones(n)*np.array([[0], [-10]])
-s2.add_force(F, (-R2, 0))
+s1.add_force(F, (R1, 0))
 
 #%%
   
-a = t.direct_input(0, 2*np.pi, T, n)*R2
+a = t.direct_input(0, 2*np.pi, T, n)*R1
 sys.solve_dynamics(a)
 P1 = s1.get_point((R1, 0))
 P2 = s2.get_point((-R2, 0))
 
 
-anim = t.animate([P1, r1.point, r2.point, P2], list_vectors=[(r1.point, -r1.force), (r2.point, -r2.force), (P2, F), (gear.contact_point, -gear.contact_force)], vector_scale=0.1)
-# anim.save('anim.gif')
 
+anim = t.animate([P1, r1.point, r2.point, P2], list_vectors=[(r1.point, -r1.force), (r2.point, -r2.force), (P1, F), (gear.contact_point, gear.contact_force)], vector_scale=0.1)
+# anim.save('anim.gif')
+plt.show()
 #%%
 
-plt.plot(r1.torque)
+plt.plot(r2.torque)
 plt.show()
 
 #%%
