@@ -25,7 +25,7 @@ h = 400
 n, T = 101, 5
 sys = k.System()
 
-s1 = sys.add_solid('Ventail', m=5, g=(f/2, 0))
+s1 = sys.add_solid('Ventail', m=50, g=(f/2, 0))
 s2 = sys.add_solid('Bras')
 s3 = sys.add_solid('Bielle')
 
@@ -64,7 +64,7 @@ VP = t.get_speed(P, T)
 
 time = np.linspace(0, T, n)
 v = t.get_speed(b_, T)
-plt.plot(-r3.torque*v)
+plt.plot(time, -r3.torque*v)
 
 print(np.sum((-r3.torque*v)[1:-1])*T)#/n) # calcule de l'énergie nécessaire
 
