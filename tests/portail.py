@@ -22,9 +22,10 @@ h = 400
 
 #%%
 
+n, T = 101, 5
 sys = k.System()
 
-s1 = sys.add_solid('Ventail', m=50, g=(f/2, 0))
+s1 = sys.add_solid('Ventail', m=5, g=(f/2, 0))
 s2 = sys.add_solid('Bras')
 s3 = sys.add_solid('Bielle')
 
@@ -39,12 +40,8 @@ sys.compile()
 
 #%%
 
-a = t.direct_input(0, np.pi/2, 5, 101)
+a = t.direct_input(0, np.pi/2, T, n)
 sys.solve_kinematics(a)
-H = s1.get_point((d, 0))
-P = s1.get_point((f, 0))
-
-VP = t.get_speed(P, 5)
 
 #%%
 b_min, b_max = np.min(r3.angle), np.max(r3.angle)
@@ -54,29 +51,23 @@ sys.pilot(r3)
 sys.compile()
 sys.change_signs(-1)
 
-b_ = t.sinusoidal_input(b_min, b_max, 5, 101, v_max=0.5)
-b_ = np.concatenate((b_, b_[::-1]))
+b_ = t.sinusoidal_input(b_min, b_max, T, n, v_max=0.5)
 sys.solve_kinematics(b_)
-r2.set_torque(-1)
-sys.solve_dynamics(5, inputs=b_)
+#r1.set_torque(10)
+sys.solve_dynamics(b_, T)
 H = s1.get_point((d, 0))
 P = s1.get_point((f, 0))
-r1.force
-r2.force
-r4.force
-r3.torque
 
+VP = t.get_speed(P, T)
 
-VP = t.get_speed(P, 5)
-VP = np.concatenate((VP, [[0.], [0.]]), axis=1)
 #%%
-#
+
+time = np.linspace(0, T, n)
+v = t.get_speed(b_, T)
+plt.plot(-r3.torque*v)
+
+print(np.sum((-r3.torque*v)[1:-1])*T)#/n) # calcule de l'énergie nécessaire
+
+#%%
+
 anim = t.animate([[r1.point, H, r2.point, r4.point, r3.point], [H, P]], list_vectors=[(P, VP)], vector_scale=0.5)
-plt.show()
-#%%
-
-plt.plot(t.norm(VP)/1000)
-plt.show()
-
-
-
