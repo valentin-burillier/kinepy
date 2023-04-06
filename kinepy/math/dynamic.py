@@ -209,6 +209,7 @@ def compute_ma(system):
     for inter in system.interactions:
         inter.set_ma(system)
 
+
 def rec_ghosts(system):
     for j in system.dyn_ghosted:
         j.dyn_recover_ghosts()

@@ -108,6 +108,7 @@ class PrismaticJoint(Joint):
     def get_effort(self):
         return self.normal
 
+
 class GhostRevolute(Joint):
     id_, tag = RevoluteJoint.id_, 'GhostRev'
     force = torque = angle = None

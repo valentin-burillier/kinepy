@@ -42,7 +42,6 @@ P1 = s1.get_point((R1, 0))
 P2 = s2.get_point((-R2, 0))
 
 
-
 anim = t.animate([P1, r1.point, r2.point, P2], list_vectors=[(r1.point, -r1.force), (r2.point, -r2.force), (P1, F), (gear.contact_point, gear.contact_force)], vector_scale=0.1)
 # anim.save('anim.gif')
 plt.show()

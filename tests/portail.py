@@ -22,7 +22,7 @@ h = 400
 
 #%%
 
-n, T = 101, 5
+n, T = 10001, 5
 sys = k.System()
 
 s1 = sys.add_solid('Ventail', m=50, g=(f/2, 0))
@@ -64,9 +64,13 @@ VP = t.get_speed(P, T)
 
 time = np.linspace(0, T, n)
 v = t.get_speed(b_, T)
-plt.plot(time, -r3.torque * v)
+plt.plot(time, -r3.torque)
+plt.plot(time, v)
+plt.plot(time, v * -r3.torque)
+plt.plot(time, [np.trapz((v * -r3.torque)[1:x], dx=T / n) for x in range(0, n)])
+
 plt.show()
-print(np.sum((-r3.torque*v)[1:-1])*T)#/n) # calcule de l'énergie nécessaire
+print(np.trapz((-r3.torque*v)[1:-1], dx=T/n))  # calcule de l'énergie nécessaire
 
 #%%
 
