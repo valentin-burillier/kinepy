@@ -1,5 +1,8 @@
 import numpy as np
 
+# every goat related data is from http://www.chevre-poitevine.org/le-standard-de-race/
+
+
 #  ------------------------------------------------ Length units -------------------------------------------------------
 
 LENGTH = 'Length'

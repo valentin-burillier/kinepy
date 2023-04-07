@@ -6,7 +6,7 @@ from kinepy.math.dynamic import DYN
 
 
 class System:
-    dt = inputs = None
+    dt = inputs = n = None
 
     def __init__(self, sols, joints, relations, piloted, blocked, interactions):
         self.sols, self.joints, self.relations, self.piloted, self.blocked, self.interactions = \
@@ -17,6 +17,7 @@ class System:
         self.compiler = Compiler(self)
 
     def reset(self, n):
+        self.n = n
         for sol in self.sols:
             sol.reset(n)
         for joint in self.joints:
