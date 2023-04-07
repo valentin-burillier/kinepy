@@ -185,6 +185,9 @@ class PinSlotJoint(Joint):
         self.angle = self.ghost_j2.angle
         self.sliding = self.ghost_j1.sliding
 
+    def dyn_recover_ghosts(self):
+        self.normal = self.ghost_j1.normal
+
 
 class RectangularJoint(Joint):
     id_, tag, dof, inputs = 4, 'Rec', 2, (f'X ({LENGTH})', f'Y ({LENGTH})')
@@ -230,6 +233,9 @@ class RectangularJoint(Joint):
         p = self.s2.origin + rvec(self.s2.angle, self.p2) - self.s1.origin - rvec(self.s1.angle, self.p1)
         d = det(ux, uy)
         self.sliding = det(p, uy) / d, det(ux, p) / d
+
+    def dyn_recover_ghosts(self):
+        self.torque = self.ghost_j1.torque
 
 
 class ThreeDegreesOfFreedomJoint(Joint):

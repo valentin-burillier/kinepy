@@ -112,7 +112,7 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 
 sys.solve_kinematics(a)
 
-P = s4.get_point((saw / 1000., 0))
+P = s4.get_point((saw, 0))
 
 #%%
 
@@ -126,7 +126,7 @@ P = s4.get_point((saw / 1000., 0))
 #     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
 #     [r20.point, r21.point, r22.point]  # bras
 # ], anim_time=2)
-circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4 * .001
+circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
 # plt.plot(*circle)
 # # anim.save('anim.gif')
 # plt.show()

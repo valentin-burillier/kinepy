@@ -114,7 +114,7 @@ def physics_input_method(*phy):
                     n_args.append(kwargs[arg])
             return method(self, *n_args)
 
-        g.__doc__ = method.__doc__
+        g.__doc__, g.__name__ = method.__doc__, method.__name__
         return g
     return decor
 
