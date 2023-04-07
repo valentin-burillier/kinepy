@@ -1,25 +1,25 @@
 from kinepy.units import *
-from kinepy.interface.decorators import physics_input
+from kinepy.interface.decorators import physics_input_method
 
 
 class Test:
     def __init__(self):
         self._unit_system = UnitSystem()
-        self._unit_system.set(ANGLE, DEGREE)
+        self._unit_system.set(ANGLE, *DEGREE)
 
-    @physics_input(LENGTH, ANGLE)
+    @physics_input_method(LENGTH, ANGLE)
     def test0(self, length, angle):
         return length, angle
 
-    @physics_input(LENGTH, ANGLE)
+    @physics_input_method(LENGTH, ANGLE)
     def test1(self, length, angle=np.math.pi):
         return length, angle
 
-    @physics_input(LENGTH, ANGLE)
+    @physics_input_method(LENGTH, ANGLE)
     def test2(self, length=1., angle=np.math.pi):
         return length, angle
 
-    @physics_input(LENGTH, ANGLE, '', LENGTH, ACCELERATION)
+    @physics_input_method(LENGTH, ANGLE, '', LENGTH, ACCELERATION)
     def test3(self, length, angle, brandon, point=(1., 1.), gravity=(0., -G)):
         return length, angle, brandon, tuple(point), tuple(gravity)
 

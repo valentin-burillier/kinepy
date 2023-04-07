@@ -5,7 +5,7 @@ from matplotlib import cm
 import matplotlib.colors as mcol
 
 from kinepy.units import *
-from kinepy.interface.decorators import physics_input, physics_output
+from kinepy.interface.decorators import physics_input_function, physics_output
 
 
 
@@ -84,6 +84,7 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     
     return anim
 
+
 def direct_input(a, b, t, n=101, v_max=None):
     v = (b - a)/t
     if v_max is not None and abs(v) > v_max: # triangle
@@ -148,29 +149,29 @@ def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     l_dec = v/2*(T[-i:] - t + t_inf + t_inf/np.pi*np.sin(np.pi/t_inf*(T[-i:] - t + t_inf))) + v*(t - 2*t_inf) + a + v/2*t_inf
     return np.r_[l_acc, l_plateau, l_dec]
 
-class j:
-    def __init__(self):
-        self._unit_system = UnitSystem()
 
-    @physics_output(INERTIA)
-    @physics_input(LENGTH, LENGTH, LENGTH, MASS)
-    def parallelepiped(self, L, l, e, m):
-        return m/12*(L**2 + l**2 + e**2)
-    
-    @physics_output(INERTIA)
-    @physics_input(LENGTH, LENGTH, MASS)
-    def bar(self, L, r, m):
-        return m/4*(r**2 + L**2/3)
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
+def parallelepiped_inertia(L, l, e, m):
+    return m/12*(L**2 + l**2 + e**2)
 
-    @physics_output(INERTIA)
-    @physics_input(LENGTH, LENGTH, MASS)
-    def cylinder(self, r, e, m):
-        return m*r**2/2
-    
-    @physics_output(INERTIA)
-    @physics_input(LENGTH, LENGTH, MASS)
-    def ball(self, r, m):
-        return 2/5*m*r**2
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, MASS)
+def bar_inertia(L, r, m):
+    return m/4*(r**2 + L**2/3)
+
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, MASS)
+def cylinder_inertia(r, m):
+    return m*r**2/2
+
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, MASS)
+def ball_inertia(r, m):
+    return 2/5*m*r**2
 
 
 def distance(p1, p2):

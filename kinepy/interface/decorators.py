@@ -1,4 +1,5 @@
 import numpy as np
+import kinepy.units as units
 
 
 def get_object(self):
@@ -68,17 +69,13 @@ def multiple_joints(f):
     return g
 
 
-decor_divide = (lambda x, y: None if x is None else x / y), (lambda x, y: None if x is None else (lambda: x() / y))
-decor_multiply = (lambda x, y: None if x is None else x * y), (lambda x, y: None if x is None else (lambda: x() * y))
-
-
 FUNCTION_TYPE = type(lambda: None)
 
 
 def physics_output(phy):
     def decor(f):
-        def g(self, *args, **kwargs):
-            return f(self, *args, **kwargs) / self._unit_system[phy]
+        def g(*args, **kwargs):
+            return f(*args, **kwargs) / units.SYSTEM[phy]
         return g
     return decor
 
@@ -93,7 +90,7 @@ def to_function(f):
     return g
 
 
-def physics_input(*phy):
+def physics_input_method(*phy):
     def decor(method):
         cnt = method.__code__.co_argcount
         f_args = method.__code__.co_varnames[1:cnt]
@@ -104,7 +101,7 @@ def physics_input(*phy):
             if len(args) + len(kwargs) > cnt:
                 raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
 
-            n_args = [value * self._unit_system[unit] if unit else value for value, unit in zip(args, phy)]
+            n_args = [value * units.SYSTEM[unit] if unit else value for value, unit in zip(args, phy)]
 
             for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
                 if arg not in kwargs:
@@ -112,7 +109,7 @@ def physics_input(*phy):
                         raise TypeError(f"Value axpected for {arg}, index {index}")
                     n_args.append(defaults[index - shift])
                 elif phy[index]:
-                    n_args.append(kwargs[arg] * self._unit_system[phy[index]])
+                    n_args.append(kwargs[arg] * units.SYSTEM[phy[index]])
                 else:
                     n_args.append(kwargs[arg])
             return method(self, *n_args)
@@ -122,8 +119,37 @@ def physics_input(*phy):
     return decor
 
 
+def physics_input_function(*phy):
+    def decor(method):
+        cnt = method.__code__.co_argcount
+        f_args = method.__code__.co_varnames[1:cnt]
+        defaults = method.__defaults__ if method.__defaults__ is not None else ()
+        shift = cnt - 1 - len(defaults)
+
+        def g(*args, **kwargs):
+            if len(args) + len(kwargs) > cnt:
+                raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
+
+            n_args = [value * units.SYSTEM[unit] if unit else value for value, unit in zip(args, phy)]
+
+            for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
+                if arg not in kwargs:
+                    if index < shift:
+                        raise TypeError(f"Value axpected for {arg}, index {index}")
+                    n_args.append(defaults[index - shift])
+                elif phy[index]:
+                    n_args.append(kwargs[arg] * units.SYSTEM[phy[index]])
+                else:
+                    n_args.append(kwargs[arg])
+            return method(*n_args)
+
+        g.__doc__ = method.__doc__
+        return g
+    return decor
+
+
 def add_joint(self, cls, s1, s2, *args):
-    joint = cls(self._unit_system, s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
+    joint = cls(s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
     self._object.joints.append(get_object(joint))
     self._object.interactions.append(joint.interaction)
     self.named_joints[repr(joint)] = joint

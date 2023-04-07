@@ -1,3 +1,4 @@
+import kinepy.units as units
 from kinepy.units import *
 
 
@@ -24,8 +25,7 @@ class MetaUnit(type):
 
         old__init__ = dct.get("__init__", lambda self: None)
 
-        def __init__(self, unit_system, *args):
-            self._unit_system = unit_system
+        def __init__(self, *args):
             self._object = bases[0](*args)
             old__init__(self)
 
@@ -37,13 +37,13 @@ class MetaUnit(type):
     @staticmethod
     def read_only(tag, phy):
         return property(
-            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy])
+            (lambda self: self._object.__getattribute__(f'{tag}') / units.SYSTEM[phy])
         )
 
     @staticmethod
     def read_write(tag, phy):
         return property(
-            (lambda self: self._object.__getattribute__(f'{tag}') / self._unit_system[phy]),
-            (lambda self, value: self._object.__setattr__(f'{tag}', value * self._unit_system[phy])
+            (lambda self: self._object.__getattribute__(f'{tag}') / units.SYSTEM[phy]),
+            (lambda self, value: self._object.__setattr__(f'{tag}', value * units.SYSTEM[phy])
              if value is not None else None)
         )

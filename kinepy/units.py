@@ -66,7 +66,7 @@ KILOGRAM_METER_SQUARED = np.array(1.), 'kg.m²'
 
 # --------------------------------------------- Adimensionned ----------------------------------------------------------
 
-ADIMENSIONNED = 'Adimensionned'
+DIMENSIONLESS = 'dimensionless'
 NO_UNIT = np.array(1.), 'No Unit'
 PERCENT = np.array(.01), '%'
 
@@ -84,7 +84,7 @@ class UnitSystem:
             TORQUE: NEWTON_METER,
             SPRING_CONSTANT: NEWTON_PER_METER,
             INERTIA: KILOGRAM_METER_SQUARED,
-            ADIMENSIONNED: NO_UNIT
+            DIMENSIONLESS: NO_UNIT
         }
 
     def __getitem__(self, item):
@@ -97,4 +97,23 @@ class UnitSystem:
         return '\n'.join('{phy:14} : {unit}'.format(phy=phy, unit=unit) for phy, (value, unit) in self.dct.items())
 
 
-PHYSICAL_QUANTITIES = LENGTH, TIME, ANGLE, ACCELERATION, FORCE, MASS, TORQUE, SPRING_CONSTANT, INERTIA, ADIMENSIONNED
+PHYSICAL_QUANTITIES = LENGTH, TIME, ANGLE, ACCELERATION, FORCE, MASS, TORQUE, SPRING_CONSTANT, INERTIA, DIMENSIONLESS
+
+SYSTEM = UnitSystem()
+
+
+def set_unit(phy, value, unit='Unnamed unit'):
+    if isinstance(value, tuple):
+        value, unit = value
+    SYSTEM.set(phy, value, unit)
+
+
+set_unit.__doc__ = f"""Changes the unit
+phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
+value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
+name is the name of your unit.
+You can use units imported from units.py"""
+
+
+def show_units():
+    print("Currently used units:", *(f'{key}: {name}' for key, (_, name) in SYSTEM.dct.items()), sep='\n')

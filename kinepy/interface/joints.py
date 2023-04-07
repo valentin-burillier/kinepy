@@ -11,13 +11,13 @@ class RevoluteJoint(obj.RevoluteJoint, metaclass=MetaUnit):
     read_write = P1, P2
 
     def __init__(self): # noqa
-        self.interaction = RevoluteTorque(self._unit_system, self, ZERO_F)
+        self.interaction = RevoluteTorque(self, ZERO_F)
 
     @to_function
     def set_torque(self, t):
         self.interaction.torque = t
 
-    point = property(lambda self: self._object.s2.origin / self._unit_system[LENGTH] + rvec(self._object.s2.angle, self.p2))
+    point = property(lambda self: self._object.s2.origin / units.SYSTEM[LENGTH] + rvec(self._object.s2.angle, self.p2))
 
 
 class PrismaticJoint(obj.PrismaticJoint, metaclass=MetaUnit):
@@ -26,20 +26,20 @@ class PrismaticJoint(obj.PrismaticJoint, metaclass=MetaUnit):
     read_write = A1, A2, D1, D2
 
     def __init__(self): # noqa
-        self.interaction = PrismaticTangent(self._unit_system, self, ZERO_F)
+        self.interaction = PrismaticTangent(self, ZERO_F)
 
     @to_function
     def set_tangent(self, t):
         self.interaction.tangent = t
 
 
-class PinslotJoint(obj.PinSlotJoint, metaclass=MetaUnit):
+class PinSlotJoint(obj.PinSlotJoint, metaclass=MetaUnit):
     _object: obj.PinSlotJoint
     read_only = SLIDING, NORMAL, TANGENT, TORQUE_
     read_write = A1, D1, P2
 
     def __init__(self): # noqa
-        self.interaction = PinSlotTangentTorque(self._unit_system, self, ZERO_F, ZERO_F)
+        self.interaction = PinSlotTangentTorque(self, ZERO_F, ZERO_F)
 
     @to_function
     def set_torque(self, t):
@@ -49,7 +49,7 @@ class PinslotJoint(obj.PinSlotJoint, metaclass=MetaUnit):
     def set_tangent(self, t):
         self.interaction.tangent = t
 
-    point = property(lambda self: self.s2.origin + rvec(self.s2.angle, self.p2) / self._unit_system[LENGTH])
+    point = property(lambda self: self.s2.origin + rvec(self.s2.angle, self.p2) / units.SYSTEM[LENGTH])
 
 
 class RectangularJoint(obj.RectangularJoint, metaclass=MetaUnit):

@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import kinepy.tools as t
 import kinepy as k
+from kinepy.units import set_unit, show_units, LENGTH, METER
 from kinepy.math.geometry import unit
 
 
@@ -15,7 +16,7 @@ from kinepy.math.geometry import unit
 
 
 sys = k.System()
-sys.show_units()
+show_units()
 
 # mains
 s1 = sys.add_solid(name='Roue_scie')
@@ -94,13 +95,10 @@ r21 = sys.add_revolute(14, 15, p1=(45, 0))
 r22 = sys.add_revolute(4, 15, p2=(43, 0))
 
 gear = sys.add_gear(r0, r5, r=1, v0=-0.5)
-print(f'{gear._object.common_eq = }')
 
 
 sys.pilot(r0)
 sys.compile()
-
-print(f'{gear._object.common_eq = }')
 
 
 # en mode R+P
@@ -113,7 +111,8 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 #%%
 
 sys.solve_kinematics(a)
-P = s4.get_point((saw, 0))
+
+P = s4.get_point((saw / 1000., 0))
 
 #%%
 
@@ -127,7 +126,7 @@ P = s4.get_point((saw, 0))
 #     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
 #     [r20.point, r21.point, r22.point]  # bras
 # ], anim_time=2)
-circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
+circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4 * .001
 # plt.plot(*circle)
 # # anim.save('anim.gif')
 # plt.show()

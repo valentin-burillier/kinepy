@@ -1,5 +1,6 @@
 import kinepy.objects as obj
 from kinepy.interface.metaclass import *
+import kinepy.units as units
 
 
 class EffortlessRelation(obj.EffortlessRelation, metaclass=MetaUnit):
@@ -12,14 +13,13 @@ class EffortlessRelation(obj.EffortlessRelation, metaclass=MetaUnit):
         self.r = self._object.r
 
     v0 = property(
-        (lambda self: self.v0_ / self._unit_system[self.v0_phy]),
-        lambda self, v: setattr(self, 'v0', v * self._unit_system[self.v0_phy])
+        (lambda self: self.v0_ / units.SYSTEM[self.v0_phy]),
+        lambda self, v: setattr(self, 'v0', v * units.SYSTEM[self.v0_phy])
     )
 
     r = property(
-        (lambda self: self._object.r_ * self._unit_system[self.r_phy[1]] / self._unit_system[self.r_phy[0]]),
-        lambda self, v: setattr(self._object, 'r', v * self._unit_system[self.r_phy[0]] /
-                                self._unit_system[self.r_phys[1]])
+        (lambda self: self._object.r_ * units.SYSTEM[self.r_phy[1]] / units.SYSTEM[self.r_phy[0]]),
+        lambda self, v: setattr(self._object, 'r', v * units.SYSTEM[self.r_phy[0]] / units.SYSTEM[self.r_phys[1]])
     )
 
 
@@ -29,7 +29,7 @@ class DistantRelation(obj.DistantRelation, EffortlessRelation):
 
 class Gear(obj.Gear, metaclass=MetaUnit):
     read_only = ('contact_force', FORCE), ('contact_point', LENGTH)
-    read_write = ('pressure_angle', ANGLE), ('v0', ANGLE), ('r', ADIMENSIONNED)
+    read_write = ('pressure_angle', ANGLE), ('v0', ANGLE), ('r', DIMENSIONLESS)
 
 
 class GearRack(obj.GearRack, metaclass=MetaUnit):

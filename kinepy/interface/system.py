@@ -1,8 +1,9 @@
 from kinepy.units import *
+import kinepy.units as units
 import kinepy.objects as obj
 from kinepy.interface.solid import Solid
-from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinslotJoint, RectangularJoint, J3DOF
-from kinepy.interface.decorators import physics_input, add_joint, solid_checker, multiple_joints, joint_checker, \
+from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint, J3DOF
+from kinepy.interface.decorators import physics_input_method, add_joint, solid_checker, multiple_joints, joint_checker, \
     get_object
 from kinepy.interface.relations import Gear, GearRack, DistantRelation, EffortlessRelation
 
@@ -10,12 +11,11 @@ from kinepy.interface.relations import Gear, GearRack, DistantRelation, Effortle
 class System:
     def __init__(self):
         self._object = obj.System([], [], [], [], [], [])
-        self._unit_system = UnitSystem()
         self.named_joints, self.named_sols = {}, {}
         self.ground = self.add_solid('Ground', 0., 0., (0., 0.))
         self._compiled = False
 
-    @physics_input('', MASS, INERTIA, LENGTH)
+    @physics_input_method('', MASS, INERTIA, LENGTH)
     def add_solid(self, name='', m=0., j=0., g=(0., 0.)) -> Solid:
         """
         Adds a solid to the system
@@ -29,7 +29,7 @@ class System:
         Returns: Solid
         """
         name = name if name else f"Solid_{len(self._object.sols)}"
-        s = Solid(self._unit_system, m, j, g, name)  # noqa
+        s = Solid(m, j, g, name)  # noqa
         self._object.sols.append(get_object(s))
         # print(s._object, id(s._object))
         self.named_sols[name] = s
@@ -38,14 +38,14 @@ class System:
         return s
 
     @solid_checker
-    @physics_input('', '', LENGTH, LENGTH)
+    @physics_input_method('', '', LENGTH, LENGTH)
     def add_revolute(self, s1, s2, p1=(0., 0.), p2=(0., 0.)) -> RevoluteJoint:
         """
         Adds a revolute joint to the system
 
         Parameters :
-         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
-         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - s1, int, str or Solid: index, name or object referring to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object referring to the second solid concerned by the joint
          - p1, tuple[float, float]: local position of the joint in s1
          - p2, tuple[float, float]: local position of the joint in s2
 
@@ -55,14 +55,14 @@ class System:
         return add_joint(self, RevoluteJoint, s1, s2, p1, p2)
 
     @solid_checker
-    @physics_input('', '', ANGLE, LENGTH, ANGLE, LENGTH)
+    @physics_input_method('', '', ANGLE, LENGTH, ANGLE, LENGTH)
     def add_prismatic(self, s1, s2, a1=0., d1=0., a2=0., d2=0.) -> PrismaticJoint:
         """
         Adds a prismatic joint to the system
 
         Parameters :
-         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
-         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - s1, int, str or Solid: index, name or object referring to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object referring to the second solid concerned by the joint
          - a1, float: local direction of the axis of the joint in s1
          - a2, float: local direction of the axis of the joint in s2
          - d1, float: algebraic distance from the reference of s1 to the axis of the joint
@@ -74,14 +74,14 @@ class System:
         return add_joint(self, PrismaticJoint, s1, s2, a1, d1, a2, d2)
 
     @solid_checker
-    @physics_input('', '', ANGLE, LENGTH, LENGTH)
-    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)) -> PinslotJoint:
+    @physics_input_method('', '', ANGLE, LENGTH, LENGTH)
+    def add_pin_slot(self, s1, s2, a1=0., d1=0., p2=(0., 0.)) -> PinSlotJoint:
         """
         Adds a pin slot joint to the system
 
         Parameters :
-         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
-         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - s1, int, str or Solid: index, name or object referring to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object referring to the second solid concerned by the joint
          - a1, float: local direction of the axis of the joint in s1
          - d1, float: algebraic distance from the reference of s1 to the axis of the joint
          - p2, tuple[float, float]: local position of the joint in s2
@@ -89,17 +89,17 @@ class System:
         Returns: PinSlotJoint
         """
         self._compiled = False
-        return add_joint(self, PinslotJoint, s1, s2, a1, d1, p2)
+        return add_joint(self, PinSlotJoint, s1, s2, a1, d1, p2)
 
     @solid_checker
-    @physics_input('', '', ANGLE, ANGLE, LENGTH, LENGTH)
+    @physics_input_method('', '', ANGLE, ANGLE, LENGTH, LENGTH)
     def add_rectangle(self, s1, s2, angle=0., a1=0., a2=np.pi * .5, p1=(0., 0.), p2=(0., 0.)) -> RectangularJoint:
         """
         Adds a rectangle joint to the system
 
         Parameters :
-         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
-         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - s1, int, str or Solid: index, name or object referring to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object referring to the second solid concerned by the joint
          - a1, float: local direction of the axis of the joint in s1
          - a2, float: local direction of the axis of the joint in s2
          - p1, tuple[float, float]: local position of the anchor of joint in s1
@@ -111,14 +111,14 @@ class System:
         return add_joint(self, RectangularJoint, s1, s2, angle, a1, a2, p1, p2)
 
     @solid_checker
-    @physics_input('', '', LENGTH, LENGTH)
+    @physics_input_method('', '', LENGTH, LENGTH)
     def add_3dof(self, s1, s2, p1=(0., 0.), p2=(0., 0.)) -> J3DOF:
         """
-        Adds a 3 degrees of freedom joint to the system
+        Adds a 3-degree of freedom joint to the system
 
         Parameters :
-         - s1, int, str or Solid: index, name or object refering to the first solid concerned by the joint
-         - s2, int, str or Solid: index, name or object refering to the second solid concerned by the joint
+         - s1, int, str or Solid: index, name or object referring to the first solid concerned by the joint
+         - s2, int, str or Solid: index, name or object referring to the second solid concerned by the joint
          - p1, tuple[float, float]: local position of the anchor of joint in s1
          - p2, tuple[float, float]: local position of the anchor of joint in s2
 
@@ -127,34 +127,34 @@ class System:
         self._compiled = False
         return add_joint(self, J3DOF, s1, s2, p1, p2)
 
-    @physics_input(ACCELERATION)
+    @physics_input_method(ACCELERATION)
     def add_gravity(self, g=G):
-        grav = Gravity(self._unit_system, g)  # noqa
+        grav = Gravity(g)  # noqa
         self._object.interactions.append(grav)
         return grav
 
     @solid_checker
-    @physics_input('', '', SPRING_CONSTANT, LENGTH, LENGTH, LENGTH)
+    @physics_input_method('', '', SPRING_CONSTANT, LENGTH, LENGTH, LENGTH)
     def add_spring(self, s1, s2, k, l0, p1=(0., 0.), p2=(0, 0.)):
-        spr = Spring(self._unit_system, s1, s2, k, l0, p1, p2)  # noqa
+        spr = Spring(s1, s2, k, l0, p1, p2)  # noqa
         self._object.interactions.append(spr)
         return spr
 
     @joint_checker
-    @physics_input('', '', ADIMENSIONNED, ANGLE, ANGLE)
+    @physics_input_method('', '', DIMENSIONLESS, ANGLE, ANGLE)
     def add_gear(self, rev1, rev2, r, v0=0., pressure_angle=np.pi / 9):
         if not isinstance(rev1, obj.RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
         if not isinstance(rev2, obj.RevoluteJoint):
             raise TypeError('Joints must be RevoluteJoints')
-        g = Gear(self._unit_system, rev1, rev2, r, v0, pressure_angle) # noqa
+        g = Gear(rev1, rev2, r, v0, pressure_angle) # noqa
         self._object.relations.append(get_object(g))
         self._compiled = False
         return g
 
     @joint_checker
-    @physics_input('', '', LENGTH, LENGTH)
-    def add_gearrack(self, rev, pri, r, v0=0., pressure_angle=np.pi / 9):
+    @physics_input_method('', '', LENGTH, LENGTH)
+    def add_gear_rack(self, rev, pri, r, v0=0., pressure_angle=np.pi / 9):
         if not isinstance(rev, obj.RevoluteJoint):
             raise TypeError('Joint 1 must be a RevoluteJoint')
         if not isinstance(pri, obj.PrismaticJoint):
@@ -189,15 +189,6 @@ class System:
         print('Current input order:')
         print(f"({'; '.join(m for joint in self._object.piloted for m in joint.input_mode())})")
 
-    def show_units(self):
-        print('Currently used units:')
-        print(self._unit_system)
-
-    def set_unit(self, phy, value, unit='Unnamed unit'):
-        if isinstance(value, tuple):
-            value, unit = value
-        self._unit_system.set(phy, value, unit)
-
     @multiple_joints
     def pilot(self, *joints):
         """sets given joints as kinematic entry points for the mechanism"""
@@ -215,7 +206,8 @@ class System:
         if not self._compiled:
             self._object.compile()
             self._compiled = True
-            print(f"Current signs :\n {self._object.signs}")
+            string = '\n'.join(f'{key}: {value}' for key, value in self._object.signs.items())
+            print(f"Current signs :\n{string}")
         
     def change_signs(self, signs):
         if isinstance(signs, (int, float)):
@@ -246,7 +238,7 @@ class System:
         if inputs.ndim == 1:
             inputs = inputs[np.newaxis, :]
         for vec, phy in zip(inputs, (p for joint in self._object.piloted for p in joint.inputs)):
-            vec *= self._unit_system[phy]
+            vec *= units.SYSTEM[phy]
         self._object.solve_kinematics(inputs)
 
     def solve_statics(self, inputs=None, compute_kine=True):
@@ -256,23 +248,17 @@ class System:
             self.solve_kinematics(inputs)
         self._object.solve_statics()
 
+    @physics_input_method('', TIME, '')
     def solve_dynamics(self, inputs=None, t=10, compute_kine=True):
         if not self._compiled:
             self.compile()
-        t *= self._unit_system[TIME]
         if compute_kine:
             self.solve_kinematics(inputs)
         self._object.solve_dynamics(t)
     
     def bill_of_materials(self):
-        print('N°\t| Names')
-        print('-----------')
+        print('N°\t| Names', '-' * 20, sep='\n')
         for i, s in enumerate(self._object.sols):
             print(f'{i}\t| {s}')
 
 
-System.set_unit.__doc__ = f"""Changes the unit
-phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
-value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
-name is the name of your unit
-You can use units imported from units.py"""

@@ -1,5 +1,6 @@
 import kinepy.objects as obj
 from kinepy.interface.metaclass import *
+import kinepy.units as units
 from kinepy.math.geometry import ZERO_21, unit, get_angle, get_zero, rvec
 from kinepy.interface.decorators import get_object
 
@@ -14,14 +15,14 @@ class Spring(obj.Spring, metaclass=MetaUnit):
 
 
 class SolidExternal:
-    def __init__(self, unit_system, solid):
-        self._unit_system, self.solid = unit_system, solid
+    def __init__(self, solid):
+        self.solid = solid
         self.externals = []
 
     def append(self, force, torque, point):
         self.externals.append((
-            (lambda: force() * self._unit_system[FORCE]),
-            (lambda: torque() * self._unit_system[TORQUE]),
+            (lambda: force() * units.SYSTEM[FORCE]),
+            (lambda: torque() * units.SYSTEM[TORQUE]),
             point
         ))
 
@@ -33,13 +34,12 @@ class SolidExternal:
 
 class RevoluteTorque:
 
-    def __init__(self, unit_system, rev, t):
-        self._unit_system = unit_system
+    def __init__(self, rev, t):
         self.rev, self._torque = rev, t
 
     torque = property(
-        (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_torque', (lambda: value() * self._unit_system[FORCE])))
+        (lambda self: (lambda: self._torque() / units.SYSTEM[FORCE])),
+        (lambda self, value: setattr(self, '_torque', (lambda: value() * units.SYSTEM[FORCE])))
     )
 
     def set_ma(self, _):
@@ -50,13 +50,12 @@ class RevoluteTorque:
 
 class PrismaticTangent:
 
-    def __init__(self, unit_system, pri, f):
-        self._unit_system = unit_system
+    def __init__(self, pri, f):
         self.pri, self._tangent = pri, f
 
     tangent = property(
-        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: value() * self._unit_system[FORCE])))
+        (lambda self: (lambda: self._tangent() / units.SYSTEM[FORCE])),
+        (lambda self, value: setattr(self, '_tangent', (lambda: value() * units.SYSTEM[FORCE])))
     )
 
     def set_ma(self, _):
@@ -69,8 +68,7 @@ class PrismaticTangent:
 
 class PinSlotTangentTorque:
 
-    def __init__(self, unit_system, pin, f, t):
-        self._unit_system = unit_system
+    def __init__(self, pin, f, t):
         self.pin, self._tangent, self._torque = pin, f, t
 
     def set_ma(self, _):
@@ -81,11 +79,11 @@ class PinSlotTangentTorque:
         self.pin.s2.add_mech_action(-f, p, -t)
 
     tangent = property(
-        (lambda self: (lambda: self._tangent() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_tangent', (lambda: value() * self._unit_system[FORCE])))
+        (lambda self: (lambda: self._tangent() / units.SYSTEM[FORCE])),
+        (lambda self, value: setattr(self, '_tangent', (lambda: value() * units.SYSTEM[FORCE])))
     )
 
     torque = property(
-        (lambda self: (lambda: self._torque() / self._unit_system[FORCE])),
-        (lambda self, value: setattr(self, '_torque', (lambda: value() * self._unit_system[FORCE])))
+        (lambda self: (lambda: self._torque() / units.SYSTEM[FORCE])),
+        (lambda self, value: setattr(self, '_torque', (lambda: value() * units.SYSTEM[FORCE])))
     )
