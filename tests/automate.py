@@ -10,6 +10,7 @@ import kinepy.tools as t
 import kinepy as k
 from kinepy.units import set_unit, show_units, LENGTH, METER
 from kinepy.math.geometry import unit
+from kinepy.gui import display
 
 
 #%%
@@ -111,30 +112,32 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 #%%
 
 sys.solve_kinematics(a)
+display(sys)
 
-P = s4.get_point((saw, 0))
 
-#%%
-
-# print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5) # sais tu que tu as un outils norm dans tools ?
-# je supp que non, voici un tuto :
-# print(t.norm(genou_d.point - pied_d.point))
-
-# anim = t.animate([
-#     [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion
-#     [r5.point, r7.point, r8.point, r6.point], [r7.point, r9.point, r10.point, r11.point],  # body motion
-#     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
-#     [r20.point, r21.point, r22.point]  # bras
-# ], anim_time=2)
-circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
-# plt.plot(*circle)
-# # anim.save('anim.gif')
-# plt.show()
+# P = s4.get_point((saw, 0))
+#
 # #%%
-
-anim = t.animate([[r18.point, P],
-                  [r9.point, r10.point],
-                  [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
-                  [r20.point, r21.point, r22.point]], anim_time=1)
-plt.plot(*circle)
-plt.show()
+#
+# # print(np.sum((genou_d.point - pied_d.point) ** 2, axis=0) ** .5) # sais tu que tu as un outils norm dans tools ?
+# # je supp que non, voici un tuto :
+# # print(t.norm(genou_d.point - pied_d.point))
+#
+# # anim = t.animate([
+# #     [r0.point, r2.point, r3.point, r1.point], [r3.point, r18.point, P],  # saw motion
+# #     [r5.point, r7.point, r8.point, r6.point], [r7.point, r9.point, r10.point, r11.point],  # body motion
+# #     [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],  # buggy part
+# #     [r20.point, r21.point, r22.point]  # bras
+# # ], anim_time=2)
+# circle = np.reshape(ps.p2, (2, 1)) + unit(np.linspace(0, 2 * np.pi, 101)) * 23.4
+# # plt.plot(*circle)
+# # # anim.save('anim.gif')
+# # plt.show()
+# # #%%
+#
+# anim = t.animate([[r18.point, P],
+#                   [r9.point, r10.point],
+#                   [pied_g.point, genou_g.point, hanche_g.point, genou_d.point, pied_d.point],
+#                   [r20.point, r21.point, r22.point]], anim_time=1)
+# plt.plot(*circle)
+# plt.show()
