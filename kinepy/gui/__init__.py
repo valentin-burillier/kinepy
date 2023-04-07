@@ -21,11 +21,21 @@ class GUI:
     scale = 1.
     animation_state = 0
     sol_mapping = ()
+    grid_cell = 0
+    min_ = 0
+    real_rectangle = 0
+    scale0 = 1
 
-    def __init__(self, system: _System, additional_points=()):
+
+    def __init__(self, system: _System, additional_points=(), background=(160, 160, 160), grid=False):
         self.surface = pg.display.set_mode((640, 480), pg.RESIZABLE)
 
         path = os.path.dirname(__file__)
+        pg.display.set_caption('Kinepy', os.path.join(path, 'logo.ico'))
+        pg.display.set_icon(pg.image.load(os.path.join(path, 'logo.ico')).convert_alpha())
+
+        self.back_ground, self.grid = background, grid
+
         self.current_ground = self.ground = pg.image.load(os.path.join(path, 'ground.png')).convert_alpha()
 
         self.system: System = get_object(system)
@@ -36,6 +46,7 @@ class GUI:
         self.make_joint_points()
         self.make_bound_box()
         self.set_scale()
+        self.scale0 = self.scale
         self.compute_all_points()
         self.make_sol_mapping()
 
@@ -49,14 +60,19 @@ class GUI:
         max__ = (np.amax([np.amax(point, axis=1) for point in self.additional_points], axis=0),) if self.additional_points else ()
         min_ = np.amin(sum((tuple(np.amin(i, axis=1) for i in points) for points in self.joint_points), min__), axis=0)
         max_ = np.amax(sum((tuple(np.amax(i, axis=1) for i in points) for points in self.joint_points), max__), axis=0)
-        self.camera, self.rectangle = (min_ + max_) / 2, (max_ - min_) * 1.05
-        if self.rectangle[0] == 0. or self.rectangle[1] == 0:
+        self.camera, self.real_rectangle = (min_ + max_) / 2, (max_ - min_) * 1.05
+        self.min_ = min_
+        if self.real_rectangle[0] == 0. or self.real_rectangle[1] == 0:
             raise ValueError("System does not use any area")
 
     def set_scale(self):
         self.screen_center = np.array(self.surface.get_size(), float) * .5
-        self.scale = min(self.surface.get_size() / self.rectangle)
-        self.current_ground = pg.transform.scale(self.ground, (15 * self.scale, 15 * self.scale))
+        self.scale = min(self.surface.get_size() / self.real_rectangle)
+        self.min_ = self.camera - self.screen_center / self.scale
+        self.rectangle = 2 * self.screen_center / self.scale
+        self.grid_cell = 2 ** np.round(np.log2(min(self.rectangle) / 10))
+        print(f'\r{self.rectangle} {self.grid_cell} {self.min_} {self.scale}', end='')
+        self.current_ground = pg.transform.scale(self.ground, (15 * self.scale / self.scale0, 15 * self.scale / self.scale0))
 
     @staticmethod
     def rev_get_points(rev: RevoluteJoint):
@@ -81,13 +97,13 @@ class GUI:
         PinSlotJoint.tag: pin_get_points
     }
 
-    def real_to_screen(self, point):
+    def real_to_unscaled_screen(self, point):
         return (point - self.camera[:, np.newaxis]) * ((1,), (-1,))
 
     def compute_all_points(self):
-        self.additional_points = tuple(self.real_to_screen(point) for point in self.additional_points)
+        self.additional_points = tuple(self.real_to_unscaled_screen(point) for point in self.additional_points)
         self.joint_points = tuple(
-            tuple(self.real_to_screen(point) for point in joint_points) for joint_points in self.joint_points
+            tuple(self.real_to_unscaled_screen(point) for point in joint_points) for joint_points in self.joint_points
         )
 
     def make_sol_mapping(self):
@@ -115,13 +131,32 @@ class GUI:
                 self.surface.blit(self.current_ground, rect)
 
     def draw_loop(self):
-        self.surface.fill((160, 160, 160))
+        self.surface.fill(self.back_ground)
+        if self.grid:
+            start = (self.min_ // self.grid_cell + 1) * self.grid_cell
+            end = self.min_ + self.rectangle
+            x0, x1 = self.min_[0], self.min_[0] + self.rectangle[0]
+            y0, y1 = self.min_[1], self.min_[1] + self.rectangle[1]
+            while end[0] - start[0] > 0:
+                pg.draw.line(
+                    self.surface, (0, 0, 0),
+                    ((start[0], y0) - self.camera) * (1, -1) * self.scale + self.screen_center,
+                    ((start[0], y1) - self.camera) * (1, -1) * self.scale + self.screen_center,
+                )
+                start[0] += self.grid_cell
+            while end[1] - start[1] > 0:
+                pg.draw.line(
+                    self.surface, (0, 0, 0),
+                    ((x0, start[1]) - self.camera) * (1, -1) * self.scale + self.screen_center,
+                    ((x1, start[1]) - self.camera) * (1, -1) * self.scale + self.screen_center,
+                )
+                start[1] += self.grid_cell
         for sol, mapping in zip(self.system.sols, self.sol_mapping):
             self.draw_solid(sol, *mapping)
         for joint, points in zip(self.system.joints, self.joint_points):
             for point, sol in zip(points, (joint.s1, joint.s2)):
                 color = self.colors[sol.rep % len(self.colors)]
-                pg.draw.circle(self.surface, color, point[:, self.animation_state] * self.scale + self.screen_center, 5)
+                pg.draw.circle(self.surface, color, point[:, self.animation_state] * self.scale + self.screen_center, 4 * self.scale / self.scale0)
         pg.display.flip()
         self.animation_state = (self.animation_state + 1) % self.system.n
 
@@ -133,7 +168,7 @@ class GUI:
             self.clock.tick(30)
 
 
-def display(system: System):
+def display(system: System, additional_points=(), background=(160, 160, 160), grid=True):
     pg.init()
-    GUI(system).main_loop()
+    GUI(system, additional_points, background, grid).main_loop()
     pg.quit()

@@ -112,6 +112,7 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 #%%
 
 sys.solve_kinematics(a)
+set_unit(LENGTH, METER)
 display(sys)
 
 
