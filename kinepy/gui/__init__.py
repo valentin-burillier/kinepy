@@ -1,4 +1,4 @@
-import numpy as np
+import os
 import pygame as pg
 from kinepy.interface.system import System as _System
 from kinepy.interface.decorators import get_object
@@ -7,6 +7,7 @@ from kinepy.objects.joints import RevoluteJoint, PrismaticJoint, PinSlotJoint
 from kinepy.math.geometry import get_point, get_zero, get_angle, unit, z_cross, rvec
 from kinepy.units import *
 import kinepy.units as units
+
 
 
 class GUI:
@@ -19,9 +20,13 @@ class GUI:
     additional_points = ()
     scale = 1.
     animation_state = 0
+    sol_mapping = ()
 
     def __init__(self, system: _System, additional_points=()):
         self.surface = pg.display.set_mode((640, 480), pg.RESIZABLE)
+
+        path = os.path.dirname(__file__)
+        self.current_ground = self.ground = pg.image.load(os.path.join(path, 'ground.png')).convert_alpha()
 
         self.system: System = get_object(system)
         self.additional_points = additional_points
@@ -32,6 +37,7 @@ class GUI:
         self.make_bound_box()
         self.set_scale()
         self.compute_all_points()
+        self.make_sol_mapping()
 
         self.clock = pg.time.Clock()
 
@@ -50,6 +56,7 @@ class GUI:
     def set_scale(self):
         self.screen_center = np.array(self.surface.get_size(), float) * .5
         self.scale = min(self.surface.get_size() / self.rectangle)
+        self.current_ground = pg.transform.scale(self.ground, (15 * self.scale, 15 * self.scale))
 
     @staticmethod
     def rev_get_points(rev: RevoluteJoint):
@@ -83,16 +90,38 @@ class GUI:
             tuple(self.real_to_screen(point) for point in joint_points) for joint_points in self.joint_points
         )
 
+    def make_sol_mapping(self):
+        self.sol_mapping = tuple(([], [], []) for _ in self.system.sols)
+        for joint, joint_points in zip(self.system.joints, self.joint_points):
+            jp = joint_points * 2
+            points, directions, joints = self.sol_mapping[joint.s1.rep]
+            points.append(jp[0])
+            directions.append(False)
+            joints.append(joint)
+            points, directions, joints = self.sol_mapping[joint.s2.rep]
+            points.append(jp[1])
+            directions.append(True)
+            joints.append(joint)
+
     def event_loop(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
 
+    def draw_solid(self, sol, joint_points, directions, joints):
+        if not sol.rep:
+            for point in joint_points:
+                rect = self.current_ground.get_rect(midtop=point[:, self.animation_state] * self.scale + self.screen_center)
+                self.surface.blit(self.current_ground, rect)
+
     def draw_loop(self):
         self.surface.fill((160, 160, 160))
+        for sol, mapping in zip(self.system.sols, self.sol_mapping):
+            self.draw_solid(sol, *mapping)
         for joint, points in zip(self.system.joints, self.joint_points):
-            for point in points:
-                pg.draw.circle(self.surface, (255, 255, 255), point[:, self.animation_state] * self.scale + self.screen_center, 5)
+            for point, sol in zip(points, (joint.s1, joint.s2)):
+                color = self.colors[sol.rep % len(self.colors)]
+                pg.draw.circle(self.surface, color, point[:, self.animation_state] * self.scale + self.screen_center, 5)
         pg.display.flip()
         self.animation_state = (self.animation_state + 1) % self.system.n
 
