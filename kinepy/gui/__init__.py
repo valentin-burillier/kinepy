@@ -70,7 +70,7 @@ class GUI:
         self.scale = min(self.surface.get_size() / self.real_rectangle)
         self.min_ = self.camera - self.screen_center / self.scale
         self.rectangle = 2 * self.screen_center / self.scale
-        self.grid_cell = 2 ** np.round(np.log2(min(self.rectangle) / 10))
+        self.grid_cell = 10 ** np.round(np.log10(min(self.rectangle) / 10))
         print(f'\r{self.rectangle} {self.grid_cell} {self.min_} {self.scale}', end='')
         self.current_ground = pg.transform.scale(self.ground, (15 * self.scale / self.scale0, 15 * self.scale / self.scale0))
 
@@ -168,7 +168,7 @@ class GUI:
             self.clock.tick(30)
 
 
-def display(system: System, additional_points=(), background=(160, 160, 160), grid=True):
+def display(system: System, additional_points=(), background=(255, 255, 255), grid=True):
     pg.init()
     GUI(system, additional_points, background, grid).main_loop()
     pg.quit()

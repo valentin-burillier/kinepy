@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import kinepy.tools as t
 import kinepy as k
-from kinepy.units import set_unit, show_units, LENGTH, METER
+from kinepy.units import set_unit, show_units, LENGTH, METER, GOAT_HEIGHT
 from kinepy.math.geometry import unit
 from kinepy.gui import display
 
@@ -112,7 +112,7 @@ a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
 #%%
 
 sys.solve_kinematics(a)
-set_unit(LENGTH, METER)
+set_unit(LENGTH, GOAT_HEIGHT )
 display(sys)
 
 
