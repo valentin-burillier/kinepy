@@ -128,7 +128,7 @@ class System:
         return add_joint(self, J3DOF, s1, s2, p1, p2)
 
     @physics_input_method(ACCELERATION)
-    def add_gravity(self, g=G):
+    def add_gravity(self, g=float(G[0])):
         grav = Gravity(g)  # noqa
         self._object.interactions.append(grav)
         return grav
