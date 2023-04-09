@@ -3,6 +3,7 @@ import kinepy.units as units
 import kinepy.objects as obj
 from kinepy.interface.solid import Solid
 from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint, J3DOF
+from kinepy.interface.interactions import Gravity, Spring
 from kinepy.interface.decorators import physics_input_method, add_joint, solid_checker, multiple_joints, joint_checker, \
     get_object
 from kinepy.interface.relations import Gear, GearRack, DistantRelation, EffortlessRelation
