@@ -31,7 +31,8 @@ s2 = sys.add_solid('Crémaillere')
 r1 = sys.add_revolute(0, 1)
 p1 = sys.add_prismatic(0, 2, d1=d)
 
-gr = sys.add_gear_rack(r1, p1, R, 0)
+gr = sys.add_gear_rack(r1, p1, R, 0, np.pi / 5)
+print(f"{gr.pressure_angle = }")
 
 sys.pilot(r1)
 
@@ -52,6 +53,7 @@ P2 = sys.ground.get_point((0, d))
 
 anim = t.animate([P1, r1.point, P2, s2.origin], list_vectors=[(s2.origin, F), (gr.contact_point, gr.contact_force), (r1.point, -r1.force), (P2, -p1.normal*np.array([[0], [1]]))], vector_scale=0.2)
 # anim.save('anim.gif')
+plt.show()
 
 #%%
 

@@ -25,7 +25,8 @@ s2 = sys.add_solid('Roue 2')
 r1 = sys.add_revolute(0, 1)
 r2 = sys.add_revolute(0, 2, p1=(R1+R2, 0))
 
-gear = sys.add_gear(r1, r2, -R1/R2, 0)
+gear = sys.add_gear(r1, r2, -R1/R2, 0, np.pi / 9)
+print(f"{gear.pressure_angle = }")
 
 sys.pilot(r2) # normalement r1.force = 0
 

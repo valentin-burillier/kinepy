@@ -34,4 +34,4 @@ class Gear(obj.Gear, metaclass=MetaUnit):
 
 class GearRack(obj.GearRack, metaclass=MetaUnit):
     read_only = ('contact_force', FORCE), ('contact_point', LENGTH)
-    read_write = ('v0', LENGTH), ('r', LENGTH)
+    read_write = ('pressure_angle', ANGLE), ('v0', LENGTH), ('r', LENGTH)

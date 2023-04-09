@@ -77,6 +77,6 @@ class GearRack(GearRelation):
             set_force(self.j1, True, group_trd((eq1, eq0), (0,), ref))
         else:
             t_gear = dot(group_trd((eq0, eq1), (not self.common_eq[direction],), ref), u)
-            self._solve_contact(direction, eff_r, v, contact_point, t_gear)
+            self._solve_contact(direction, -eff_r, v, contact_point, t_gear)
             n_10, m_10 = group_trd((eq0, eq1), (0,), ref), group_tmd((eq0, eq1), (0,), ref, get_zero(self.j2, 0, u))
             set_normal(self.j2, True, n_10, m_10, u)

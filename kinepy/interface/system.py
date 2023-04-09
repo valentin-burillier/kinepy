@@ -154,7 +154,7 @@ class System:
         return g
 
     @joint_checker
-    @physics_input_method('', '', LENGTH, LENGTH)
+    @physics_input_method('', '', LENGTH, LENGTH, ANGLE)
     def add_gear_rack(self, rev, pri, r, v0=0., pressure_angle=np.pi / 9):
         if not isinstance(rev, obj.RevoluteJoint):
             raise TypeError('Joint 1 must be a RevoluteJoint')
