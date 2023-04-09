@@ -59,9 +59,9 @@ class PrismaticTangent:
     )
 
     def set_ma(self, _):
-        u = unit(get_angle(self.pri, 0))
+        u = unit(get_angle(get_object(self.pri), 0))
         f = self._tangent() * u
-        p = get_zero(self.pri, 0, u)
+        p = get_zero(get_object(self.pri), 0, u)
         get_object(self.pri).s1.add_mech_action(f, p, 0.)
         get_object(self.pri).s2.add_mech_action(-f, p, 0.)
 

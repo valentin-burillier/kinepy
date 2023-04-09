@@ -25,7 +25,7 @@ s2 = sys.add_solid('Crémaillere')
 r1 = sys.add_revolute(0, 1)
 p1 = sys.add_prismatic(0, 2, d1=d)
 
-sys.add_gearrack(r1, p1, -R, 0, 0)
+sys.add_gear_rack(r1, p1, -R, 0, 0)
 
 sys.pilot(r1)
 
@@ -41,7 +41,7 @@ sys.compile()
 a = t.direct_input(0, 2*np.pi, T, n)
 sys.solve_dynamics(a)
 P1 = s1.get_point((R, 0))
-P2 = sys.sols[0].get_point((0, -d))
+P2 = sys.ground.get_point((0, -d))
 
 #%%
 
