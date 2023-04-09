@@ -49,7 +49,7 @@ class PinSlotJoint(obj.PinSlotJoint, metaclass=MetaUnit):
     def set_tangent(self, t):
         self.interaction.tangent = t
 
-    point = property(lambda self: self.s2.origin + rvec(self.s2.angle, self.p2) / units.SYSTEM[LENGTH])
+    point = property(lambda self: self._object.s2.origin / units.SYSTEM[LENGTH] + rvec(self._object.s2.angle, self.p2))
 
 
 class RectangularJoint(obj.RectangularJoint, metaclass=MetaUnit):
