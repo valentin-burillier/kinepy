@@ -9,6 +9,29 @@ from kinepy.units import *
 import kinepy.units as units
 
 
+def rev_get_points(rev: RevoluteJoint):
+    return get_point(rev, 0) / units.SYSTEM[LENGTH],
+
+
+def pri_get_points(pri: PrismaticJoint):
+    u = unit(get_angle(pri, 0))
+    return get_zero(pri, 0, u) / units.SYSTEM[LENGTH], get_zero(pri, 1, u) / units.SYSTEM[LENGTH]
+
+
+def pin_get_points(pin: PinSlotJoint):
+    u = unit(pin.s1.angle + pin.a1)
+    return (
+        (pin.s1.origin + pin.d1 * z_cross(u)) / units.SYSTEM[LENGTH],
+        pin.s2.origin + rvec(pin.s2.angle, pin.p2) / units.SYSTEM[LENGTH]
+    )
+
+
+get_points = {
+    RevoluteJoint.tag: rev_get_points,
+    PrismaticJoint.tag: pri_get_points,
+    PinSlotJoint.tag: pin_get_points
+}
+
 
 class GUI:
     running = True
@@ -53,7 +76,7 @@ class GUI:
         self.clock = pg.time.Clock()
 
     def make_joint_points(self):
-        self.joint_points = tuple(self.get_points[j.tag](j) for j in self.system.joints)
+        self.joint_points = tuple(get_points[j.tag](j) for j in self.system.joints)
 
     def make_bound_box(self):
         min__ = (np.amin([np.amin(point, axis=1) for point in self.additional_points], axis=0),) if self.additional_points else ()
@@ -73,29 +96,6 @@ class GUI:
         self.grid_cell = 10 ** np.round(np.log10(min(self.rectangle) / 10))
         print(f'\r{self.rectangle} {self.grid_cell} {self.min_} {self.scale}', end='')
         self.current_ground = pg.transform.scale(self.ground, (15 * self.scale / self.scale0, 15 * self.scale / self.scale0))
-
-    @staticmethod
-    def rev_get_points(rev: RevoluteJoint):
-        return get_point(rev, 0) / units.SYSTEM[LENGTH],
-
-    @staticmethod
-    def pri_get_points(pri: PrismaticJoint):
-        u = unit(get_angle(pri, 0))
-        return get_zero(pri, 0, u) / units.SYSTEM[LENGTH], get_zero(pri, 1, u) / units.SYSTEM[LENGTH]
-
-    @staticmethod
-    def pin_get_points(pin: PinSlotJoint):
-        u = unit(pin.s1.angle + pin.a1)
-        return (
-            (pin.s1.origin + pin.d1 * z_cross(u)) / units.SYSTEM[LENGTH],
-            pin.s2.origin + rvec(pin.s2.angle, pin.p2) / units.SYSTEM[LENGTH]
-        )
-
-    get_points = {
-        RevoluteJoint.tag: rev_get_points,
-        PrismaticJoint.tag: pri_get_points,
-        PinSlotJoint.tag: pin_get_points
-    }
 
     def real_to_unscaled_screen(self, point):
         return (point - self.camera[:, np.newaxis]) * ((1,), (-1,))
