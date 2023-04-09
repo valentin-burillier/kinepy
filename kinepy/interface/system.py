@@ -159,7 +159,7 @@ class System:
             raise TypeError('Joint 1 must be a RevoluteJoint')
         if not isinstance(pri, obj.PrismaticJoint):
             raise TypeError('Joint 2 must be a PrismaticJoint')
-        gr = GearRack(self, rev, pri, r, v0, pressure_angle)  # noqa
+        gr = GearRack(rev, pri, r, v0, pressure_angle)  # noqa
         self._object.relations.append(get_object(gr))
         self._compiled = False
         return gr
