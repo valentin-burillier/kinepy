@@ -152,7 +152,6 @@ def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     return np.r_[l_acc, l_plateau, l_dec]
 
 
-
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
 def parallelepiped_inertia(L, l, e, m):
@@ -177,15 +176,12 @@ def ball_inertia(r, m):
     return 2/5*m*r**2
 
 
-
-
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
 
+
 def norm(v):
     return np.linalg.norm(v, axis=0)
-
-
 
 
 @physics_output(SPEED)
@@ -193,25 +189,30 @@ def norm(v):
 def get_velocity_vector(p, t):
     return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
 
+
 @physics_output(ACCELERATION)
 @physics_input_function(LENGTH, TIME)
 def get_acceleration_vector(p, t):
     return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
+
 
 @physics_output(SPEED)
 @physics_input_function(LENGTH, TIME)
 def get_speed(x, t):
     return np.diff(x, append=np.nan)*len(x)/t
 
+
 @physics_output(ACCELERATION)
 @physics_input_function(LENGTH, TIME)
 def get_acceleration(x, t):
-    return np.diff(x, 2, append=np.nan, prepend=np.nan)/(x/len(p))**2
+    return np.diff(x, 2, append=np.nan, prepend=np.nan)/(t/len(x))**2
+
 
 @physics_output(ANGULAR_VELOCITY)
 @physics_input_function(ANGLE, TIME)
 def get_angular_velocity(a, t):
     return np.diff(a, append=np.nan)*len(a)/t
+
 
 @physics_output(ANGULAR_ACCELERATION)
 @physics_input_function(ANGLE, TIME)

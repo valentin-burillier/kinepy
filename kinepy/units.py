@@ -94,24 +94,82 @@ DIMENSIONLESS = 'dimensionless'
 NO_UNIT = np.array(1.), 'No Unit'
 PERCENT = np.array(.01), '%'
 
+# ---------------------------------------------- Preset systems --------------------------------------------------------
+
+DEFAULT_SYSTEM = {
+    TIME: SECOND,
+    LENGTH: MILLIMETER,
+    SPEED: METER_PER_SECOND,
+    ACCELERATION: METER_PER_SECOND_SQUARED,
+    ANGLE: RADIAN,
+    ANGULAR_VELOCITY: RADIAN_PER_SECOND,
+    ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    MASS: KILOGRAM,
+    FORCE: NEWTON,
+    TORQUE: NEWTON_METER,
+    SPRING_CONSTANT: NEWTON_PER_METER,
+    INERTIA: KILOGRAM_METER_SQUARED,
+    DIMENSIONLESS: NO_UNIT
+}
+
+SI = {
+    TIME: SECOND,
+    LENGTH: METER,
+    SPEED: METER_PER_SECOND,
+    ACCELERATION: METER_PER_SECOND_SQUARED,
+    ANGLE: RADIAN,
+    ANGULAR_VELOCITY: RADIAN_PER_SECOND,
+    ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    MASS: KILOGRAM,
+    FORCE: NEWTON,
+    TORQUE: NEWTON_METER,
+    SPRING_CONSTANT: NEWTON_PER_METER,
+    INERTIA: KILOGRAM_METER_SQUARED,
+    DIMENSIONLESS: NO_UNIT
+}
+
+AMERICAN_SYSTEM = {
+    TIME: SECOND,
+    LENGTH: METER,
+    SPEED: METER_PER_SECOND,
+    ACCELERATION: METER_PER_SECOND_SQUARED,
+    ANGLE: RADIAN,
+    ANGULAR_VELOCITY: RADIAN_PER_SECOND,
+    ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    MASS: KILOGRAM,
+    FORCE: NEWTON,
+    TORQUE: NEWTON_METER,
+    SPRING_CONSTANT: NEWTON_PER_METER,
+    INERTIA: KILOGRAM_METER_SQUARED,
+    DIMENSIONLESS: NO_UNIT
+}
+
+GOAT_SYSTEM = {
+    LENGTH: GOAT_HEIGHT,
+    SPEED: GOAT_SPEED,
+    MASS: GOAT_MASS,
+}
+
+_CGS = {
+    TIME: _PINS,
+    LENGTH: _ALLOUFS,
+    SPEED: _ALLOUFS_PER_PINS,
+    ACCELERATION: _ALLOUFS_PER_PINS_SQUARED,
+    ANGLE: RADIAN,
+    ANGULAR_VELOCITY: RADIAN_PER_SECOND,
+    ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    MASS: _CAISSEMS,
+    FORCE: NEWTON,
+    TORQUE: NEWTON_METER,
+    SPRING_CONSTANT: NEWTON_PER_METER,
+    INERTIA: KILOGRAM_METER_SQUARED,
+    DIMENSIONLESS: NO_UNIT
+}
+
 
 class UnitSystem:
     def __init__(self):
-        self.dct = {
-            TIME: SECOND,
-            LENGTH: MILLIMETER,
-            SPEED: METER_PER_SECOND,
-            ACCELERATION: METER_PER_SECOND_SQUARED,
-            ANGLE: RADIAN,
-            ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-            ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-            MASS: KILOGRAM,
-            FORCE: NEWTON,
-            TORQUE: NEWTON_METER,
-            SPRING_CONSTANT: NEWTON_PER_METER,
-            INERTIA: KILOGRAM_METER_SQUARED,
-            DIMENSIONLESS: NO_UNIT
-        }
+        self.dct = dict(DEFAULT_SYSTEM)
 
     def __getitem__(self, item):
         return self.dct[item][0]
@@ -129,90 +187,31 @@ PHYSICAL_QUANTITIES = (
 )
 SYSTEM = UnitSystem()
 
-show_units = lambda : print(SYSTEM)    
+
+def show_units():
+    print(SYSTEM)
+
 
 def set_unit(phy, value, unit='Unnamed unit'):
     if isinstance(value, tuple):
         value, unit = value
     SYSTEM.set(phy, value, unit)
 
-def set_unit_system(unit_system='Default'):
-    """
-    ['Default', 'SI', 'American', 'Goat']
-    """ # CGS
-    if unit_system == 'Default':
-        SYSTEM.dct = {TIME: SECOND,
-                      LENGTH: MILLIMETER,
-                      SPEED: METER_PER_SECOND,
-                      ACCELERATION: METER_PER_SECOND_SQUARED,
-                      ANGLE: RADIAN,
-                      ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-                      ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-                      MASS: KILOGRAM,
-                      FORCE: NEWTON,
-                      TORQUE: NEWTON_METER,
-                      SPRING_CONSTANT: NEWTON_PER_METER,
-                      INERTIA: KILOGRAM_METER_SQUARED,
-                      DIMENSIONLESS: NO_UNIT}
-    elif unit_system == 'SI':
-        SYSTEM.dct = {TIME: SECOND,
-                      LENGTH: METER,
-                      SPEED: METER_PER_SECOND,
-                      ACCELERATION: METER_PER_SECOND_SQUARED,
-                      ANGLE: RADIAN,
-                      ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-                      ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-                      MASS: KILOGRAM,
-                      FORCE: NEWTON,
-                      TORQUE: NEWTON_METER,
-                      SPRING_CONSTANT: NEWTON_PER_METER,
-                      INERTIA: KILOGRAM_METER_SQUARED,
-                      DIMENSIONLESS: NO_UNIT}
-    elif unit_system == 'American':
-        SYSTEM.dct = {TIME: SECOND,
-                      LENGTH: METER,
-                      SPEED: METER_PER_SECOND,
-                      ACCELERATION: METER_PER_SECOND_SQUARED,
-                      ANGLE: RADIAN,
-                      ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-                      ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-                      MASS: KILOGRAM,
-                      FORCE: NEWTON,
-                      TORQUE: NEWTON_METER,
-                      SPRING_CONSTANT: NEWTON_PER_METER,
-                      INERTIA: KILOGRAM_METER_SQUARED,
-                      DIMENSIONLESS: NO_UNIT}
-    elif unit_system == 'Goat':
-        SYSTEM.dct = {TIME: None,
-                      LENGTH: GOAT_HEIGHT,
-                      SPEED: GOAT_SPEED,
-                      ACCELERATION: None,
-                      ANGLE: None,
-                      ANGULAR_VELOCITY: None,
-                      ANGULAR_ACCELERATION: None,
-                      MASS: GOAT_MASS,
-                      FORCE: None,
-                      TORQUE: None,
-                      SPRING_CONSTANT: None,
-                      INERTIA: None,
-                      DIMENSIONLESS: None}        
-    elif unit_system == 'CGS':
-        SYSTEM.dct = {TIME: _PINS,
-                      LENGTH: _ALLOUFS,
-                      SPEED: _ALLOUFS_PER_PINS,
-                      ACCELERATION: _ALLOUFS_PER_PINS_SQUARED,
-                      ANGLE: RADIAN,
-                      ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-                      ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-                      MASS: _CAISSEMS,
-                      FORCE: NEWTON,
-                      TORQUE: NEWTON_METER,
-                      SPRING_CONSTANT: NEWTON_PER_METER,
-                      INERTIA: KILOGRAM_METER_SQUARED,
-                      DIMENSIONLESS: NO_UNIT}
 
 set_unit.__doc__ = f"""Changes the unit
 phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
 value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
 name is the name of your unit.
 You can use units imported from units.py"""
+
+
+def set_unit_system(unit_system: dict):
+    """
+    Replaces every unit of the global unit system with the units described in unit_system.
+    Missing units will be unchanged.
+    
+    Available systems:
+    DEFAULT_SYSTEM, SI, AMERICAN_SYSTEM, GOAT_SYSTEM 
+    """  # _CGS
+    for key in SYSTEM.dct:
+        SYSTEM.dct[key] = unit_system.get(key, default=SYSTEM.dct[key])
