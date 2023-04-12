@@ -12,7 +12,7 @@ Nous allons nous intéresser à :
 - La loi entrée/sortie du mécanisme. C'est-à-dire trouver la relation liant la hauteur de la vitre et l'angle du moteur.
 - Dimmensionner le ressort permettant à la vitre de ne pas tombe et réduire l'effort pour la déplacer.
 
-# Modélisation du mécanisme
+# Initialisation de l'environement de travail
 
 On commence par importer les bibliothèques nécessaires 
 
@@ -45,6 +45,8 @@ Inertia              : kg.m²
 dimensionless        : No Unit
 ```
 
+# Modélisation du mécanisme
+
 On considère le schéma cinématique suivant :
 
 <p align="center" width="100">
@@ -63,6 +65,7 @@ s4 = sys.add_solid('Glass', m=1.5, g=(-l, 0))
 ```
 
 On intègre chaque liaison au mécanisme. Le mécanisme est actionné par un moteur électrique au niveau de la pivot entre 1 et 0.
+Le mécanisme est composé d'un train d'engrenage simple. 
 
 ```python
 rA, rB, l = 7, 70, 130
