@@ -1,9 +1,7 @@
 # Paramètres
 
-*Dans les différentes représentations ci-dessous, une sphère fait contact au plan en réalité le contact est réalisé en un seul point (ie le rayon de la sphère est nul)*
-
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603588-7434f2c8-9ec9-4c88-b530-99f3d8453576.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/231388443-d6a9b7ca-6ce6-42e6-8851-c0ad759034ab.svg">
 </p>
 
 Le paramétrage d'une sphère-plan s'effectue grâce à ces 5 attributs :
@@ -19,7 +17,7 @@ Il est constamment possible de changer les valeurs de `a1`, `d1` et `p2` même a
 # Cinématique
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603637-0d328c0e-7c1f-4e5d-837a-b773e0be251d.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/231391710-73bd6d3f-fcd1-4083-9886-66765c475bb1.svg">
 </p>
 
 - `point`, 2darray : Coordonnées successives du point de contact exprimées dans le système de coordonnées global
@@ -31,7 +29,7 @@ Il est constamment possible de changer les valeurs de `a1`, `d1` et `p2` même a
 # Actions mécaniques internes
 
 <p align="center" width="100%">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/189603654-a06bfa81-da29-488d-80c0-e93e4900ca51.svg">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/231391485-1d5a0f9e-97ce-49da-9c0e-cf2a7c17d603.svg">
 </p>
 
 # Entrées
