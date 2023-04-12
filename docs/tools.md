@@ -13,3 +13,16 @@
 - `get_speed(p, t)` : Retourne les vecteurs vitesses du point `p`. L'argument `p` correspond à un tableau de forme (2, n). La sortie est un tableau de forme (2, n-1).
 - `get_speed_accurate(p, t)` : Retourne les vecteurs vitesses du point `p`. L'argument `p` correspond à un tableau de forme (2, n). Les valeurs retournées sont plus précises que la méthode `get_speed` mais la sortie est un tableau de forme (2, n-2).
 - `get_acceleration(p, t)` : Retourne les vecteurs vitesses du point `p`. L'argument `p` correspond à un tableau de forme (2, n). La sortie est un tableau de forme (2, n-2).
+
+# Entrées cinématiques
+
+- `direct_input(a, b, t, n=101, v_max=None)` :
+- `trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None)` :
+- `sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None)` :
+
+# Calcul d'inetie
+
+- `j_parallelepiped(L, l, e, m)` :
+- `j_bar(L, r, m)` :
+- `j_cylinder(r, e, m)` :
+- `j_ball(r, m)` :
