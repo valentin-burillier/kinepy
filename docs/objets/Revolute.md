@@ -8,8 +8,8 @@ Le paramétrage d'une pivot s'effectue grâce à ces 4 attributs :
 
 - `s1`, int : L'indice du premier solide
 - `s2`, int : L'indice du deuxième solide
-- `p1`, tuple : Coordonnées du point de pivot dans le repère de `s1`
-- `p2`, tuple : Coordonnées du point de pivot dans le repère de `s2`
+- `p1`, tuple : Coordonnées du point de pivot dans le repère de `s1`. Par defaut, c'est l'origine.
+- `p2`, tuple : Coordonnées du point de pivot dans le repère de `s2`. Par defaut, c'est l'origine.
 
 Il est constamment possible de changer les valeurs de `p1` et `p2` même après la compilation du mécanisme. 
 
