@@ -15,6 +15,8 @@ On notera que la liaison `s1` est toujours le solide de référence pour l'expre
 
 ## Ajout de relations
 
+Une relation décrit une interaction accouplant deux liaisons. Elle est uniquement de nature affine. Cela permet entre autres de modéliser un train d'engrenage, un système pignon-crémaillère,...
+
 - `add_gear(rev1, rev2, r, v0=0., pressure_angle=np.pi/9)` : Ajoute un engrenage en liant cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2`. Retourne l'objet `Gear` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Gear.md).
 - `add_gear_rack(rev, pri, r, v0=0., pressure_angle=np.pi/9)` : Ajoute un système pignon-crémaillière en liant cinématiquement et dynamiquement une liaison pivot `rev` et une liaison glissière `pri`. Retourne l'objet `Gear_rack` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Gear.md).
 
