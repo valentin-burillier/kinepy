@@ -1,7 +1,7 @@
 # Introduction
 
 Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des différentes liaisons liant les solides entre eux. 
-Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les longueurs/coordonnées sont exprimées en mm et les angles en radians. 
+Ce système de coordonnées est représenté ci-dessous.
 
 # Parameters
 ## Nomenclature
@@ -11,8 +11,8 @@ Ce système de coordonnées est représenté ci-dessous. Par défaut, toutes les
 
 ## Paramètres physiques
 
-- `m`, float : Masse du solide en kg. Par défaut, 0. 
-- `j`, float : L'inertie du solide en kg.m². Par défaut, 0. 
+- `m`, float : Masse du solide. Par défaut, 0. 
+- `j`, float : L'inertie du solide. Par défaut, 0. 
 - `g`, tuple : Coordonnées du centre d'inertie du solide confondu à celui de gravité. Par défaut, (0, 0).
 
 En dehors de l'initialisation du solide, il est constamment possible de changer ces attributs.
