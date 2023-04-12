@@ -110,6 +110,7 @@ class PrismaticJoint(Joint):
 
 
 class GhostRevolute(Joint):
+    g = (0, 0)
     id_, tag = RevoluteJoint.id_, 'GhostRev'
     force = torque = angle = None
 
@@ -129,6 +130,7 @@ class GhostPrismatic(Joint):
     id_, tag = PrismaticJoint.id_, 'GhostPri'
     normal = tangent = torque = sliding = None
     d2 = 0.
+    g = (0, 0)
 
     def __init__(self, master, index, name):
         self.master = master
@@ -150,7 +152,7 @@ class PinSlotJoint(Joint):
     def __init__(self, s1, s2, a1, d1, p2, name):
         Joint.__init__(self, s1, s2, name)
         self.p2, self.a1, self.d1 = p2, a1, d1
-        self.ghost_sol = Solid(0, 0, 0, f'Ghost-{self.name}')
+        self.ghost_sol = Solid(0, 0, (0, 0), f'Ghost-{self.name}')
         self.ghost_j1 = GhostPrismatic(self, 0, f'{self.name}-0')
         self.ghost_j2 = GhostRevolute(self, 1, f'{self.name}-1')
 
@@ -196,7 +198,7 @@ class RectangularJoint(Joint):
     def __init__(self, s1, s2, angle, a1, a2, p1, p2, name):
         Joint.__init__(self, s1, s2, name)
         self.angle, self.a1, self.a2, self.p1, self.p2 = angle, a1, a2, p1, p2
-        self.ghost_sol = Solid(0, 0, 0, f'Ghost-{self.name}')
+        self.ghost_sol = Solid(0, 0, (0, 0), f'Ghost-{self.name}')
         self.ghost_j1 = GhostPrismatic(self, 0, f'{self.name}-0')
         self.ghost_j2 = GhostPrismatic(self, 1, f'{self.name}-1')
 

@@ -69,12 +69,12 @@ class PrismaticTangent:
 class PinSlotTangentTorque:
 
     def __init__(self, pin, f, t):
-        self.pin, self._tangent, self._torque = pin, f, t
+        self.pin, self._tangent, self._torque = get_object(pin), f, t
 
     def set_ma(self, _):
-        u = unit(self.pin.s1.angle_ + self.pin.a1_)
+        u = unit(self.pin.s1.angle + self.pin.a1)
         f, t = self._tangent() * u, self._torque()
-        p = self.pin.s2.origin_ + rvec(self.pin.s2.angle_, self.pin.p2_)
+        p = self.pin.s2.origin + rvec(self.pin.s2.angle, self.pin.p2)
         self.pin.s1.add_mech_action(f, p, t)
         self.pin.s2.add_mech_action(-f, p, -t)
 
