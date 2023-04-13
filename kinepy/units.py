@@ -8,7 +8,6 @@ TIME = 'Time'
 SECOND = np.array(1.), 's'
 MILLISECOND = np.array(1e-3), 'ms'
 MINUTE = np.array(60.), 'min'
-_PINS = np.array(2.2), "pin's"
 
 #  ------------------------------------------------ Length units -------------------------------------------------------
 
@@ -17,23 +16,27 @@ MILLIMETER = np.array(1e-3), 'mm'
 METER = np.array(1.), 'm'
 CENTIMETER = np.array(1e-2), 'cm'
 INCH = np.array(2.54e-2), 'in'
+FOOT = np.array(0.3048), 'ft'
+YARD = np.array(0.9144), 'yd'
 GOAT_HEIGHT = np.array(.673), 'goats'
-_ALLOUFS = np.array(6e-2), "allouf's"
 
 # ----------------------------------------------- Speed units ---------------------------------------------------
 
 SPEED = 'Speed'
 METER_PER_SECOND = np.array(1.), 'm/s'
+MILLIMETER_PER_SECOND = np.array(1e-3), 'mm/s'
 KILOMETRE_PER_HOUR = np.array(1/3.6), 'km/h'
+FOOT_PER_SECOND = np.array(0.3048), 'ft/s'
+MILES_PER_HOUR = np.array(0.44704), 'mph'
 GOAT_SPEED = np.array(16 / 3.6), 'goat speed'
-_ALLOUFS_PER_PINS = np.array(2.73e-2), "allouf's/pin's"
 
 # ----------------------------------------------- Acceleration units ---------------------------------------------------
 
 ACCELERATION = 'Acceleration'
 METER_PER_SECOND_SQUARED = np.array(1.), 'm/s²'
+MILLIMETER_PER_SECOND_SQUARED = np.array(1e-3), 'mm/s²'
+FOOT_PER_SECOND_SQUARED = np.array(0.3048), 'ft/s²'
 G = np.array(9.8067), 'G'
-_ALLOUFS_PER_PINS_SQUARED = np.array(1.24e-2), "allouf's/pin's²"
 
 
 # ------------------------------------------------ Angle units ---------------------------------------------------------
@@ -41,12 +44,13 @@ _ALLOUFS_PER_PINS_SQUARED = np.array(1.24e-2), "allouf's/pin's²"
 ANGLE = 'Angle'
 RADIAN = np.array(1.), 'rad'
 DEGREE = np.array(np.pi / 180), '°'
+REVOLUTION = np.array(2*np.pi), 'r'
 
 # --------------------------------------------- Angular velocity units -------------------------------------------------
 
 ANGULAR_VELOCITY = 'Angular velocity'
 RADIAN_PER_SECOND = np.array(1.), 'rad/s'
-RPM = np.array(np.pi/30), 'rpm'
+REVOLUTION_PER_MINUTE = np.array(np.pi/30), 'rpm'
 HERTZ = np.array(2*np.pi), 'Hz'
 
 # ----------------------------------------- Angular velocity acceleration ----------------------------------------------
@@ -59,9 +63,16 @@ RADIAN_PER_SECOND_SQUARED = np.array(1.), 'rad/s²'
 MASS = 'Mass'
 KILOGRAM = np.array(1.), 'kg'
 GRAM = np.array(1e-3), 'g'
-POUND = np.array(2.20462), 'lb'
+POUND = np.array(0.453592), 'lb'
 GOAT_MASS = np.array(60.), 'goats'
-_CAISSEMS = np.array(50.), "caissem's"
+
+# --------------------------------------------- Density units -------------------------------------------------------------
+
+DENSITY = 'Density'
+KILOGRAM_PER_CUBIC_METER = np.array(1.), 'kg/m³'
+GRAM_PER_CUBIC_CENTIMETER = np.array(1e3), 'g/cm³'
+POUND_PER_CUBIC_INCH = np.array(27679.9), 'lb/in³'
+POUND_PER_CUBIC_FOOT = np.array(16.0185), 'lb/ft³'
 
 # ---------------------------------------------- Force units -----------------------------------------------------------
 
@@ -70,6 +81,7 @@ NEWTON = np.array(1.), 'N'
 DECANEWTON = np.array(10.), 'daN'
 MILLINEWTON = np.array(1e-3), 'mN'
 KILONEWTON = np.array(1e3), 'kN'
+POUND_FORCE = np.array(4.44822), 'lbf'
 KILOGRAM_FORCE = np.array(9.8067), 'kgf'
 
 # -------------------------------------------- Torque units ------------------------------------------------------------
@@ -77,16 +89,20 @@ KILOGRAM_FORCE = np.array(9.8067), 'kgf'
 TORQUE = 'Torque'
 NEWTON_METER = np.array(1.), 'Nm'
 MILLINEWTON_METER = np.array(1e-3), 'mNm'
+POUND_FOOT = np.array(1.355818), 'lb.ft'
 
 # -------------------------------------------- Spring constant units ---------------------------------------------------
 
 SPRING_CONSTANT = 'SpringConstant'
 NEWTON_PER_METER = np.array(1.), 'N/m'
+NEWTON_PER_MILLIMETER = np.array(1e3), 'N/mm'
+POUND_FORCE_PER_INCH = np.array(0.112985), 'lbf/in'
 
 # --------------------------------------------- Inertia units ----------------------------------------------------------
 
 INERTIA = 'Inertia'
 KILOGRAM_METER_SQUARED = np.array(1.), 'kg.m²'
+POUND_FOOT_SECOND_SQUARED = np.array(1.3423), 'lbf.ft.s2'
 
 # -------------------------------------------- dimensionless units -----------------------------------------------------
 
@@ -104,6 +120,7 @@ DEFAULT_SYSTEM = {
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    DENSITY: GRAM_PER_CUBIC_CENTIMETER,
     MASS: KILOGRAM,
     FORCE: NEWTON,
     TORQUE: NEWTON_METER,
@@ -120,6 +137,7 @@ SI = {
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
+    DENSITY:KILOGRAM_PER_CUBIC_METER,
     MASS: KILOGRAM,
     FORCE: NEWTON,
     TORQUE: NEWTON_METER,
@@ -130,17 +148,18 @@ SI = {
 
 AMERICAN_SYSTEM = {
     TIME: SECOND,
-    LENGTH: METER,
-    SPEED: METER_PER_SECOND,
-    ACCELERATION: METER_PER_SECOND_SQUARED,
+    LENGTH: INCH,
+    SPEED: FOOT_PER_SECOND,
+    ACCELERATION: FOOT_PER_SECOND_SQUARED,
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-    MASS: KILOGRAM,
-    FORCE: NEWTON,
-    TORQUE: NEWTON_METER,
-    SPRING_CONSTANT: NEWTON_PER_METER,
-    INERTIA: KILOGRAM_METER_SQUARED,
+    DENSITY:POUND_PER_CUBIC_INCH,
+    MASS: POUND,
+    FORCE: POUND_FORCE,
+    TORQUE: POUND_FOOT,
+    SPRING_CONSTANT: POUND_FORCE_PER_INCH,
+    INERTIA: POUND_FOOT_SECOND_SQUARED,
     DIMENSIONLESS: NO_UNIT
 }
 
@@ -150,21 +169,6 @@ GOAT_SYSTEM = {
     MASS: GOAT_MASS,
 }
 
-_CGS = {
-    TIME: _PINS,
-    LENGTH: _ALLOUFS,
-    SPEED: _ALLOUFS_PER_PINS,
-    ACCELERATION: _ALLOUFS_PER_PINS_SQUARED,
-    ANGLE: RADIAN,
-    ANGULAR_VELOCITY: RADIAN_PER_SECOND,
-    ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-    MASS: _CAISSEMS,
-    FORCE: NEWTON,
-    TORQUE: NEWTON_METER,
-    SPRING_CONSTANT: NEWTON_PER_METER,
-    INERTIA: KILOGRAM_METER_SQUARED,
-    DIMENSIONLESS: NO_UNIT
-}
 
 
 class UnitSystem:
@@ -212,6 +216,6 @@ def set_unit_system(unit_system: dict):
     
     Available systems:
     DEFAULT_SYSTEM, SI, AMERICAN_SYSTEM, GOAT_SYSTEM 
-    """  # _CGS
+    """
     for key in SYSTEM.dct:
-        SYSTEM.dct[key] = unit_system.get(key, default=SYSTEM.dct[key])
+        SYSTEM.dct[key] = unit_system[key]
