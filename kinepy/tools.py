@@ -7,7 +7,7 @@ import matplotlib.colors as mcol
 from kinepy.units import *
 from kinepy.interface.decorators import physics_input_function, physics_output
 
-
+# ---------------------------------------------------- Animate -------------------------------------------------------------
 
 global C
 # C = cm.get_cmap('coolwarm') # plasma, coolwarm, bwr, rainbow, OrRd
@@ -84,18 +84,16 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     
     return anim
 
+# ---------------------------------------------------- Inputs -------------------------------------------------------------
 
-
-
-def direct_input(a, b, t, n=101, v_max=None):
+def __direct_input(a, b, t, n, v_max):
     v = (b - a)/t
     if v_max is not None and abs(v) > v_max: # triangle
         print('speed too high')
         return
     return np.linspace(a, b, n)
 
-
-def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None):
+def __trapezoidal_input(a, b, t, n, v_max, a_max):
     v = 2*(b - a)/t
     if v_max is None or abs(v) <= v_max: # triangle
         acc = 4*(b - a)/t**2
@@ -124,7 +122,7 @@ def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     l_dec = acc*T[-i:]*(t - T[-i:]/2) + v*(t - 2*t_inf) + a + acc*(t_inf**2 - t**2/2)       
     return np.r_[l_acc, l_plateau, l_dec]
 
-def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
+def __sinusoidal_input(a, b, t, n, v_max, a_max):
     v = 2*(b - a)/t
     if v_max is None or abs(v) <= v_max: # triangle
         acc = np.pi*2*(b - a)/t**2
@@ -152,6 +150,90 @@ def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
     return np.r_[l_acc, l_plateau, l_dec]
 
 
+@physics_output(ANGLE)
+@physics_input_function(ANGLE, ANGLE, TIME, '', ANGULAR_VELOCITY)
+def direct_angular_input(a, b, t, n=101, v_max=None):
+    return __direct_input(a, b, t, n, v_max)
+
+@physics_output(ANGLE)
+@physics_input_function(ANGLE, ANGLE, TIME, '', ANGULAR_VELOCITY, ANGULAR_ACCELERATION)
+def trapezoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
+    return __trapezoidal_input(a, b, t, n, v_max, a_max)
+
+@physics_output(ANGLE)
+@physics_input_function(ANGLE, ANGLE, TIME, '', ANGULAR_VELOCITY, ANGULAR_ACCELERATION)
+def sinusoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
+    return __sinusoidal_input(a, b, t, n, v_max, a_max)
+
+
+@physics_output(LENGTH)
+@physics_input_function(LENGTH, LENGTH, TIME, '', SPEED)
+def direct_linear_input(a, b, t, n=101, v_max=None):
+    return __direct_input(a, b, t, n, v_max)
+
+@physics_output(LENGTH)
+@physics_input_function(LENGTH, LENGTH, TIME, '', SPEED, ACCELERATION)
+def trapezoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
+    return __trapezoidal_input(a, b, t, n, v_max, a_max)
+
+@physics_output(LENGTH)
+@physics_input_function(LENGTH, LENGTH, TIME, '', SPEED, ACCELERATION)
+def sinusoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
+    return __sinusoidal_input(a, b, t, n, v_max, a_max)
+
+# ---------------------------------------------------- Geometry -------------------------------------------------------------
+
+def distance(p1, p2):
+    return np.linalg.norm(p2 - p1, axis=0)
+
+def norm(v):
+    return np.linalg.norm(v, axis=0)
+
+# ---------------------------------------------------- Derivate -------------------------------------------------------------
+
+@physics_output(SPEED)
+@physics_input_function(LENGTH, TIME)
+def get_velocity_vector(p, t):
+    return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
+
+
+@physics_output(ACCELERATION)
+@physics_input_function(LENGTH, TIME)
+def get_acceleration_vector(p, t):
+    return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
+
+
+@physics_output(SPEED)
+@physics_input_function(LENGTH, TIME)
+def get_linear_speed(x, t):
+    return np.diff(x, append=np.nan)*len(x)/t
+
+
+@physics_output(ACCELERATION)
+@physics_input_function(LENGTH, TIME)
+def get_linear_acceleration(x, t):
+    return np.diff(x, 2, append=np.nan, prepend=np.nan)/(t/len(x))**2
+
+
+@physics_output(ANGULAR_VELOCITY)
+@physics_input_function(ANGLE, TIME)
+def get_angular_velocity(a, t):
+    return np.diff(a, append=np.nan)*len(a)/t
+
+
+@physics_output(ANGULAR_ACCELERATION)
+@physics_input_function(ANGLE, TIME)
+def get_angular_acceleration(a, t):
+    return np.diff(a, 2, append=np.nan, prepend=np.nan)/(t/len(a))**2
+
+
+# ---------------------------------------------------- Mass -------------------------------------------------------------
+
+
+
+
+# ---------------------------------------------------- Inertia -------------------------------------------------------------
+
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
 def parallelepiped_inertia(L, l, e, m):
@@ -176,45 +258,3 @@ def ball_inertia(r, m):
     return 2/5*m*r**2
 
 
-def distance(p1, p2):
-    return np.linalg.norm(p2 - p1, axis=0)
-
-
-def norm(v):
-    return np.linalg.norm(v, axis=0)
-
-
-@physics_output(SPEED)
-@physics_input_function(LENGTH, TIME)
-def get_velocity_vector(p, t):
-    return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
-
-
-@physics_output(ACCELERATION)
-@physics_input_function(LENGTH, TIME)
-def get_acceleration_vector(p, t):
-    return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
-
-
-@physics_output(SPEED)
-@physics_input_function(LENGTH, TIME)
-def get_speed(x, t):
-    return np.diff(x, append=np.nan)*len(x)/t
-
-
-@physics_output(ACCELERATION)
-@physics_input_function(LENGTH, TIME)
-def get_acceleration(x, t):
-    return np.diff(x, 2, append=np.nan, prepend=np.nan)/(t/len(x))**2
-
-
-@physics_output(ANGULAR_VELOCITY)
-@physics_input_function(ANGLE, TIME)
-def get_angular_velocity(a, t):
-    return np.diff(a, append=np.nan)*len(a)/t
-
-
-@physics_output(ANGULAR_ACCELERATION)
-@physics_input_function(ANGLE, TIME)
-def get_angular_acceleration(a, t):
-    return np.diff(a, 2, append=np.nan, prepend=np.nan)/(t/len(a))**2
