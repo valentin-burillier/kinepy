@@ -193,68 +193,94 @@ def norm(v):
 
 @physics_output(SPEED)
 @physics_input_function(LENGTH, TIME)
-def get_velocity_vector(p, t):
+def get_speed(p, t):
+    if len(p.shape) == 1:
+        return np.diff(p, append=np.nan)*len(p)/t
     return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
 
-
 @physics_output(ACCELERATION)
 @physics_input_function(LENGTH, TIME)
-def get_acceleration_vector(p, t):
+def get_acceleration(p, t):
+    if len(p.shape) == 1:
+        return np.diff(p, 2, append=np.nan, prepend=np.nan)/(t/len(p))**2
     return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
-
-
-@physics_output(SPEED)
-@physics_input_function(LENGTH, TIME)
-def get_linear_speed(x, t):
-    return np.diff(x, append=np.nan)*len(x)/t
-
-
-@physics_output(ACCELERATION)
-@physics_input_function(LENGTH, TIME)
-def get_linear_acceleration(x, t):
-    return np.diff(x, 2, append=np.nan, prepend=np.nan)/(t/len(x))**2
-
 
 @physics_output(ANGULAR_VELOCITY)
 @physics_input_function(ANGLE, TIME)
 def get_angular_velocity(a, t):
     return np.diff(a, append=np.nan)*len(a)/t
 
-
 @physics_output(ANGULAR_ACCELERATION)
 @physics_input_function(ANGLE, TIME)
 def get_angular_acceleration(a, t):
     return np.diff(a, 2, append=np.nan, prepend=np.nan)/(t/len(a))**2
 
-
 # ---------------------------------------------------- Mass -------------------------------------------------------------
 
+@physics_output(MASS)
+@physics_input_function(LENGTH, LENGTH, DENSITY)
+def cylinder_mass(d, h, rho):
+    return rho*h*np.pi/4*d**2
 
+def round_rod_mass(d, l, rho):
+    return cylinder_mass(d, l, rho)
 
+@physics_output(MASS)
+@physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
+def hollow_cylinder_mass(d, h, t, rho):
+    return rho*h*np.pi*t*(d - t)
+
+def round_pipe_mass(d, l, t, rho):
+    return hollow_cylinder_mass(d, l, t, rho)
+
+@physics_output(MASS)
+@physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
+def parallelepiped_mass(l, w, h, rho):
+    return rho*l*w*h
+
+@physics_output(MASS)
+@physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, DENSITY)
+def rectangular_tube_mass(l, w, h, t, rho):
+    return 2*rho*l*t*(h + w - 2*t)
+
+@physics_output(MASS)
+@physics_input_function(LENGTH, DENSITY)
+def ball_mass(d, rho):
+    return rho/6*np.pi*d**3
 
 # ---------------------------------------------------- Inertia -------------------------------------------------------------
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
-def parallelepiped_inertia(L, l, e, m):
-    return m/12*(L**2 + l**2 + e**2)
-
+@physics_input_function(LENGTH, MASS)
+def cylinder_inertia(d, m):
+    return m*d**2/8
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, MASS)
-def bar_inertia(L, r, m):
-    return m/4*(r**2 + L**2/3)
+def hollow_cylinder_inertia(d, t, m):
+    return m/4*(d**2 - 2*t*d + 2*t**2)
 
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, MASS)
+def round_rod_inertia(d, l, m):
+    return m/4*(d**2/4 + l**2/3)
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
+def round_pipe_inertia(d, l, t, m):
+    return m/4*((d**2 - 2*t*d + 2*t**2)/2 + l**2/3) # (d**2 + (d - 2*t)**2)/4
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, MASS)
+def parallelepiped_inertia(l, w, m):
+    return m/12*(l**2 + w**2)
+
+@physics_output(INERTIA)
+@physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, MASS)
+def rectangular_tube_inertia(l, w, h, t, m):
+    return m/12*(w*h*2*(w - t)/(w + h - 2*t) + (w - 2*t)**2 + l**2)
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, MASS)
-def cylinder_inertia(r, m):
-    return m*r**2/2
-
-
-@physics_output(INERTIA)
-@physics_input_function(LENGTH, MASS)
-def ball_inertia(r, m):
-    return 2/5*m*r**2
-
-
+def ball_inertia(d, m):
+    return m/10*d**2
