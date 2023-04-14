@@ -20,4 +20,14 @@
 
 # Calcul de masse/inertie
 
-[mettre tableau]
+&nbsp;&nbsp;&nbsp;
+
+| <img width=50/> Noms <img width=50/> | <img width=150/> Représentation <img width=150/> |
+| :---: | --- |
+| `cylinder` | ![Gear_dyn](https://user-images.githubusercontent.com/93446869/231987610-fa7bb8c6-f9e2-4df1-aa7f-3a058626da1b.svg) |
+| `hollow_cylinder` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
+| `round_rod` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
+| `round_pipe` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
+| `parallepiped` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
+| `rectangular_tube` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
+| `ball` | ![Gear_params](https://user-images.githubusercontent.com/93446869/231987677-8fe7490f-0140-4bc4-aa92-b39dc0b2d892.svg) |
