@@ -53,7 +53,7 @@ RADIAN_PER_SECOND = np.array(1.), 'rad/s'
 REVOLUTION_PER_MINUTE = np.array(np.pi/30), 'rpm'
 HERTZ = np.array(2*np.pi), 'Hz'
 
-# ----------------------------------------- Angular velocity acceleration ----------------------------------------------
+# ----------------------------------------- Angular acceleration units -------------------------------------------------
 
 ANGULAR_ACCELERATION = 'Angular acceleration'
 RADIAN_PER_SECOND_SQUARED = np.array(1.), 'rad/s²'
@@ -66,7 +66,7 @@ GRAM = np.array(1e-3), 'g'
 POUND = np.array(0.453592), 'lb'
 GOAT_MASS = np.array(60.), 'goats'
 
-# --------------------------------------------- Density units -------------------------------------------------------------
+# --------------------------------------------- Density units ----------------------------------------------------------
 
 DENSITY = 'Density'
 KILOGRAM_PER_CUBIC_METER = np.array(1.), 'kg/m³'
@@ -154,7 +154,7 @@ AMERICAN_SYSTEM = {
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-    DENSITY:POUND_PER_CUBIC_INCH,
+    DENSITY: POUND_PER_CUBIC_INCH,
     MASS: POUND,
     FORCE: POUND_FORCE,
     TORQUE: POUND_FOOT,
@@ -169,6 +169,12 @@ GOAT_SYSTEM = {
     MASS: GOAT_MASS,
 }
 
+DERIVATIVES = {
+    LENGTH: SPEED,
+    SPEED: ACCELERATION,
+    ANGLE: ANGULAR_VELOCITY,
+    ANGULAR_VELOCITY: ANGULAR_ACCELERATION
+}
 
 
 class UnitSystem:

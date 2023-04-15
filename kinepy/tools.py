@@ -155,10 +155,12 @@ def __sinusoidal_input(a, b, t, n, v_max, a_max):
 def direct_angular_input(a, b, t, n=101, v_max=None):
     return __direct_input(a, b, t, n, v_max)
 
+
 @physics_output(ANGLE)
 @physics_input_function(ANGLE, ANGLE, TIME, '', ANGULAR_VELOCITY, ANGULAR_ACCELERATION)
 def trapezoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
     return __trapezoidal_input(a, b, t, n, v_max, a_max)
+
 
 @physics_output(ANGLE)
 @physics_input_function(ANGLE, ANGLE, TIME, '', ANGULAR_VELOCITY, ANGULAR_ACCELERATION)
@@ -171,25 +173,51 @@ def sinusoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
 def direct_linear_input(a, b, t, n=101, v_max=None):
     return __direct_input(a, b, t, n, v_max)
 
+
 @physics_output(LENGTH)
 @physics_input_function(LENGTH, LENGTH, TIME, '', SPEED, ACCELERATION)
 def trapezoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
     return __trapezoidal_input(a, b, t, n, v_max, a_max)
+
 
 @physics_output(LENGTH)
 @physics_input_function(LENGTH, LENGTH, TIME, '', SPEED, ACCELERATION)
 def sinusoidal_angular_input(a, b, t, n=101, v_max=None, a_max=None):
     return __sinusoidal_input(a, b, t, n, v_max, a_max)
 
-# ---------------------------------------------------- Geometry -------------------------------------------------------------
+
+# ---------------------------------------------------- Geometry --------------------------------------------------------
 
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
 
+
 def norm(v):
     return np.linalg.norm(v, axis=0)
 
-# ---------------------------------------------------- Derivate -------------------------------------------------------------
+
+# ---------------------------------------------------- Derivative ------------------------------------------------------
+
+# "*," means phy can only be a keyword argument
+def derivative(obj, t, *, phy=ANGLE):
+    if phy not in DERIVATIVES:
+        raise ValueError(f"This unit {phy} has no derivative ready to use")
+    if len(obj.shape) == 1:
+        return np.diff(obj / SYSTEM[phy], append=np.nan) * len(obj) * SYSTEM[TIME] * SYSTEM[DERIVATIVES[phy]] / t
+    return np.diff(obj / SYSTEM[phy], axis=1, append=np.nan) * obj.shape[1] * SYSTEM[TIME] * SYSTEM[DERIVATIVES[phy]] / t
+
+
+# "*," means phy can only be a keyword argument
+def second_derivative(obj, t, *, phy=ANGLE):
+    if phy not in DERIVATIVES:
+        raise ValueError(f"This unit {phy} has no derivative ready to use")
+    if DERIVATIVES[phy] not in DERIVATIVES:
+        raise ValueError(f"This unit {phy} has no second derivative ready to use")
+    second = DERIVATIVES[DERIVATIVES[phy]]
+    if len(obj.shape) == 1:
+        return np.diff(obj / SYSTEM[phy], append=np.nan) * SYSTEM[second] * (len(obj) * SYSTEM[TIME] / t) ** 2
+    return np.diff(obj / SYSTEM[phy], 2, axis=1, prepend=np.nan, append=np.nan) * SYSTEM[second] * (obj.shape[1] * SYSTEM[TIME] / t ** 2)
+
 
 @physics_output(SPEED)
 @physics_input_function(LENGTH, TIME)
@@ -198,6 +226,7 @@ def get_speed(p, t):
         return np.diff(p, append=np.nan)*len(p)/t
     return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
 
+
 @physics_output(ACCELERATION)
 @physics_input_function(LENGTH, TIME)
 def get_acceleration(p, t):
@@ -205,80 +234,96 @@ def get_acceleration(p, t):
         return np.diff(p, 2, append=np.nan, prepend=np.nan)/(t/len(p))**2
     return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
 
+
 @physics_output(ANGULAR_VELOCITY)
 @physics_input_function(ANGLE, TIME)
 def get_angular_velocity(a, t):
     return np.diff(a, append=np.nan)*len(a)/t
+
 
 @physics_output(ANGULAR_ACCELERATION)
 @physics_input_function(ANGLE, TIME)
 def get_angular_acceleration(a, t):
     return np.diff(a, 2, append=np.nan, prepend=np.nan)/(t/len(a))**2
 
-# ---------------------------------------------------- Mass -------------------------------------------------------------
+
+# ---------------------------------------------------- Mass ------------------------------------------------------------
 
 @physics_output(MASS)
 @physics_input_function(LENGTH, LENGTH, DENSITY)
 def cylinder_mass(d, h, rho):
     return rho*h*np.pi/4*d**2
 
+
 def round_rod_mass(d, l, rho):
     return cylinder_mass(d, l, rho)
+
 
 @physics_output(MASS)
 @physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
 def hollow_cylinder_mass(d, h, t, rho):
     return rho*h*np.pi*t*(d - t)
 
+
 def round_pipe_mass(d, l, t, rho):
     return hollow_cylinder_mass(d, l, t, rho)
+
 
 @physics_output(MASS)
 @physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
 def parallelepiped_mass(l, w, h, rho):
     return rho*l*w*h
 
+
 @physics_output(MASS)
 @physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, DENSITY)
 def rectangular_tube_mass(l, w, h, t, rho):
     return 2*rho*l*t*(h + w - 2*t)
+
 
 @physics_output(MASS)
 @physics_input_function(LENGTH, DENSITY)
 def ball_mass(d, rho):
     return rho/6*np.pi*d**3
 
-# ---------------------------------------------------- Inertia -------------------------------------------------------------
+
+# ---------------------------------------------------- Inertia ---------------------------------------------------------
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, MASS)
 def cylinder_inertia(d, m):
     return m*d**2/8
 
+
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, MASS)
 def hollow_cylinder_inertia(d, t, m):
     return m/4*(d**2 - 2*t*d + 2*t**2)
+
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, MASS)
 def round_rod_inertia(d, l, m):
     return m/4*(d**2/4 + l**2/3)
 
+
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
 def round_pipe_inertia(d, l, t, m):
     return m/4*((d**2 - 2*t*d + 2*t**2)/2 + l**2/3) # (d**2 + (d - 2*t)**2)/4
+
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, MASS)
 def parallelepiped_inertia(l, w, m):
     return m/12*(l**2 + w**2)
 
+
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, MASS)
 def rectangular_tube_inertia(l, w, h, t, m):
     return m/12*(w*h*2*(w - t)/(w + h - 2*t) + (w - 2*t)**2 + l**2)
+
 
 @physics_output(INERTIA)
 @physics_input_function(LENGTH, MASS)
