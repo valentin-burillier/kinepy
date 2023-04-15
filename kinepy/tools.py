@@ -67,6 +67,7 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
         
         n = PAs.shape[2]
         lines.append(ax.quiver([10**10]*n,[10**10]*n, [0]*n, [0]*n, scale=1/vector_scale, scale_units='xy', cmap='plasma'))
+
         def _animate_(i):
             for lnum, line in enumerate(lines[:-1]):
                 line.set_data(M[lnum][i, 0], M[lnum][i, 1])
@@ -83,7 +84,6 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     anim = animation.FuncAnimation(fig, _animate_, frames=(n:=len(M[0])), interval=anim_time*1000/n, blit=True, repeat=repeat)    
     
     return anim
-
 # ---------------------------------------------------- Inputs -------------------------------------------------------------
 
 def __direct_input(a, b, t, n, v_max):
@@ -105,7 +105,7 @@ def __trapezoidal_input(a, b, t, n, v_max, a_max):
         l_dec = 2*a - b + acc*T[n//2:]*(t - T[n//2:]/2)
         return np.r_[l_acc, l_dec]
     
-    if v_max*t < abs(b - a):
+    if v_max * t < abs(b - a):
         print('input not possible')
         return
     # trapèze

@@ -110,6 +110,13 @@ DIMENSIONLESS = 'dimensionless'
 NO_UNIT = np.array(1.), 'No Unit'
 PERCENT = np.array(.01), '%'
 
+
+# ----------------------------------------------- Variable units -------------------------------------------------------
+
+VARIABLE_UNIT = 'X'
+VARIABLE_DERIVATIVE = 'dX/dt'
+VARIABLE_SECOND_DERIVATIVE = 'd²X/dt²'
+
 # ---------------------------------------------- Preset systems --------------------------------------------------------
 
 DEFAULT_SYSTEM = {
@@ -137,7 +144,7 @@ SI = {
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
-    DENSITY:KILOGRAM_PER_CUBIC_METER,
+    DENSITY: KILOGRAM_PER_CUBIC_METER,
     MASS: KILOGRAM,
     FORCE: NEWTON,
     TORQUE: NEWTON_METER,
@@ -224,4 +231,4 @@ def set_unit_system(unit_system: dict):
     DEFAULT_SYSTEM, SI, AMERICAN_SYSTEM, GOAT_SYSTEM 
     """
     for key in SYSTEM.dct:
-        SYSTEM.dct[key] = unit_system[key]
+        SYSTEM.dct[key] = unit_system.get(key, SYSTEM[key])

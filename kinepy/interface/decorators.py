@@ -90,29 +90,37 @@ def to_function(f):
     return g
 
 
+def make_new_args(args, kwargs, phy, f_args, shift, defaults, cnt):
+    if len(args) + len(kwargs) > cnt:
+        raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt - 1} were expected")
+
+    # positional arguments are simple to compute
+    n_args = [value * units.SYSTEM[unit] if unit else value for value, unit in zip(args, phy)]
+
+    for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
+        if arg not in kwargs:
+            # no default is defined for that arg
+            if index < shift:
+                raise TypeError(f"Value expected for {arg}, index {index}")
+            n_args.append(defaults[index - shift])
+        elif phy[index]:
+            n_args.append(kwargs[arg] * units.SYSTEM[phy[index]])
+        else:
+            n_args.append(kwargs[arg])
+    return n_args
+
+
 def physics_input_method(*phy):
     def decor(method):
+        # number of arguments
         cnt = method.__code__.co_argcount
+        # arguments 'self' excluded
         f_args = method.__code__.co_varnames[1:cnt]
         defaults = method.__defaults__ if method.__defaults__ is not None else ()
         shift = cnt - 1 - len(defaults)
 
         def g(self, *args, **kwargs):
-            if len(args) + len(kwargs) > cnt:
-                raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
-
-            n_args = [value * units.SYSTEM[unit] if unit else value for value, unit in zip(args, phy)]
-
-            for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
-                if arg not in kwargs:
-                    if index < shift:
-                        raise TypeError(f"Value axpected for {arg}, index {index}")
-                    n_args.append(defaults[index - shift])
-                elif phy[index]:
-                    n_args.append(kwargs[arg] * units.SYSTEM[phy[index]])
-                else:
-                    n_args.append(kwargs[arg])
-            return method(self, *n_args)
+            return method(self, *make_new_args(args, kwargs, phy, f_args, shift, defaults, cnt))
 
         g.__doc__, g.__name__ = method.__doc__, method.__name__
         return g
@@ -120,30 +128,40 @@ def physics_input_method(*phy):
 
 
 def physics_input_function(*phy):
-    def decor(method):
-        cnt = method.__code__.co_argcount
-        f_args = method.__code__.co_varnames[1:cnt]
-        defaults = method.__defaults__ if method.__defaults__ is not None else ()
-        shift = cnt - 1 - len(defaults)
+    def decor(function):
+        cnt = function.__code__.co_argcount
+        f_args = function.__code__.co_varnames[:cnt]
+        defaults = function.__defaults__ if function.__defaults__ is not None else ()
+        shift = cnt - len(defaults)
 
         def g(*args, **kwargs):
-            if len(args) + len(kwargs) > cnt:
-                raise TypeError(f"Received too many arguments {len(args) + len(kwargs)}, at most {cnt-1} were expected")
+            return function(*make_new_args(args, kwargs, phy, f_args, shift, defaults, cnt))
 
-            n_args = [value * units.SYSTEM[unit] if unit else value for value, unit in zip(args, phy)]
+        g.__doc__ = function.__doc__
+        return g
+    return decor
 
-            for index, arg in enumerate(f_args[len(n_args):], len(n_args)):
-                if arg not in kwargs:
-                    if index < shift:
-                        raise TypeError(f"Value axpected for {arg}, index {index}")
-                    n_args.append(defaults[index - shift])
-                elif phy[index]:
-                    n_args.append(kwargs[arg] * units.SYSTEM[phy[index]])
-                else:
-                    n_args.append(kwargs[arg])
-            return method(*n_args)
 
-        g.__doc__ = method.__doc__
+def scan_units(var_phy, physics):
+    dic = {
+        units.VARIABLE_UNIT: var_phy,
+        units.VARIABLE_DERIVATIVE: units.DERIVATIVES.get(var_phy),
+        units.VARIABLE_SECOND_DERIVATIVE: units.DERIVATIVES.get(units.DERIVATIVES.get(var_phy))
+    }
+    return tuple(dic.get(x, x) for x in physics)
+
+
+def physics_input_function_variable(*phy_):
+    def decor(function):
+        cnt = function.__code__.co_argcount
+        f_args = function.__code__.co_varnames[:cnt]
+        defaults = function.__defaults__ if function.__defaults__ is not None else ()
+        shift = cnt - len(defaults)
+
+        def g(*args, phy=units.ANGLE, **kwargs):
+            return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt))
+
+        g.__doc__ = function.__doc__
         return g
     return decor
 
