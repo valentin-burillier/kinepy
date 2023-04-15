@@ -151,7 +151,7 @@ def scan_units(var_phy, physics):
     return tuple(dic.get(x, x) for x in physics)
 
 
-def physics_input_function_variable(*phy_):
+def physics_input_function_variable(*phy_, output=units.VARIABLE_UNIT):
     def decor(function):
         cnt = function.__code__.co_argcount
         f_args = function.__code__.co_varnames[:cnt]
@@ -159,7 +159,9 @@ def physics_input_function_variable(*phy_):
         shift = cnt - len(defaults)
 
         def g(*args, phy=units.ANGLE, **kwargs):
-            return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt))
+            if output is None:
+                return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt))
+            return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt)) / units.SYSTEM.get(output, 1.)
 
         g.__doc__ = function.__doc__
         return g
