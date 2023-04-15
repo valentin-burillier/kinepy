@@ -1,7 +1,15 @@
-Toute la bibliothèque s'articule autour d'un système d'unité pour l'expression des entrées et des sorties.*
+Toute la bibliothèque s'articule autour d'un système d'unité pour l'expression des entrées et des sorties de chaque méthode. La bibliothèque gère automatiquement les convertions.
 
-modifiable au debut du code : goat
+Au début de son programme, l'utilisateur choisit les unités avec lequel il va travailler. Si les unités déjà implémenté ne lui correspondent pas, il a la possibilité de créer ces propres unités.
 
-- `show_units()` :
-- `set_unit_system(unit_system)` : DEFAULT_SYSTEM, SI, AMERICAN_SYSTEM, GOAT_SYSTEM 
-- `set_unit(phy, value, unit='Unnamed unit')` :
+Par default, le systéme d'unité est celui du système internationnal a 2 modifiaction près. Les longueurs sont exprimées en mm et la masse volumique en g/cm³.
+
+- `show_units()` : Affiche le système d'unité actuellement utilisé
+- `set_unit_system(unit_system)` : Permet de changer le système d'unité au complet. Des systèmes d'unité sont déjà renseigné : `DEFAULT_SYSTEM`, `SI`, `AMERICAN_SYSTEM`, `GOAT_SYSTEM`. Pour modifier le système d'unité, on fait correspondre l'un de ces système à l'argument `unit_system`.
+- `set_unit(phy, value, unit='Unnamed unit')` : Permet de changer l'unité d'une seule grandeur. 
+
+[Bla³]
+
+# Le système d'unité chèvre
+
+Prenez la plus belle chèvre que vous possédez. Mesurez sa hauteur, pesez-la, mesurez le temps qu'elle met pour manger une carotte, mesurez la force qu'elle déploie pour vous foncer dessus, faite la tourner pour calculer son moment d'inertie... Grâce à cela, vous aurez toutes les données nécessaire afin de créer un système d'unité. Attention toute fois à ne pas la blaisser durant vos mesures. Les chèvres sont des animaux respectables donc il faut les respecter.
