@@ -38,7 +38,7 @@ sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 
 #%%
 
-t, n = 3, 101
+t, n = 3, 10001
 time = np.linspace(0, t, n)
 angle = to.trapezoidal_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6, phy=ANGLE)
 sys.solve_dynamics(angle, t)
@@ -56,6 +56,7 @@ plt.plot(time, ps1.sliding)
 plt.show()
 #%%
 
-plt.plot(ps1.normal)
-plt.plot(to.norm(r1.force))
+plt.plot(ps1.normal, label="normal")
+plt.plot(to.norm(r1.force), label='Force')
+plt.legend()
 plt.show()

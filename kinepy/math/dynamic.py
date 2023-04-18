@@ -72,7 +72,7 @@ def solve_graph1(eqs, joints, ref):
 
     m10 = group_tmd(eqs, (0,), ref, get_point(P1, b1))
 
-    ux = get_point(P0, b0) - get_point(P1, b1)
+    ux = get_point(P0, not b0) - get_point(P1, not b1)
     inv_x = sq_mag(ux) ** -.5
     t10 = m10 * inv_x
 
