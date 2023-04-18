@@ -40,7 +40,7 @@ sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 
 t, n = 3, 101
 time = np.linspace(0, t, n)
-angle = to._trapezoidal_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6, phy=ANGLE)
+angle = to.trapezoidal_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6, phy=ANGLE)
 sys.solve_dynamics(angle, t)
 
 #%%a
