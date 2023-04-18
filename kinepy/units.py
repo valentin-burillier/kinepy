@@ -52,11 +52,14 @@ ANGULAR_VELOCITY = 'Angular velocity'
 RADIAN_PER_SECOND = np.array(1.), 'rad/s'
 REVOLUTION_PER_MINUTE = np.array(np.pi/30), 'rpm'
 HERTZ = np.array(2*np.pi), 'Hz'
+DEGREE_PER_SECOND = np.array(np.pi / 180), '°/s'
+
 
 # ----------------------------------------- Angular acceleration units -------------------------------------------------
 
 ANGULAR_ACCELERATION = 'Angular acceleration'
 RADIAN_PER_SECOND_SQUARED = np.array(1.), 'rad/s²'
+DEGREE_PER_SECOND_SQUARED = np.array(np.pi / 180), '°/s²'
 
 # --------------------------------------------- Mass units -------------------------------------------------------------
 
