@@ -40,22 +40,22 @@ sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 
 t, n = 3, 101
 time = np.linspace(0, t, n)
-angle = to.trapezoidal_angular_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6)
+angle = to._trapezoidal_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6, phy=ANGLE)
 sys.solve_dynamics(angle, t)
 
 #%%a
 
 P = s1.get_point((-rA, 0))
 G = s2.get_point((-rB, 0))
-to.animate([[G, ps2.point, r4.point, ps1.point], [P, s1.origin]])
-
+_ = to.animate([[G, ps2.point, r4.point, ps1.point], [P, s1.origin]])
+plt.show()
 #%%
 
 plt.plot(time, s4.origin[1])
 plt.plot(time, ps1.sliding)
-
+plt.show()
 #%%
 
 plt.plot(ps1.normal)
 plt.plot(to.norm(r1.force))
-
+plt.show()

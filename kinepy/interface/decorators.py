@@ -142,13 +142,15 @@ def physics_input_function(*phy):
     return decor
 
 
-def scan_units(var_phy, physics):
-    dic = {
-        units.VARIABLE_UNIT: var_phy,
-        units.VARIABLE_DERIVATIVE: units.DERIVATIVES.get(var_phy),
-        units.VARIABLE_SECOND_DERIVATIVE: units.DERIVATIVES.get(units.DERIVATIVES.get(var_phy))
-    }
-    return tuple(dic.get(x, x) for x in physics)
+def make_dict(var_phy):
+    dic = {units.VARIABLE_UNIT: var_phy}
+    if var_phy not in units.DERIVATIVES:
+        return dic
+    dic[units.VARIABLE_DERIVATIVE] = derivative = units.DERIVATIVES[var_phy]
+    if derivative not in units.DERIVATIVES:
+        return dic
+    dic[units.VARIABLE_SECOND_DERIVATIVE] = units.DERIVATIVES[derivative]
+    return dic
 
 
 def physics_input_function_variable(*phy_, output=units.VARIABLE_UNIT):
@@ -159,9 +161,11 @@ def physics_input_function_variable(*phy_, output=units.VARIABLE_UNIT):
         shift = cnt - len(defaults)
 
         def g(*args, phy=units.ANGLE, **kwargs):
+            dic = make_dict(phy)
+            inputs = tuple(dic.get(x, x) for x in phy_)
             if output is None:
-                return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt))
-            return function(*make_new_args(args, kwargs, scan_units(phy, phy_), f_args, shift, defaults, cnt)) / units.SYSTEM.get(output, 1.)
+                return function(*make_new_args(args, kwargs, inputs, f_args, shift, defaults, cnt))
+            return function(*make_new_args(args, kwargs, inputs, f_args, shift, defaults, cnt)) / units.SYSTEM[dic.get(output, output)]
 
         g.__doc__ = function.__doc__
         return g

@@ -2,13 +2,15 @@ from kinepy.math.geometry import np, rvec, sq_mag
 
 
 class Gravity:
+    name = "Gravity"
+
     def __init__(self, g):
         self.g = g
 
     def set_ma(self, system):
         g = np.reshape(np.array(self.g), (2, 1))
         for s in system.sols:
-            s.add_mech_actions(g * s.m, s.og, 0.)
+            s.add_mech_action(g * s.m, s.og, 0.)
 
 
 class Spring:

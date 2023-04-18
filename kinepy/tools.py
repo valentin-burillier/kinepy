@@ -5,7 +5,7 @@ from matplotlib import cm
 import matplotlib.colors as mcol
 
 from kinepy.units import *
-from kinepy.interface.decorators import physics_input_function, physics_output
+from kinepy.interface.decorators import physics_input_function, physics_output, physics_input_function_variable
 
 # ---------------------------------------------------- Animate -------------------------------------------------------------
 
@@ -84,91 +84,77 @@ def animate(list_paths, list_vectors=None, anim_time=4, repeat=True, scale=1, ve
     anim = animation.FuncAnimation(fig, _animate_, frames=(n:=len(M[0])), interval=anim_time*1000/n, blit=True, repeat=repeat)    
     
     return anim
-# ---------------------------------------------------- Inputs -------------------------------------------------------------
+# ---------------------------------------------------- Inputs ----------------------------------------------------------
 
-def direct_input(a, b, t, n=101, v_max=None, *, phy=ANGLE):
-    if phy not in [ANGLE, LENGTH]:
-        raise ValueError(f"{phy} is not 'Angle' or 'Length'")
-    t /= SYSTEM[TIME]
-    if v_max is not None:
-        v_max /= SYSTEM[DERIVATIVES[phy]] 
-    v = (b - a)/t
-    if v_max is not None and abs(v) > v_max: # triangle
-        print('speed too high')
-        return
+
+@physics_input_function_variable(VARIABLE_UNIT, VARIABLE_UNIT, TIME, '', VARIABLE_DERIVATIVE)
+def direct_input(a, b, t, n=101, v_max=None):
+    if v_max is not None and abs((b - a) / t) > v_max:
+        raise ValueError("Speed is too high")
     return np.linspace(a, b, n)
 
-def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None, *, phy=ANGLE):
-    if phy not in [ANGLE, LENGTH]:
-        raise ValueError(f"{phy} is not 'Angle' or 'Length'")
-    t /= SYSTEM[TIME]
-    if v_max is not None:
-        v_max /= SYSTEM[DERIVATIVES[phy]]
-    if  a_max is not None:
-        a_max /= SYSTEM[DERIVATIVES[DERIVATIVES[phy]]]
-    v = 2*(b - a)/t
-    if v_max is None or abs(v) <= v_max: # triangle
-        acc = 4*(b - a)/t**2
-        if a_max is not None and abs(acc) > a_max:
-            print('too much acceleration')
-            return
-        T = np.linspace(0, t, n)
-        l_acc = a + acc/2*T[:n//2]**2
-        l_dec = 2*a - b + acc*T[n//2:]*(t - T[n//2:]/2)
-        return np.r_[l_acc, l_dec]
-    
-    if v_max * t < abs(b - a):
-        print('input not possible')
-        return
-    # trapèze
-    v = np.sign(v)*v_max
-    t_inf = t - (b - a)/v
-    acc = v/t_inf
-    if a_max is not None and abs(acc) > a_max:
-        print('too much acceleration')
-        return
-    T = np.linspace(0, t, n)
-    i = int(t_inf/t*n)
-    l_acc = a + acc/2*T[:i]**2
-    l_plateau = v*(T[i:-i] - t_inf) + a + acc/2*t_inf**2
-    l_dec = acc*T[-i:]*(t - T[-i:]/2) + v*(t - 2*t_inf) + a + acc*(t_inf**2 - t**2/2)       
-    return np.r_[l_acc, l_plateau, l_dec]
 
-def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None, *, phy=ANGLE):
-    if phy not in [ANGLE, LENGTH]:
-        raise ValueError(f"{phy} is not 'Angle' or 'Length'")
-    t /= SYSTEM[TIME]
-    if v_max is not None:
-        v_max /= SYSTEM[DERIVATIVES[phy]]
-    if  a_max is not None:
-        a_max /= SYSTEM[DERIVATIVES[DERIVATIVES[phy]]]
-    v = 2*(b - a)/t
-    if v_max is None or abs(v) <= v_max: # triangle
-        acc = np.pi*2*(b - a)/t**2
-        if a_max is not None and acc <= a_max:
-            print('too much acceleration')
-            return
-        T = np.linspace(0, t, n)
-        return a + v/2*(T - t/(2*np.pi)*np.sin(2*np.pi/t*T))
-    
-    if v_max*t < abs(b - a):
-        print('input not possible')
-        return
-    # trapèze
-    v = np.sign(v)*v_max
-    t_inf = t - (b - a)/v
-    acc = v/t_inf*np.pi/2
+@physics_input_function_variable(VARIABLE_UNIT, VARIABLE_UNIT, TIME, '', VARIABLE_DERIVATIVE, VARIABLE_SECOND_DERIVATIVE)
+def trapezoidal_input(a, b, t, n=101, v_max=None, a_max=None):
+    time_line = np.linspace(0, t, n)
+    v = 2 * (b - a) / t
+
+    # triangle case
+    if v_max is None or abs(v) <= v_max:
+        acc = 4 * (b - a) / (t * t)
+        if a_max is not None and abs(acc) > a_max:
+            raise ValueError("Too much Acceleration")
+        t0, t1 = time_line[:n//2], time_line[n//2:]
+        return np.r_[a + .5 * acc * t0 * t0, b - .5 * acc * (t1 - t) ** 2]
+
+    # trapezoid case
+    if 2 * v_max < abs(v):
+        raise ValueError("Impossible input")
+    v = np.sign(v) * v_max
+    acc = v_max / (t_acc := t - (b - a) / v)
     if a_max is not None and abs(acc) > a_max:
-        print('too much acceleration')
-        return
-    T = np.linspace(0, t, n)
-    i = int(t_inf/t*n)
-    l_acc = a + v/2*(T[:i] - t_inf/np.pi*np.sin(np.pi/t_inf*T[:i]))
-    l_plateau = v*(T[i:-i] - t_inf) + a + v/2*t_inf
-    l_dec = v/2*(T[-i:] - t + t_inf + t_inf/np.pi*np.sin(np.pi/t_inf*(T[-i:] - t + t_inf))) + v*(t - 2*t_inf) + a + v/2*t_inf
-    return np.r_[l_acc, l_plateau, l_dec]
+        raise ValueError("Too much acceleration")
+    cutting_index = int(n * t_acc / t)
+    if cutting_index:
+        t0, t1, t2 = time_line[:cutting_index], time_line[cutting_index:-cutting_index], time_line[-cutting_index:]
+    else:
+        t0, t1, t2 = np.array([], float), time_line, np.array([], float)
+    x0 = a + .5 * acc * t_acc * t_acc
+    return np.r_[a + .5 * acc * t0 * t0, x0 + v * (t1 - t_acc), b - .5 * acc * (t2 - t) ** 2]
+
+
+@physics_input_function_variable(VARIABLE_UNIT, VARIABLE_UNIT, TIME, '', VARIABLE_DERIVATIVE, VARIABLE_SECOND_DERIVATIVE)
+def sinusoidal_input(a, b, t, n=101, v_max=None, a_max=None):
+    time_line = np.linspace(0, t, n)
+    v = 2 * (b - a) / t
+
+    # "triangle" case
+    if v_max is None or abs(v) <= v_max:
+        acc = np.pi * v / t
+        if a_max is not None and abs(acc) > a_max:
+            raise ValueError("Too much Acceleration")
+        omega = 2 * np.pi / t
+        return a + .5 * v * (time_line - np.sin(time_line * omega) / omega)
+
+    # "trapezoid" case
+    if 2 * v_max < abs(v):
+        raise ValueError("Impossible input")
+    v = np.sign(v) * v_max
+    acc = .5 * np.pi * v_max / (t_acc := t - (b - a) / v)
+    if a_max is not None and abs(acc) > a_max:
+        raise ValueError("Too much acceleration")
+
+    cutting_index = int(n * t_acc / t)
+    if cutting_index:
+        t0, t1, t2 = time_line[:cutting_index], time_line[cutting_index:-cutting_index], time_line[-cutting_index:]
+    else:
+        t0, t1, t2 = np.array([], float), time_line, np.array([], float)
+    omega, x0 = np.pi / t_acc, a + .5 * v * t_acc
+    return np.r_[a + .5 * v * (t0 - np.sin(omega * t0) / omega), x0 + v * (t1 - t_acc), b + .5 * v * (t2 - t - np.sin(omega * (t2 - t)) / omega)]
+
 
 # ---------------------------------------------------- Geometry --------------------------------------------------------
+
 
 def distance(p1, p2):
     return np.linalg.norm(p2 - p1, axis=0)
@@ -179,12 +165,13 @@ def norm(v):
 
 # ---------------------------------------------------- Derivative ------------------------------------------------------
 
+
 def derivative(obj, t, *, phy=ANGLE):
     if phy not in DERIVATIVES:
         raise ValueError(f"This unit {phy} has no derivative ready to use")
     if len(obj.shape) == 1:
-        return np.diff(obj / SYSTEM[phy], append=np.nan) * len(obj) * SYSTEM[TIME] * SYSTEM[DERIVATIVES[phy]] / t
-    return np.diff(obj / SYSTEM[phy], axis=1, append=np.nan) * obj.shape[1] * SYSTEM[TIME] * SYSTEM[DERIVATIVES[phy]] / t
+        return np.diff(obj * SYSTEM[phy], append=np.nan) * len(obj) / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
+    return np.diff(obj * SYSTEM[phy], axis=1, append=np.nan) * obj.shape[1] / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
 
 
 def second_derivative(obj, t, *, phy=ANGLE):
@@ -194,36 +181,9 @@ def second_derivative(obj, t, *, phy=ANGLE):
         raise ValueError(f"This unit {phy} has no second derivative ready to use")
     second = DERIVATIVES[DERIVATIVES[phy]]
     if len(obj.shape) == 1:
-        return np.diff(obj / SYSTEM[phy], append=np.nan) * SYSTEM[second] * (len(obj) * SYSTEM[TIME] / t) ** 2
-    return np.diff(obj / SYSTEM[phy], 2, axis=1, prepend=np.nan, append=np.nan) * SYSTEM[second] * (obj.shape[1] * SYSTEM[TIME] / t ** 2)
+        return np.diff(obj * SYSTEM[phy], append=np.nan) / SYSTEM[second] * (len(obj) / SYSTEM[TIME] / t) ** 2
+    return np.diff(obj * SYSTEM[phy], 2, axis=1, prepend=np.nan, append=np.nan) / SYSTEM[second] * (obj.shape[1] / SYSTEM[TIME] / t ** 2)
 
-
-@physics_output(SPEED)
-@physics_input_function(LENGTH, TIME)
-def get_speed(p, t):
-    if len(p.shape) == 1:
-        return np.diff(p, append=np.nan)*len(p)/t
-    return np.diff(p, axis=1, append=np.nan)*p.shape[1]/t
-
-
-@physics_output(ACCELERATION)
-@physics_input_function(LENGTH, TIME)
-def get_acceleration(p, t):
-    if len(p.shape) == 1:
-        return np.diff(p, 2, append=np.nan, prepend=np.nan)/(t/len(p))**2
-    return np.diff(p, 2, axis=1, append=np.nan, prepend=np.nan)/(t/p.shape[1])**2
-
-
-@physics_output(ANGULAR_VELOCITY)
-@physics_input_function(ANGLE, TIME)
-def get_angular_velocity(a, t):
-    return np.diff(a, append=np.nan)*len(a)/t
-
-
-@physics_output(ANGULAR_ACCELERATION)
-@physics_input_function(ANGLE, TIME)
-def get_angular_acceleration(a, t):
-    return np.diff(a, 2, append=np.nan, prepend=np.nan)/(t/len(a))**2
 
 # ---------------------------------------------------- Mass ------------------------------------------------------------
 
