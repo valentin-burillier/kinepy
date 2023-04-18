@@ -4,9 +4,26 @@ Au début de son programme, l'utilisateur choisit les unités avec lequel il va 
 
 Par default, le systéme d'unité est celui du système internationnal a 2 modifiaction près. Les longueurs sont exprimées en mm et la masse volumique en g/cm³.
 
+```
+Time                 : s
+Length               : mm
+Speed                : m/s
+Acceleration         : m/s²
+Angle                : rad
+Angular velocity     : rad/s
+Angular acceleration : rad/s²
+Density              : g/cm³
+Mass                 : kg
+Force                : N
+Torque               : Nm
+SpringConstant       : N/m
+Inertia              : kg.m²
+dimensionless        : No Unit
+```
+
 - `show_units()` : Affiche le système d'unité actuellement utilisé
-- `set_unit_system(unit_system)` : Permet de changer le système d'unité au complet. Des systèmes d'unité sont déjà renseigné : `DEFAULT_SYSTEM`, `SI`, `AMERICAN_SYSTEM`, `GOAT_SYSTEM`. Pour modifier le système d'unité, on fait correspondre l'un de ces système à l'argument `unit_system`.
-- `set_unit(phy, value, unit='Unnamed unit')` : Permet de changer l'unité d'une seule grandeur. 
+- `set_unit_system(unit_system)` : Permet de changer le système d'unité au complet. On fait correspondre l'argument `unit_system` des systèmes d'unité disponibles : `DEFAULT_SYSTEM`, `SI`, `AMERICAN_SYSTEM`, `GOAT_SYSTEM`.
+- `set_unit(phy, value, unit='Unnamed unit')` : Permet de changer l'unité d'une seule grandeur parmi celle ci-dessus. 
 
 [Bla³]
 
