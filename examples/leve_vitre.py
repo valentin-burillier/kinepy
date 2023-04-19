@@ -15,9 +15,9 @@ rA, rB, l = 7, 70, 130
 
 sys = k.System()
 
-s1 = sys.add_solid('Gear wheel', m=0.2)
-s2 = sys.add_solid('Crank', m=0.5, g=(l, 0))
-s3 = sys.add_solid('Support arm', m=0.5, g=(l, 0))
+s1 = sys.add_solid('Gear wheel', m=0.) # 0.2
+s2 = sys.add_solid('Crank', m=0., g=(l, 0)) # 0.5
+s3 = sys.add_solid('Support arm', m=0., g=(l, 0)) # 0.5
 s4 = sys.add_solid('Glass', m=1.5, g=(-l, 0))
 
 r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
@@ -38,16 +38,16 @@ sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 
 #%%
 
-t, n = 3, 10001
+t, n = 3, 101
 time = np.linspace(0, t, n)
 angle = to.trapezoidal_input(-np.pi/4*rB/rA, np.pi/4*rB/rA, t, n, v_max=6, phy=ANGLE)
 sys.solve_dynamics(angle, t)
 
-#%%a
+#%%
 
 P = s1.get_point((-rA, 0))
 G = s2.get_point((-rB, 0))
-_ = to.animate([[G, ps2.point, r4.point, ps1.point], [P, s1.origin]])
+_ = to.animate([[G, ps2.point, r4.point, ps1.point], [P, s1.origin]], list_vectors=[(gear.contact_point, gear.contact_force), (r4.point, r4.force), (r3.point, -r3.force), (r2.point, -r2.force)], vector_scale=10)
 plt.show()
 #%%
 
@@ -56,7 +56,12 @@ plt.plot(time, ps1.sliding)
 plt.show()
 #%%
 
+
 plt.plot(ps1.normal, label="normal")
-plt.plot(to.norm(r1.force), label='Force')
+plt.plot(ps2.normal, label="normal")
+plt.plot()
 plt.legend()
 plt.show()
+#%%
+
+plt.plot(time, r1.torque)
