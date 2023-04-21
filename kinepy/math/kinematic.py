@@ -220,8 +220,8 @@ def solve_pilot(system, eq_order):
 
 
 def set_origin(system):
-    move_eq(system.sols, -system.sols[0].origin)
-    rotate_eq(system.sols, -system.sols[0].angle)
+    move_eq(system.kin_sols, -system.sols[0].origin)
+    rotate_eq(system.kin_sols, -system.sols[0].angle)
 
 
 def recover_ghosts(system):
