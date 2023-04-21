@@ -70,18 +70,15 @@ def solve_graph0(eqs, joints, ref):
 def solve_graph1(eqs, joints, ref):
     (P0, b0), (P1, b1), (G2, b2) = joints
 
-    m10 = group_tmd(eqs, (0,), ref, get_point(P1, b1))
+    m10 = group_tmd(eqs, (0,), ref, get_point(P1, not b1))
 
     ux = get_point(P0, not b0) - get_point(P1, not b1)
-    inv_x = sq_mag(ux) ** -.5
-    t10 = m10 * inv_x
 
-    ux *= inv_x
     uy = unit(get_angle(G2, 0))
 
-    t10_ = det(uy, f := group_trd(eqs, (0, 2), ref))
+    t10_ = dot(uy, f := group_trd(eqs, (0, 2), ref))
 
-    f10 = t10 * z_cross(ux) - ux * (t10_ - det(uy, ux) * t10) / dot(uy, ux)
+    f10 = t10_ * uy + z_cross(uy) * (m10 - t10_ * det(ux, uy)) / dot(uy, ux)
     set_force(P0, b0, f10)
 
     m21 = group_tmd(eqs, (1,), ref, get_zero(G2, 0, uy))
