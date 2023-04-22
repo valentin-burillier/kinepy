@@ -90,8 +90,9 @@ KILOGRAM_FORCE = np.array(9.8067), 'kgf'
 # -------------------------------------------- Torque units ------------------------------------------------------------
 
 TORQUE = 'Torque'
-NEWTON_METER = np.array(1.), 'Nm'
-MILLINEWTON_METER = np.array(1e-3), 'mNm'
+NEWTON_METER = np.array(1.), 'N.m'
+NEWTON_MILLIMETER = np.array(1e-3), 'N.mm'
+MILLINEWTON_METER = np.array(1e-3), 'mN.m'
 POUND_FOOT = np.array(1.355818), 'lb.ft'
 
 # -------------------------------------------- Spring constant units ---------------------------------------------------
@@ -125,8 +126,8 @@ VARIABLE_SECOND_DERIVATIVE = 'd²X/dt²'
 DEFAULT_SYSTEM = {
     TIME: SECOND,
     LENGTH: MILLIMETER,
-    SPEED: MILLIMETER_PER_SECOND,
-    ACCELERATION: MILLIMETER_PER_SECOND_SQUARED,
+    SPEED: METER_PER_SECOND,
+    ACCELERATION: METER_PER_SECOND_SQUARED,
     ANGLE: RADIAN,
     ANGULAR_VELOCITY: RADIAN_PER_SECOND,
     ANGULAR_ACCELERATION: RADIAN_PER_SECOND_SQUARED,
@@ -216,6 +217,9 @@ def set_unit(phy, value, unit='Unnamed unit'):
     if isinstance(value, tuple):
         value, unit = value
     SYSTEM.set(phy, value, unit)
+    
+def get_unit(phy):
+    return SYSTEM.dct[phy][1]
 
 
 set_unit.__doc__ = f"""Changes the unit
