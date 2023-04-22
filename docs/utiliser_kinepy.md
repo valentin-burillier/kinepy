@@ -2,14 +2,14 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 
 # Sommaire
 
-- [Présentation du système](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#présentation-du-système)
-- [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
-- [Ajouts d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#ajouts-defforts-extérieurs)
-- [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
-- [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#affichage-du-mécanisme)
-- [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#récupération-de-données-cinématiques)
-- [Récupération de données sur les efforts internes](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#récupération-de-données-sur-les-efforts-internes)
-- [Optimisation de paramètres](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#optimisation-de-paramètres)
+- [Présentation du système](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#présentation-du-système)
+- [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
+- [Ajouts d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#ajouts-defforts-extérieurs)
+- [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
+- [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#affichage-du-mécanisme)
+- [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#récupération-de-données-cinématiques)
+- [Récupération de données sur les efforts internes](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#récupération-de-données-sur-les-efforts-internes)
+- [Optimisation de paramètres](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#optimisation-de-paramètres)
 
 # Présentation du système
 
@@ -172,9 +172,9 @@ s4.add_force((0, -2), (-2*l, 0))
 
 On réalise une simulation de remonté de la vitre. La durée de simulation est de 3 s où 1001 points sont simulés. 
 
-On commande le systeme par un trapèze de vitesse où la vitesse maximale du moteur est de 6 rad/s ([entrées cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#entrées-cinématiques)).
+On commande le systeme par un trapèze de vitesse où la vitesse maximale du moteur est de 6 rad/s ([doc entrées cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#entrées-cinématiques)).
 
-Afin de vérifier notre entrée, on affiche ce trapèze de vitesse en calculant la dérivée (doc). On utilise `get_unit` pour obtenir l'unité des grandeurs physiques. Cela évite les ereurs d'unité.
+Afin de vérifier notre entrée, on affiche ce trapèze de vitesse en calculant la dérivée ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)). On utilise `get_unit` pour obtenir l'unité des grandeurs physiques. Cela évite les ereurs d'unité.
 
 ```python
 t, n = 3, 1001
@@ -209,6 +209,8 @@ plt.show()
 
 # Récupération de données cinématiques
 
+On affiche l'évolution temporelle de la hauteur de la vitre ainsi que ça vitesse au court du temps. Pour ce faire, on récupère l'information de hauteur en prenant l'ordonnée du repère attaché à la vitre ([doc solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Solid.md#cinématique)). On en prend la dérivée pour obtenir la vitesse ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)).
+
 ```python
 glass_heigth = s4.origin[1]
 glass_speed = to.derivative(glass_heigth, t)
@@ -231,6 +233,8 @@ plt.show()
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808355-b26b3f9f-88ae-4a06-9ddb-5fd71f79ef0c.png">
 </p>
 
+On peut vérifier certaines exigences à propos de longueur de course et de vitesse maximale de la vitre.
+
 ```python
 print('Glass stroke :', round(np.max(glass_heigth) - np.min(glass_heigth)), get_unit(LENGTH))
 print('Maximum glass speed :', round(np.nanmax(glass_speed)), get_unit(SPEED))
@@ -241,6 +245,8 @@ Maximum glass speed : 156 mm/s
 ```
 
 # Récupération de données sur les efforts internes
+
+Afin de dimensionner le moteur, on affiche l'évolution du couple d'entrée au cours du temps. Pour ce faire, on récupère l'information de couple au niveau de la liaison ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#sorties)). Il y a un signe "-" car `r1.torque` correspond au couple exercé par le bras sur le bâti. Or, c'est l'opposée qui nous intéresse.
 
 ```python
 motor_torque = -r1.torque
@@ -257,7 +263,7 @@ plt.show()
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808383-bc2d18d0-cf35-49fe-bfe4-500d77e7de3d.png">
 </p>
 
-Plusieurs truc à dire :
+On peut analyser plusieurs éléments sur ce graphique :
 - discontinuité car discontinuité de l'accélération du au trapèze de vitesse
 - les effets d'inertie ne s'appliquent que sur la phase d'accélérations et de décélération
 - le maximum est atteint vers la moitié de la course
