@@ -57,10 +57,14 @@ class System:
             KIN[instr[0]](*instr[1:])
 
     def solve_statics(self):
+        for sol in self.dyn_sols:
+            sol.dyn_reset()
         for instr in self.dyn_instr[1:]:
             DYN[instr[0]](*instr[1:])
 
     def solve_dynamics(self, t):
         self.dt = t / self.inputs.shape[1]
+        for sol in self.dyn_sols:
+            sol.dyn_reset()
         for instr in self.dyn_instr:
             DYN[instr[0]](*instr[1:])

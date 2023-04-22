@@ -49,7 +49,6 @@ class GUI:
     real_rectangle = 0
     scale0 = 1
 
-
     def __init__(self, system: _System, additional_points=(), background=(160, 160, 160), grid=False):
         self.surface = pg.display.set_mode((640, 480), pg.RESIZABLE)
 
@@ -156,7 +155,7 @@ class GUI:
         for joint, points in zip(self.system.joints, self.joint_points):
             for point, sol in zip(points, (joint.s1, joint.s2)):
                 color = self.colors[sol.rep % len(self.colors)]
-                pg.draw.circle(self.surface, color, point[:, self.animation_state] * self.scale + self.screen_center, 4 * self.scale / self.scale0)
+                pg.draw.circle(self.surface, color, point[:, self.animation_state] * self.scale + self.screen_center, 4)
         pg.display.flip()
         self.animation_state = (self.animation_state + 1) % self.system.n
 

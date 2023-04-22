@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.interface.metaclass import *
 import kinepy.units as units
 import kinepy.objects as obj
@@ -24,7 +26,8 @@ class Solid(obj.Solid, metaclass=MetaUnit):
 
     @physics_input_method('', LENGTH)
     def add_force(self, f, p):
-        if isinstance(f, np.ndarray) and len(f) == 2:
+        if isinstance(f, (np.ndarray, tuple, list)) and len(f) == 2:
+            f = np.array(f)
             if f.shape == (2,):
                 f = f.reshape((2, 1))
             self.external_actions.append((lambda: f * units.SYSTEM[FORCE]), ZERO_F, p)

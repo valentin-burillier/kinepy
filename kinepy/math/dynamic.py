@@ -197,7 +197,6 @@ def solve_relation(rel, b, eq1, eq2, ref):
 def compute_inertia(system):
     dt = system.dt
     for s in system.dyn_sols:
-        s.og = s.origin + rvec(s.angle, s.g)
         s.trd = -s.m * derivative2_vec(s.og, dt)
         s.g_tmd = -s.j * derivative2(s.angle, dt)
 

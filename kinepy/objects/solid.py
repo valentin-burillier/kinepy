@@ -1,4 +1,4 @@
-from kinepy.math.geometry import np, det
+from kinepy.math.geometry import np, det, rvec
 
 
 class Solid:
@@ -13,6 +13,11 @@ class Solid:
         self.g_tmd = np.zeros((n,), float)
         self.angle = np.zeros((n,), float)
         self.origin = np.zeros((2, n), float)
+
+    def dyn_reset(self):
+        self.trd *= 0
+        self.g_tmd *= 0
+        self.og = self.origin + rvec(self.angle, self.g)
 
     def add_mech_action(self, force, point, torque):
         self.trd += force
