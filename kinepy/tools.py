@@ -166,7 +166,7 @@ def norm(v):
 # ---------------------------------------------------- Derivative ------------------------------------------------------
 
 
-def derivative(obj, t, *, phy=ANGLE):
+def derivative(obj, t, *, phy=LENGTH):
     if phy not in DERIVATIVES:
         raise ValueError(f"This unit {phy} has no derivative ready to use")
     if len(obj.shape) == 1:
@@ -174,7 +174,7 @@ def derivative(obj, t, *, phy=ANGLE):
     return np.diff(obj * SYSTEM[phy], axis=1, append=np.nan) * obj.shape[1] / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
 
 
-def second_derivative(obj, t, *, phy=ANGLE):
+def second_derivative(obj, t, *, phy=LENGTH):
     if phy not in DERIVATIVES:
         raise ValueError(f"This unit {phy} has no derivative ready to use")
     if DERIVATIVES[phy] not in DERIVATIVES:
@@ -188,8 +188,8 @@ def second_derivative(obj, t, *, phy=ANGLE):
 # ---------------------------------------------------- Mass ------------------------------------------------------------
 
 @physics_output(MASS)
-@physics_input_function(LENGTH, LENGTH, DENSITY)
-def cylinder_mass(d, h, rho):
+@physics_input_function(DENSITY, LENGTH, LENGTH)
+def cylinder_mass(rho, d, h):
     """
     See the correspondence of the arguments here:
         
@@ -198,18 +198,18 @@ def cylinder_mass(d, h, rho):
     return rho*h*np.pi/4*d**2
 
 
-def round_rod_mass(d, l, rho):
+def round_rod_mass(rho, d, l):
     """
     See the correspondence of the arguments here:
         
     https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masseinertie
     """
-    return cylinder_mass(d, l, rho)
+    return cylinder_mass(rho, d, l)
 
 
 @physics_output(MASS)
-@physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
-def hollow_cylinder_mass(d, h, t, rho):
+@physics_input_function(DENSITY, LENGTH, LENGTH, LENGTH)
+def hollow_cylinder_mass(rho, d, h, t):
     """
     See the correspondence of the arguments here:
         
@@ -218,18 +218,18 @@ def hollow_cylinder_mass(d, h, t, rho):
     return rho*h*np.pi*t*(d - t)
 
 
-def round_pipe_mass(d, l, t, rho):
+def round_pipe_mass(rho, d, l, t):
     """
     See the correspondence of the arguments here:
         
     https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masseinertie
     """
-    return hollow_cylinder_mass(d, l, t, rho)
+    return hollow_cylinder_mass(rho, d, l, t)
 
 
 @physics_output(MASS)
-@physics_input_function(LENGTH, LENGTH, LENGTH, DENSITY)
-def parallelepiped_mass(l, w, h, rho):
+@physics_input_function(DENSITY, LENGTH, LENGTH, LENGTH)
+def parallelepiped_mass(rho, l, w, h):
     """
     See the correspondence of the arguments here:
         
@@ -239,8 +239,8 @@ def parallelepiped_mass(l, w, h, rho):
 
 
 @physics_output(MASS)
-@physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, DENSITY)
-def rectangular_tube_mass(l, w, h, t, rho):
+@physics_input_function(DENSITY, LENGTH, LENGTH, LENGTH, LENGTH)
+def rectangular_tube_mass(rho, l, w, h, t):
     """
     See the correspondence of the arguments here:
         
@@ -250,8 +250,8 @@ def rectangular_tube_mass(l, w, h, t, rho):
 
 
 @physics_output(MASS)
-@physics_input_function(LENGTH, DENSITY)
-def ball_mass(d, rho):
+@physics_input_function(DENSITY, LENGTH)
+def ball_mass(rho, d):
     """
     See the correspondence of the arguments here:
         
@@ -263,8 +263,8 @@ def ball_mass(d, rho):
 # ---------------------------------------------------- Inertia ---------------------------------------------------------
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, MASS)
-def cylinder_inertia(d, m):
+@physics_input_function(MASS, LENGTH)
+def cylinder_inertia(m, d):
     """
     See the correspondence of the arguments here:
         
@@ -274,8 +274,8 @@ def cylinder_inertia(d, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, MASS)
-def hollow_cylinder_inertia(d, t, m):
+@physics_input_function(MASS, LENGTH, LENGTH)
+def hollow_cylinder_inertia(m, d, t):
     """
     See the correspondence of the arguments here:
         
@@ -285,8 +285,8 @@ def hollow_cylinder_inertia(d, t, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, MASS)
-def round_rod_inertia(d, l, m):
+@physics_input_function(MASS, LENGTH, LENGTH)
+def round_rod_inertia(m, d, l):
     """
     See the correspondence of the arguments here:
         
@@ -296,8 +296,8 @@ def round_rod_inertia(d, l, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, LENGTH, MASS)
-def round_pipe_inertia(d, l, t, m):
+@physics_input_function(MASS, LENGTH, LENGTH, LENGTH)
+def round_pipe_inertia(m, d, l, t):
     """
     See the correspondence of the arguments here:
         
@@ -307,8 +307,8 @@ def round_pipe_inertia(d, l, t, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, MASS)
-def parallelepiped_inertia(l, w, m):
+@physics_input_function(MASS, LENGTH, LENGTH)
+def parallelepiped_inertia(m, l, w):
     """
     See the correspondence of the arguments here:
         
@@ -318,8 +318,8 @@ def parallelepiped_inertia(l, w, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, LENGTH, LENGTH, LENGTH, MASS)
-def rectangular_tube_inertia(l, w, h, t, m):
+@physics_input_function(MASS, LENGTH, LENGTH, LENGTH, LENGTH)
+def rectangular_tube_inertia(m, l, w, h, t):
     """
     See the correspondence of the arguments here:
         
@@ -329,8 +329,8 @@ def rectangular_tube_inertia(l, w, h, t, m):
 
 
 @physics_output(INERTIA)
-@physics_input_function(LENGTH, MASS)
-def ball_inertia(d, m):
+@physics_input_function(MASS, LENGTH)
+def ball_inertia(m, d):
     """
     See the correspondence of the arguments here:
         
