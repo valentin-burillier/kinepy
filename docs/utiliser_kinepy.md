@@ -3,6 +3,13 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 # Sommaire
 
 - [Présentation du système](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#présentation-du-système)
+- [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
+- [Ajouts d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#ajouts-defforts-extérieurs)
+- [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
+- [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#affichage-du-mécanisme)
+- [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#récupération-de-données-cinématiques)
+- [Récupération de données sur les efforts internes](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#récupération-de-données-sur-les-efforts-internes)
+- [Optimisation de paramètres](https://github.com/valentin-burillier/kinepy/edit/main/docs/utiliser_kinepy.md#optimisation-de-paramètres)
 
 # Présentation du système
 
@@ -150,7 +157,7 @@ Le système présente 2 boucles cinématiques signées. Pour déterminer les bon
 sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 ```
 
-# Ajouts des efforts extérieurs
+# Ajouts d'efforts extérieurs
 
 Le système est soumis à la gravité. De plus, on ajoute des forces s'appliquant de chaque coté de la vitre modélisant les frottements de celle-ci avec le joint d'étanchéité.
 
@@ -187,4 +194,127 @@ plt.show()
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/233799284-6ac054c3-9fb5-4b8c-b265-ef65d35945b3.png">
 </p>
 
-# Optimisation de paramètre
+# Affichage du mécanisme
+
+Ce paragraphe va changer quand les schémas cinématiques animées seront fonctionnel. Pour l'instant, on utilise la fonction `animate` de tools basée sur la fonction FuncAnimation de matplotlib. `animate` prend en argument une liste de liste de point. On obtient ces points soit en demandant le point de la liaison, soit l'origine du repère d'un solide ou soit avec la méthode `get_point`.
+
+```python
+_ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])
+plt.show()
+```
+
+<p align="center" width="100">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808218-0c52631e-2058-4273-a98b-4561d62d450d.gif">
+</p>
+
+# Récupération de données cinématiques
+
+```python
+glass_heigth = s4.origin[1]
+glass_speed = to.derivative(glass_heigth, t)
+
+plt.subplot(2, 1, 1)
+plt.grid()
+plt.plot(time, glass_heigth)
+plt.ylabel(f'Glass height (in {get_unit(LENGTH)})')
+
+plt.subplot(2, 1, 2)
+plt.grid()
+plt.plot(time, glass_speed)
+plt.xlabel(f'Time (in {get_unit(TIME)})')
+plt.ylabel(f'Glass speed (in {get_unit(SPEED)})')
+
+plt.show()
+```
+
+<p align="center" width="100">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808355-b26b3f9f-88ae-4a06-9ddb-5fd71f79ef0c.png">
+</p>
+
+```python
+print('Glass stroke :', round(np.max(glass_heigth) - np.min(glass_heigth)), get_unit(LENGTH))
+print('Maximum glass speed :', round(np.nanmax(glass_speed)), get_unit(SPEED))
+```
+```
+Glass stroke : 368 mm
+Maximum glass speed : 156 mm/s
+```
+
+# Récupération de données sur les efforts internes
+
+```python
+motor_torque = -r1.torque
+
+plt.grid()
+plt.plot(time, motor_torque)
+plt.xlabel(f'Time (in {get_unit(TIME)})')
+plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+
+plt.show()
+```
+
+<p align="center" width="100">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808383-bc2d18d0-cf35-49fe-bfe4-500d77e7de3d.png">
+</p>
+
+Plusieurs truc à dire :
+- discontinuité car discontinuité de l'accélération du au trapèze de vitesse
+- les effets d'inertie ne s'appliquent que sur la phase d'accélérations et de décélération
+- le maximum est atteint vers la moitié de la course
+- le couple > 0 <=> le systeme combat en permanance le poid des pièces
+- Le couple au début et plus faible qu'à la fin : les effets d'inertie s'oppose à la rotation du moteur au début et l'aide à la fin 
+
+```python
+print('Maximum motor torque :', round(np.nanmax(motor_torque), 2), get_unit(TORQUE))
+```
+```
+Maximum motor torque : 0.61 N.m
+```
+
+# Optimisation de paramètres
+
+```python
+crank_torque = motor_torque*rB/rA
+
+k = (crank_torque[1] - crank_torque[-2])/(r2.angle[1] - r2.angle[-2])
+a0 = np.nanmean(crank_torque)/k
+
+print('Torsion spring stiffness constant :', round(k, 2), f'{get_unit(TORQUE)}/{get_unit(ANGLE)}')
+print('Preload angle :', round(a0, 1), get_unit(ANGLE), '-->', round(get_value(ANGLE)*a0/2/np.pi, 1) , 'r')
+```
+```
+Torsion spring stiffness constant : 0.21 N.m/rad
+Preload angle : 25.2 rad --> 4.0 r
+```
+
+le "-" de la formule précédente est enlevé car cela correspond au couple de la manivelle sur le bâti
+
+```python
+r2.set_torque(lambda : k*(r2.angle - np.pi + a0))
+sys.solve_dynamics(angle, t)
+```
+
+```python
+motor_torque = -r1.torque
+
+plt.grid()
+plt.plot(time, motor_torque)
+plt.xlabel(f'Time (in {get_unit(TIME)})')
+plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+
+plt.show()
+```
+
+<p align="center" width="100">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808602-275c2b79-aa10-4499-a2f0-361c203770e9.png">
+</p>
+
+```python
+print('Maximum motor torque :', round(np.nanmax(np.abs(motor_torque)), 2), get_unit(TORQUE))
+```
+```
+Maximum motor torque : 0.1 N.m
+```
+
+
+
