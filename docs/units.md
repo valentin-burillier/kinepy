@@ -23,9 +23,8 @@ dimensionless        : No Unit
 
 - `show_units()` : Affiche le système d'unité actuellement utilisé
 - `set_unit_system(unit_system)` : Permet de changer le système d'unité au complet. On fait correspondre l'argument `unit_system` des systèmes d'unité disponibles : `DEFAULT_SYSTEM`, `SI`, `AMERICAN_SYSTEM`, `GOAT_SYSTEM`.
-- `set_unit(phy, value, unit='Unnamed unit')` : Permet de changer l'unité d'une seule grandeur parmi celle ci-dessus. 
-
-[Bla³]
+- `set_unit(phy, value, unit='Unnamed unit')` : Permet de changer l'unité d'une seule grandeur parmi celle ci-dessus. [Bla³]
+- `get_unit(phy)` : Retourne l'unité de `phy` sous la forme d'une chaîne de caractère.
 
 # Le système d'unité chèvre
 
