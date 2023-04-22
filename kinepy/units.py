@@ -221,6 +221,8 @@ def set_unit(phy, value, unit='Unnamed unit'):
 def get_unit(phy):
     return SYSTEM.dct[phy][1]
 
+def get_value(phy):
+    return SYSTEM.dct[phy][0]
 
 set_unit.__doc__ = f"""Changes the unit
 phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
