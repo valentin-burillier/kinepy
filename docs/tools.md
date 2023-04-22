@@ -18,14 +18,14 @@ Les méthodes suivantes permettent la commande de liaisons pilotées. On y retro
 
 [mettre des im ages des entrées]
 
-# Calcul de masse/inertie
+# Calcul de masse et d'inertie
 
 Les méthodes suivantes permettent de calculer la masse et l'inertie de solides simples. La liste de ces derniers est ci-dessous avec leur paramétrage correspondant. 
 - Pour calculer la masse d'un solide, on renseigne en argumants sa masse volumique `rho` et ses dimensions.
 - Pour calculer l'inertie d'un solide selon l'axe schématisé, on renseigne en argumants sa masse `m` et ses dimensions.
 
 | Noms | <img width=100/> Représentations <img width=100/> |
-|        :---:       | :---: |
+| :---: | :---: |
 | `cylinder_mass(rho, d, h)` <br/> <br/> `cylinder_inertia(m, d)`    | ![cylinder](https://user-images.githubusercontent.com/93446869/232147341-17776847-6ea3-4ec4-89e9-185157684ca1.svg) |
 |  `hollow_cylinder_mass(rho, d, h, t)` <br/> <br/> `hollow_cylinder_inertia(m, d, t)` | ![hollow cylinder](https://user-images.githubusercontent.com/93446869/232147311-2c8b0fee-4061-4c19-a8f9-8deeb27f6d97.svg) |
 | `round_rod_mass(rho, d, l)` <br/> <br/> `round_rod_inertia(m, d, l)` | ![round rod](https://user-images.githubusercontent.com/93446869/232147255-b0685ef5-21f4-454b-86d2-70944f4c4903.svg) |
