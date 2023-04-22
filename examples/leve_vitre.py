@@ -40,8 +40,8 @@ sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 
 sys.add_gravity()
 
-s4.add_force((0, -10), (0, 0))
-# s4.add_force((0, -1000), (-2*l, 0))
+s4.add_force((0, -2), (0, 0))
+s4.add_force((0, -2), (-2*l, 0))
 
 #%%
 
@@ -59,8 +59,7 @@ plt.show()
 
 #%%
 
-# sys.solve_dynamics(angle, t)
-sys.solve_statics(angle)
+sys.solve_dynamics(angle, t)
 
 #%%
 
@@ -136,7 +135,7 @@ plt.show()
 
 # le "-" de la formule précédente est enlevé car cela correspond au couple de la manivelle sur le bâti
 r2.set_torque(lambda : k*(r2.angle - np.pi + a0))
-# sys.solve_dynamics(angle, t)
+sys.solve_dynamics(angle, t)
 
 #%%
 
@@ -153,4 +152,4 @@ plt.show()
 
 print('Maximum motor torque :', round(np.nanmax(np.abs(motor_torque)), 2), get_unit(TORQUE))
 
-# La puissance nécessaire du moteur est réduite par 5 donc c'est super cool ( =
+# La puissance nécessaire du moteur est réduite par 6 donc c'est super cool ( =
