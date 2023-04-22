@@ -3,7 +3,7 @@
 Chaque solide est associé à un unique repère orthonormé direct permettant de définir les positions relatives des différentes liaisons liant les solides entre eux. 
 Ce système de coordonnées est représenté ci-dessous.
 
-# Parameters
+# Paramètres
 ## Nomenclature
 
 - `name`, str : Nom du solide. S'il n'est pas renseigné, un nom générique lui sera attribué.
@@ -17,7 +17,7 @@ Ce système de coordonnées est représenté ci-dessous.
 
 En dehors de l'initialisation du solide, il est constamment possible de changer ces attributs.
 
-# Kinematics
+# Cinématiques
 
 <p align="center" width="100%">
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/181019881-8785a058-e1c5-452c-afc3-cc42e11b8e5d.svg">
