@@ -3,7 +3,7 @@
 - `distance(p1, p2)` : Retourne la distance entre un point `p1` et `p2`. Chaque correponde à un tableau de forme (2, n).
 - `norm(v)` : Retourne la norme du vecteur `v` correspondant à un tableau de forme (2, n)
 
-# Derivées
+# Dérivées
 
 - `derivative(obj, t, phy='Length')` : Retourne la dérivée de l'argument `obj` sur la durée `t`. Le tableau retourné a le même format que le tableau `obj` en entrée. La dernière valeur du tableau est compléter par `nan`. L'argument `phy` qualifie la grandeur physique de `obj`. Par défaut, `phy` correspond à une longueur. On peut également le remplacer par `Angle`. Cette méthode permet de calculer le vecteur vitesse d'un point, la vitesse de glissement ou une vitesse de rotation...
 - `second_derivative(obj, t, phy='Length')` : Retourne la dérivée seconde de l'argument `obj` sur la durée `t`. Le tableau retourné a le même format que le tableau `obj` en entrée. La première et la dernière valeur du tableau sont compléter par `nan`. L'argument `phy` qualifie la grandeur physique de `obj`. Par défaut, `phy` correspond à une longueur. On peut également le remplacer par `Angle`. Cette méthode permet de calculer le vecteur accélération d'un point, l'accélération de glissement ou une accélération de rotation...
