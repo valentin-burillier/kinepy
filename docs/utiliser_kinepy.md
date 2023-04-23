@@ -1,4 +1,4 @@
-Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à travers un cas réel d'utilisation. 
+Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à travers un cas réel d'utilisation. Le code complet est disponible [ici](https://github.com/valentin-burillier/kinepy/blob/main/examples/leve_vitre.py).
 
 # Sommaire
 
@@ -20,8 +20,9 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 Le système de "lève-vitre" est utiliser dans les portières de voiture pour déplacer la vitre. Le mécanisme "en ciseau" comme on peut le voir ci-dessus a été massivement utiliser jusque d'en les années 90. Il est depuis remplacer par un mécanisme fonctionnant avec des câbles.
 
 Nous allons nous intéresser à : 
-- La loi entrée/sortie du mécanisme. C'est-à-dire trouver la relation liant la hauteur de la vitre et l'angle du moteur.
-- Dimmensionner le ressort permettant à la vitre de ne pas tombe et réduire l'effort pour la déplacer.
+- l'évolution de la hauteur de lavitre au cours de la remonté de celle-ci
+- le couple nécessaire en entrée afin de remonté la vitre
+- le dimmensionnement d'un le ressort de torsion afin de réduire l'effort fournit en entrée
 
 # Initialisation de l'environement de travail
 
@@ -110,7 +111,7 @@ ps1 = sys.add_pin_slot(0, 3)
 ps2 = sys.add_pin_slot(4, 2, p2=(2*l, 0))
 ```
 
-Le mécanisme est actionné par un moteur électrique au niveau de la pivot entre 1 et 0. On pilote donc cette liaison ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#pilotage-et-blocage-du-mécanisme)).
+Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur est cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#pilotage-et-blocage-du-mécanisme)).
 
 ```
 sys.pilot(r1)
@@ -233,7 +234,9 @@ plt.show()
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808355-b26b3f9f-88ae-4a06-9ddb-5fd71f79ef0c.png">
 </p>
 
-On peut vérifier certaines exigences à propos de longueur de course et de vitesse maximale de la vitre.
+On observe que la courbe de vitesse obtenue à l'allure du trapèze de vitesse.
+
+On peut vérifier certaines exigences à propos de longueur de course et de vitesse maximale de la vitre. On utilise `nanmax` au lieu de `max` pour obtenir la vitesse maximal car le dernier élément du tableau de vitesse est `nan`.
 
 ```python
 print('Glass stroke :', round(np.max(glass_heigth) - np.min(glass_heigth)), get_unit(LENGTH))
@@ -249,41 +252,52 @@ Maximum glass speed : 156 mm/s
 Afin de dimensionner le moteur, on affiche l'évolution du couple d'entrée au cours du temps. Pour ce faire, on récupère l'information de couple au niveau de la liaison ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#sorties)). Il y a un signe "-" car `r1.torque` correspond au couple exercé par le bras sur le bâti. Or, c'est l'opposée qui nous intéresse.
 
 ```python
-motor_torque = -r1.torque
+input_torque = -r1.torque
 
 plt.grid()
-plt.plot(time, motor_torque)
+plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
-plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
 plt.show()
 ```
 
 <p align="center" width="100">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808383-bc2d18d0-cf35-49fe-bfe4-500d77e7de3d.png">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233832801-0041de06-c153-428a-b85b-53627c961338.png">
 </p>
 
 On peut analyser plusieurs éléments sur ce graphique :
-- discontinuité car discontinuité de l'accélération du au trapèze de vitesse
-- les effets d'inertie ne s'appliquent que sur la phase d'accélérations et de décélération
-- le maximum est atteint vers la moitié de la course
-- le couple > 0 <=> le systeme combat en permanance le poid des pièces
-- Le couple au début et plus faible qu'à la fin : les effets d'inertie s'oppose à la rotation du moteur au début et l'aide à la fin 
+- on observe une discontinuité correspondant aux discontinuités de l'accélération du trapèze de vitesse
+- les effets d'inertie sont significatif sur la phase d'accélérations et de décélération
+- le maximum est atteint vers la moitié de la course de hauteur
+- le couple est constament supérieur à 0. Cela signifie que le systeme lutte en permanance contre le poids des pièces (surtout le poids de la vitre)
+- le couple au début de la simulation et plus élevé qu'à la fin car les effets d'inertie s'oppose à la rotation du moteur au début et l'aide à s'arrêter à la fin 
+
+On peut maintenant afficher le couple maximal en entrée. Cela peut être utilie si l'on veut dimensionner un moteur. Comme précédemment, on utilise `nanmax` au lieu de `max` pour obtenir le couple maximal car le premier et le dernier éléments du tableau est `nan`.
 
 ```python
-print('Maximum motor torque :', round(np.nanmax(motor_torque), 2), get_unit(TORQUE))
+print('Maximum input torque :', round(np.nanmax(input_torque), 2), get_unit(TORQUE))
 ```
 ```
-Maximum motor torque : 0.61 N.m
+Maximum input torque : 0.61 N.m
 ```
 
 # Optimisation de paramètres
 
-```python
-crank_torque = motor_torque*rB/rA
+Avec ce que l'on a trouver le moteur doit avoir un couple de 0.61 N.m et doit constament être actif afin de maintenir la vitre levé (lutter contre le poids du mécanisme). On décide donc d'installer un ressort de torsion au niveau de la pivot entre le bras principal est le bâti. Ce dernier a pour but de limiter l'effort nécessaire au moteur pour actionner le mécanisme.
 
-k = (crank_torque[1] - crank_torque[-2])/(r2.angle[1] - r2.angle[-2])
-a0 = np.nanmean(crank_torque)/k
+Pour établir les caractéristiques de ce ressort, nous procédons de la manière suivante :
+- on ramène l'effort d'entrée au bras principal
+- on calcul la constance de raideur du ressort afin de compenser les effets d'inertie pendant les phases d'accélération et de déccélération
+- on calcul l'angle de préchage afin que le couple d'entrée ramené au bras principal soit au alentour de 0
+
+Le ressort se comprimera lors de la descente et se détendra lors de la remonté.
+
+```python
+main_arm_torque = input_torque*rB/rA
+
+k = (main_arm_torque[1] - main_arm_torque[-2])/(r2.angle[1] - r2.angle[-2])
+a0 = np.nanmean(main_arm_torque)/k
 
 print('Torsion spring stiffness constant :', round(k, 2), f'{get_unit(TORQUE)}/{get_unit(ANGLE)}')
 print('Preload angle :', round(a0, 1), get_unit(ANGLE), '-->', round(get_value(ANGLE)*a0/2/np.pi, 1) , 'r')
@@ -293,34 +307,41 @@ Torsion spring stiffness constant : 0.21 N.m/rad
 Preload angle : 25.2 rad --> 4.0 r
 ```
 
-le "-" de la formule précédente est enlevé car cela correspond au couple de la manivelle sur le bâti
+Ainsi, le ressort doit avoir une raideur de 0.21 N.m/rad et il faut l'installer quand le bras principal est à l'horizontal en faisant 4 tours pour le préchager.
+
+Pour vérifier l'impact de cet élément, on ajoute le ressort au système et l'on relance une simulation. On applique donc un couple à la liaison correspondante suivant la loi de comportement de notre ressort. La fonction créée correspond donc au couple exercé par le bras principal sur le bâti ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#entrées))
 
 ```python
 r2.set_torque(lambda : k*(r2.angle - np.pi + a0))
 sys.solve_dynamics(angle, t)
 ```
 
+On affiche de la même manière que précédemment l'évolution du couple d'entrée et couple maximale.
+
 ```python
-motor_torque = -r1.torque
+input_torque = -r1.torque
 
 plt.grid()
-plt.plot(time, motor_torque)
+plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
-plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
 plt.show()
 ```
 
 <p align="center" width="100">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808602-275c2b79-aa10-4499-a2f0-361c203770e9.png">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233834255-66a0e3e3-e7b1-42a3-aaa9-8889611791c7.png">
 </p>
 
 ```python
-print('Maximum motor torque :', round(np.nanmax(np.abs(motor_torque)), 2), get_unit(TORQUE))
+print('Maximum input torque :', round(np.nanmax(np.abs(input_torque)), 2), get_unit(TORQUE))
 ```
 ```
-Maximum motor torque : 0.1 N.m
+Maximum input torque : 0.1 N.m
 ```
 
+Cette fois-ci, on observe que :
+- le couple au début et à la fin de la simulation sont égaux comme ce qui est attendu
+- le couple maximal en entrée n'est plus que de 0.1 N.m. Soit 6 fois moins important que sans le ressort
 
-
+Cette optimisation permettra d'utiliser un moteur moins puissant et donc probablement moins coûteux.
