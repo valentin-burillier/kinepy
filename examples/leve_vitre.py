@@ -18,9 +18,11 @@ rA, rB, l = 7, 70, 130
 sys = k.System()
 
 s1 = sys.add_solid('Gear wheel', m=0.2, j=to.cylinder_inertia(2*rA, 0.2))
-s2 = sys.add_solid('Crank', m=0.5, g=(l, 0), j=to.parallelepiped_inertia(2*l, 30, 0.5))
-s3 = sys.add_solid('Support arm', m=0.5, g=(l, 0), j=to.parallelepiped_inertia(2*l, 30, 0.5))
+s2 = sys.add_solid('Main arm', m=0.5, g=(l, 0), j=to.parallelepiped_inertia(2*l, 30, 0.5))
+s3 = sys.add_solid('Secondary arm', m=0.5, g=(l, 0), j=to.parallelepiped_inertia(2*l, 30, 0.5))
 s4 = sys.add_solid('Glass', m=1.5, g=(-l, 0))
+
+sys.bill_of_materials()
 
 r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
 r2 = sys.add_revolute(0, 2, p1=(0, 0))
@@ -91,65 +93,45 @@ print('Maximum glass speed :', round(np.nanmax(glass_speed)), get_unit(SPEED))
 
 #%%
 
-motor_torque = -r1.torque
+input_torque = -r1.torque
 
 plt.grid()
-plt.plot(time, motor_torque)
+plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
-plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
 plt.show()
 
-# Plusieurs truc à dire :
-#     - discontinuité car discontinuité de l'accélération du au trapèze de vitesse
-#     - les effets d'inertie ne s'appliquent que sur la phase d'accélérations et de décélération
-#     - le maximum est atteint vers la moitié de la course
-#     - le couple > 0 <=> le systeme combat en permanance le poid des pièces
-#     - Le couple au début et plus faible qu'à la fin : les effets d'inertie s'oppose à la rotation du moteur au début et l'aide à la fin 
+#%%
 
+print('Maximum input torque :', round(np.nanmax(input_torque), 2), get_unit(TORQUE))
 
 #%%
 
-print('Maximum motor torque :', round(np.nanmax(motor_torque), 2), get_unit(TORQUE))
+main_arm_torque = input_torque*rB/rA
 
-#%%
-
-crank_torque = motor_torque*rB/rA
-
-k = (crank_torque[1] - crank_torque[-2])/(r2.angle[1] - r2.angle[-2])
-a0 = np.nanmean(crank_torque)/k
+k = (main_arm_torque[1] - main_arm_torque[-2])/(r2.angle[1] - r2.angle[-2])
+a0 = np.nanmean(main_arm_torque)/k
 
 print('Torsion spring stiffness constant :', round(k, 2), f'{get_unit(TORQUE)}/{get_unit(ANGLE)}')
 print('Preload angle :', round(a0, 1), get_unit(ANGLE), '-->', round(get_value(ANGLE)*a0/2/np.pi, 1) , 'r')
 
 #%%
 
-plt.grid()
-plt.plot(time, crank_torque)
-plt.plot(time, r2.angle - np.pi)
-plt.plot(time, crank_torque - k*(r2.angle - np.pi + a0))
-
-plt.show()
-
-#%%
-
-# le "-" de la formule précédente est enlevé car cela correspond au couple de la manivelle sur le bâti
 r2.set_torque(lambda : k*(r2.angle - np.pi + a0))
 sys.solve_dynamics(angle, t)
 
 #%%
 
-motor_torque = -r1.torque
+input_torque = -r1.torque
 
 plt.grid()
-plt.plot(time, motor_torque)
+plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
-plt.ylabel(f'Motor torque (in {get_unit(TORQUE)})')
+plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
 plt.show()
 
 #%%
 
-print('Maximum motor torque :', round(np.nanmax(np.abs(motor_torque)), 2), get_unit(TORQUE))
-
-# La puissance nécessaire du moteur est réduite par 6 donc c'est super cool ( =
+print('Maximum input torque :', round(np.nanmax(np.abs(input_torque)), 2), get_unit(TORQUE))
