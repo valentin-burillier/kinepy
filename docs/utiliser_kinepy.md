@@ -3,6 +3,7 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 # Sommaire
 
 - [Présentation du système](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#présentation-du-système)
+- [Initialisation de l'environement de travail](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#initialisation-de-lenvironement-de-travail)
 - [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
 - [Ajouts d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#ajouts-defforts-extérieurs)
 - [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
