@@ -1,8 +1,7 @@
-<picture>
-  <source width="40%" media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/93446869/234012588-eb6269e2-3d4c-4638-a8d6-345014e6dd81.svg">
-  <source width="40%" media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/93446869/234012619-baa7df7a-4438-45ee-ac08-2ca94c07699b.svg">
-  <img src="https://user-images.githubusercontent.com/93446869/234012619-baa7df7a-4438-45ee-ac08-2ca94c07699b.svg">
-</picture>
+<p align="center" width="100%">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/234020322-1ef75f2b-1900-4b86-a83c-96becd308c8c.svg">
+</p>
+
 
 Not comfortable with French ? Go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
 
