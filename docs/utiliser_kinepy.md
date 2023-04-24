@@ -1,3 +1,5 @@
+[Fautes d'ortho non-corrigé]
+
 Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à travers un cas réel d'utilisation. Le code complet est disponible [ici](https://github.com/valentin-burillier/kinepy/blob/main/examples/leve_vitre.py).
 
 # Sommaire
@@ -18,12 +20,12 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/189538731-1ecda8fb-899e-4579-9a6d-002796fb4a15.png">
 </p>
 
-Le système de "lève-vitre" est utiliser dans les portières de voiture pour déplacer la vitre. Le mécanisme "en ciseau" comme on peut le voir ci-dessus a été massivement utiliser jusque d'en les années 90. Il est depuis remplacer par un mécanisme fonctionnant avec des câbles.
+Le système de "lève-vitre" est utilisé dans les portières de voiture pour déplacer la vitre. Le mécanisme "en ciseau" comme on peut le voir ci-dessus a été massivement utilisé jusque d'en les années 90. Il est depuis remplacé par un mécanisme fonctionnant avec des câbles.
 
 Nous allons nous intéresser à : 
-- l'évolution de la hauteur de lavitre au cours de la remonté de celle-ci
+- l'évolution de la hauteur de la vitre au cours de la remonté de celle-ci
 - le couple nécessaire en entrée afin de remonté la vitre
-- le dimmensionnement d'un le ressort de torsion afin de réduire l'effort fournit en entrée
+- le dimmensionnement d'un ressort de torsion afin de réduire l'effort fournit en entrée
 
 # Initialisation de l'environement de travail
 
