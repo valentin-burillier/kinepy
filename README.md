@@ -1,10 +1,10 @@
-<p align="center" width="100%">
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/93446869/234007661-e51159c8-0177-4787-b14e-3c5d3ac5640c.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/93446869/234009295-5998701b-c0eb-4d48-86b0-45b8c8a2b6b5.svg">
-  <img alt="Shows an illustrated sun in light mode and a moon with stars in dark mode." src="https://user-images.githubusercontent.com/93446869/234009295-5998701b-c0eb-4d48-86b0-45b8c8a2b6b5.svg">
-</p>
+<picture>
+  <source width="40%" media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/93446869/234012588-eb6269e2-3d4c-4638-a8d6-345014e6dd81.svg">
+  <source width="40%" media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/93446869/234012619-baa7df7a-4438-45ee-ac08-2ca94c07699b.svg">
+  <img src="https://user-images.githubusercontent.com/93446869/234012619-baa7df7a-4438-45ee-ac08-2ca94c07699b.svg">
+</picture>
 
-Not comfortable with French ? go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
+Not comfortable with French ? Go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
 
 Cette librairie python est dédiée à la simulation de mécanisme plan.
 
