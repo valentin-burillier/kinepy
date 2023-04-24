@@ -348,3 +348,4 @@ Cette fois-ci, on observe que :
 - le couple maximal en entrée n'est plus que de 0.1 N.m. Soit 6 fois moins important que sans le ressort
 
 Cette optimisation permettra d'utiliser un moteur moins puissant et donc probablement moins coûteux.
+
