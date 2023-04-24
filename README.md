@@ -1,5 +1,7 @@
 <p align="center" width="100%">
-    <img width="60%" src="https://user-images.githubusercontent.com/93446869/221908877-fce492bb-dabb-494b-8fa5-a1efb28f3dd9.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/93446869/234007661-e51159c8-0177-4787-b14e-3c5d3ac5640c.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/93446869/234009295-5998701b-c0eb-4d48-86b0-45b8c8a2b6b5.svg">
+  <img alt="Shows an illustrated sun in light mode and a moon with stars in dark mode." src="https://user-images.githubusercontent.com/93446869/234009295-5998701b-c0eb-4d48-86b0-45b8c8a2b6b5.svg">
 </p>
 
 Not comfortable with French ? go [there](https://github.com/valentin-burillier/kinepy/blob/main/README_EN.md) for the English version. 
