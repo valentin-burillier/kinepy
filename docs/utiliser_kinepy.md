@@ -7,7 +7,7 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 - [Présentation du système](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#présentation-du-système)
 - [Initialisation de l'environement de travail](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#initialisation-de-lenvironement-de-travail)
 - [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
-- [Ajouts d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#ajouts-defforts-extérieurs)
+- [Ajout d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#ajout-defforts-extérieurs)
 - [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
 - [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#affichage-du-mécanisme)
 - [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#récupération-de-données-cinématiques)
@@ -20,16 +20,16 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/189538731-1ecda8fb-899e-4579-9a6d-002796fb4a15.png">
 </p>
 
-Le système de "lève-vitre" est utilisé dans les portières de voiture pour déplacer la vitre. Le mécanisme "en ciseau" comme on peut le voir ci-dessus a été massivement utilisé jusque d'en les années 90. Il est depuis remplacé par un mécanisme fonctionnant avec des câbles.
+Le système de "lève-vitre" est utilisé dans les portières de voiture pour déplacer la vitre. Le mécanisme "en ciseau" comme on peut le voir ci-dessus a été massivement utilisé jusque dans les années 90. Il est depuis remplacé par un mécanisme fonctionnant avec des câbles.
 
 Nous allons nous intéresser à : 
-- l'évolution de la hauteur de la vitre au cours de la remonté de celle-ci
-- le couple nécessaire en entrée afin de remonté la vitre
-- le dimmensionnement d'un ressort de torsion afin de réduire l'effort fournit en entrée
+- l'évolution de la hauteur de la vitre au cours de la remontée de celle-ci
+- le couple nécessaire en entrée afin de remonter la vitre
+- le dimmensionnement d'un ressort de torsion afin de réduire l'effort fourni en entrée
 
 # Initialisation de l'environement de travail
 
-On commence par importer les bibliothèques nécessaires. `units` comporte les éléments `LENGTH`, `ANGLE`... correspondant à des chaînes de caractère `'Length'`, `'Angle'`... Les utiliser évitent les erreurs d'orthographes et permet de coder rapidement avec la complétion automatique. 
+On commence par importer les bibliothèques nécessaires. `units` comporte les éléments `LENGTH`, `ANGLE`... correspondant à des chaînes de caractères `'Length'`, `'Angle'`... Les utiliser évite les erreurs d'orthographe et permet de coder rapidement avec la complétion automatique. 
 
 ```python
 import kinepy as k
@@ -72,7 +72,7 @@ On considère le schéma cinématique du lève-vitre suivant :
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/231535482-95562610-c59b-4ea4-958c-6272ee5c9cb6.svg">
 </p>
 
-On se place dans les hypothèses de KinePy. On créé un système et l'on ajoute tous les solides qui compossent le mécanisme ([doc ajout de solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-solide)). On approxime l'inertie des solides : la roue d'entrée est concidéré comme un cylindre et les deux bras comme des parallélépipèdes ([doc calcul de masse et d'inertie](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masse-et-dinertie)).
+On se place dans les hypothèses de KinePy. On crée un système et l'on ajoute tous les solides qui composent le mécanisme ([doc ajout de solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-solide)). On approxime l'inertie des solides : la roue d'entrée est concidérée comme un cylindre et les deux bras comme des parallélépipèdes ([doc calcul de masse et d'inertie](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masse-et-dinertie)).
 
 ```python
 rA, rB, l = 7, 70, 130
@@ -85,7 +85,7 @@ s3 = sys.add_solid('Secondary arm', m=0.5, g=(l, 0), j=to.parallelepiped_inertia
 s4 = sys.add_solid('Glass', m=1.5, g=(-l, 0))
 ```
 
-On peut également affiché la nomenclature du système. Cela est utile lorsque le système comporte un nombre important de solide.
+On peut également afficher la nomenclature du système. Cela est utile lorsque le système comporte un nombre important de solides.
 
 ```python
 sys.bill_of_materials()
@@ -102,7 +102,7 @@ N°	| Names
 
 On intègre chaque liaison au mécanisme avec un paramétrage correspondant au schéma cinématique ([doc ajout de liaisons](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-liaisons)).
 
-Le mécanisme est composé d'un train d'engrenage simple. Cet relation lie le mouvement de la liaison `r1` à celui de `r2`. On concidère un angle de pression de 20° et l'on met une valeur initiale de l'angle à 180° pour faciliter le pilotage ([doc engrenage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-relations)).
+Le mécanisme est composé d'un train d'engrenage simple. Cette relation lie le mouvement de la liaison `r1` à celui de `r2`. On considère un angle de pression de 20° et l'on met une valeur initiale de l'angle à 180° pour faciliter le pilotage ([doc engrenage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-relations)).
 
 ```python
 r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
@@ -114,7 +114,7 @@ ps1 = sys.add_pin_slot(0, 3)
 ps2 = sys.add_pin_slot(4, 2, p2=(2*l, 0))
 ```
 
-Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur est cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#pilotage-et-blocage-du-mécanisme)).
+Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur et cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#pilotage-et-blocage-du-mécanisme)).
 
 ```
 sys.pilot(r1)
@@ -161,7 +161,7 @@ Le système présente 2 boucles cinématiques signées. Pour déterminer les bon
 sys.change_signs({'3 RRP':-1, '4 RRP':-1})
 ```
 
-# Ajouts d'efforts extérieurs
+# Ajout d'efforts extérieurs
 
 Le système est soumis à la gravité. De plus, on ajoute des forces s'appliquant de chaque coté de la vitre modélisant les frottements de celle-ci avec le joint d'étanchéité.
 
@@ -174,11 +174,11 @@ s4.add_force((0, -2), (-2*l, 0))
 
 # Simulation du mécanisme
 
-On réalise une simulation de remonté de la vitre. La durée de simulation est de 3 s où 1001 points sont simulés. 
+On réalise une simulation de remontée de la vitre. La durée de simulation est de 3 s où 1001 points sont simulés. 
 
 On commande le systeme par un trapèze de vitesse où la vitesse maximale du moteur est de 6 rad/s ([doc entrées cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#entrées-cinématiques)).
 
-Afin de vérifier notre entrée, on affiche ce trapèze de vitesse en calculant la dérivée ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)). On utilise `get_unit` pour obtenir l'unité des grandeurs physiques. Cela évite les ereurs d'unité.
+Afin de vérifier notre entrée, on affiche ce trapèze de vitesse en calculant la dérivée ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)). On utilise `get_unit` pour obtenir l'unité des grandeurs physiques. Cela évite les erreurs d'unité.
 
 ```python
 t, n = 3, 1001
@@ -200,7 +200,7 @@ plt.show()
 
 # Affichage du mécanisme
 
-Ce paragraphe va changer quand les schémas cinématiques animées seront fonctionnel. Pour l'instant, on utilise la fonction `animate` de tools basée sur la fonction FuncAnimation de matplotlib. `animate` prend en argument une liste de liste de point. On obtient ces points soit en demandant le point de la liaison, soit l'origine du repère d'un solide ou soit avec la méthode `get_point`.
+Ce paragraphe va changer lorsque les schémas cinématiques animés seront fonctionnels. Pour l'instant, on utilise la fonction `animate` de tools basée sur la fonction FuncAnimation de matplotlib. `animate` prend en argument une liste de liste de points. On obtient ces points en demandant soit le point de la liaison, soit l'origine du repère d'un solide ou soit avec la méthode `get_point`.
 
 ```python
 _ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])
@@ -213,7 +213,7 @@ plt.show()
 
 # Récupération de données cinématiques
 
-On affiche l'évolution temporelle de la hauteur de la vitre ainsi que ça vitesse au court du temps. Pour ce faire, on récupère l'information de hauteur en prenant l'ordonnée du repère attaché à la vitre ([doc solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Solid.md#cinématique)). On en prend la dérivée pour obtenir la vitesse ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)).
+On affiche l'évolution temporelle de la hauteur de la vitre ainsi que sa vitesse au court du temps. Pour ce faire, on récupère l'information de hauteur en prenant l'ordonnée du repère attaché à la vitre ([doc solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Solid.md#cinématique)). On en prend la dérivée pour obtenir la vitesse ([doc dérivées](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#derivées)).
 
 ```python
 glass_heigth = s4.origin[1]
@@ -237,9 +237,9 @@ plt.show()
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808355-b26b3f9f-88ae-4a06-9ddb-5fd71f79ef0c.png">
 </p>
 
-On observe que la courbe de vitesse obtenue à l'allure du trapèze de vitesse.
+On observe que la courbe de vitesse obtenue a l'allure du trapèze de vitesse.
 
-On peut vérifier certaines exigences à propos de longueur de course et de vitesse maximale de la vitre. On utilise `nanmax` au lieu de `max` pour obtenir la vitesse maximal car le dernier élément du tableau de vitesse est `nan`.
+On peut vérifier certaines exigences à propos de longueur de course et de vitesse maximale de la vitre. On utilise `nanmax` au lieu de `max` pour obtenir la vitesse maximale car le dernier élément du tableau de vitesse est `nan`.
 
 ```python
 print('Glass stroke :', round(np.max(glass_heigth) - np.min(glass_heigth)), get_unit(LENGTH))
@@ -252,7 +252,7 @@ Maximum glass speed : 156 mm/s
 
 # Récupération de données sur les efforts internes
 
-Afin de dimensionner le moteur, on affiche l'évolution du couple d'entrée au cours du temps. Pour ce faire, on récupère l'information de couple au niveau de la liaison ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#sorties)). Il y a un signe "-" car `r1.torque` correspond au couple exercé par le bras sur le bâti. Or, c'est l'opposée qui nous intéresse.
+Afin de dimensionner le moteur, on affiche l'évolution du couple d'entrée au cours du temps. Pour ce faire, on récupère l'information de couple au niveau de la liaison ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#sorties)). Il y a un signe "-" car `r1.torque` correspond au couple exercé par le bras sur le bâti. Or, c'est l'opposé qui nous intéresse.
 
 ```python
 input_torque = -r1.torque
@@ -271,12 +271,12 @@ plt.show()
 
 On peut analyser plusieurs éléments sur ce graphique :
 - on observe une discontinuité correspondant aux discontinuités de l'accélération du trapèze de vitesse
-- les effets d'inertie sont significatif sur la phase d'accélérations et de décélération
+- les effets d'inertie sont significatifs sur la phase d'accélération et de décélération
 - le maximum est atteint vers la moitié de la course de hauteur
 - le couple est constament supérieur à 0. Cela signifie que le systeme lutte en permanance contre le poids des pièces (surtout le poids de la vitre)
-- le couple au début de la simulation et plus élevé qu'à la fin car les effets d'inertie s'oppose à la rotation du moteur au début et l'aide à s'arrêter à la fin 
+- le couple au début de la simulation et plus élevé qu'à la fin car les effets d'inertie s'opposent à la rotation du moteur au début et l'aident à s'arrêter à la fin 
 
-On peut maintenant afficher le couple maximal en entrée. Cela peut être utilie si l'on veut dimensionner un moteur. Comme précédemment, on utilise `nanmax` au lieu de `max` pour obtenir le couple maximal car le premier et le dernier éléments du tableau est `nan`.
+On peut maintenant afficher le couple maximal en entrée. Cela peut être utilie si l'on veut dimensionner un moteur. Comme précédemment, on utilise `nanmax` au lieu de `max` pour obtenir le couple maximal car le premier et le dernier élément du tableau est `nan`.
 
 ```python
 print('Maximum input torque :', round(np.nanmax(input_torque), 2), get_unit(TORQUE))
@@ -287,14 +287,14 @@ Maximum input torque : 0.61 N.m
 
 # Optimisation de paramètres
 
-Avec ce que l'on a trouver le moteur doit avoir un couple de 0.61 N.m et doit constament être actif afin de maintenir la vitre levé (lutter contre le poids du mécanisme). On décide donc d'installer un ressort de torsion au niveau de la pivot entre le bras principal est le bâti. Ce dernier a pour but de limiter l'effort nécessaire au moteur pour actionner le mécanisme.
+Avec ce que l'on a trouvé le moteur doit avoir un couple de 0.61 N.m et doit constament être actif afin de maintenir la vitre levée (lutter contre le poids du mécanisme). On décide donc d'installer un ressort de torsion au niveau de la pivot entre le bras principal et le bâti. Ce dernier a pour but de limiter l'effort nécessaire au moteur pour actionner le mécanisme.
 
 Pour établir les caractéristiques de ce ressort, nous procédons de la manière suivante :
 - on ramène l'effort d'entrée au bras principal
-- on calcul la constance de raideur du ressort afin de compenser les effets d'inertie pendant les phases d'accélération et de déccélération
-- on calcul l'angle de préchage afin que le couple d'entrée ramené au bras principal soit au alentour de 0
+- on calcule la constante de raideur du ressort afin de compenser les effets d'inertie pendant les phases d'accélération et de déccélération
+- on calcule l'angle de précharge afin que le couple d'entrée ramené au bras principal soit au alentours de 0
 
-Le ressort se comprimera lors de la descente et se détendra lors de la remonté.
+Le ressort se comprimera lors de la descente et se détendra lors de la remontée.
 
 ```python
 main_arm_torque = input_torque*rB/rA
@@ -310,7 +310,7 @@ Torsion spring stiffness constant : 0.21 N.m/rad
 Preload angle : 25.2 rad --> 4.0 r
 ```
 
-Ainsi, le ressort doit avoir une raideur de 0.21 N.m/rad et il faut l'installer quand le bras principal est à l'horizontal en faisant 4 tours pour le préchager.
+Ainsi, le ressort doit avoir une raideur de 0.21 N.m/rad et il faut l'installer quand le bras principal est à l'horizontale en faisant 4 tours pour le préchager.
 
 Pour vérifier l'impact de cet élément, on ajoute le ressort au système et l'on relance une simulation. On applique donc un couple à la liaison correspondante suivant la loi de comportement de notre ressort. La fonction créée correspond donc au couple exercé par le bras principal sur le bâti ([doc pivot](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Revolute.md#entrées))
 
@@ -319,7 +319,7 @@ r2.set_torque(lambda : k*(r2.angle - np.pi + a0))
 sys.solve_dynamics(angle, t)
 ```
 
-On affiche de la même manière que précédemment l'évolution du couple d'entrée et couple maximale.
+On affiche de la même manière que précédemment l'évolution du couple d'entrée et le couple maximal.
 
 ```python
 input_torque = -r1.torque
@@ -348,4 +348,3 @@ Cette fois-ci, on observe que :
 - le couple maximal en entrée n'est plus que de 0.1 N.m. Soit 6 fois moins important que sans le ressort
 
 Cette optimisation permettra d'utiliser un moteur moins puissant et donc probablement moins coûteux.
-
