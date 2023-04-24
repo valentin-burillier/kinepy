@@ -1,4 +1,4 @@
-[Fautes d'ortho non-corrigé]
+[Fautes d'ortho non-corrigées]
 
 Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à travers un cas réel d'utilisation. Le code complet est disponible [ici](https://github.com/valentin-burillier/kinepy/blob/main/examples/leve_vitre.py).
 
