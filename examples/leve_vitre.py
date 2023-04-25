@@ -57,16 +57,17 @@ plt.plot(time, to.derivative(angle, t, phy=ANGLE))
 plt.xlabel(f'Time (in {get_unit(TIME)})')
 plt.ylabel(f'Input angular velocity (in {get_unit(ANGULAR_VELOCITY)})')
 
-plt.show()
+# plt.show()
 
 #%%
 
 sys.solve_dynamics(angle, t)
-
+# from kinepy.gui import display
+# display(sys)
 #%%
 
 _ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])
-plt.show()
+# plt.show()
 
 #%%
 
@@ -84,7 +85,7 @@ plt.plot(time, glass_speed)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
 plt.ylabel(f'Glass speed (in {get_unit(SPEED)})')
 
-plt.show()
+# plt.show()
 
 #%%
 
@@ -100,7 +101,7 @@ plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
 plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
-plt.show()
+# plt.show()
 
 #%%
 
@@ -130,7 +131,7 @@ plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
 plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
 
-plt.show()
+# plt.show()
 
 #%%
 
