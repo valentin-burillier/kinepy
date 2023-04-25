@@ -54,9 +54,11 @@ def dfs(a):
 
 
 def multiple_joints(f):
-    def g(self, *args):
+    def g(self, *joints):
         n_args = []
-        for arg in args:
+        for arg in joints:
+            if isinstance(arg, (tuple, list)):
+                raise TypeError("Do not send lists or tuple, use multiple arguments instead")
             if isinstance(arg, str):
                 arg = get_object(self.named_joints[arg])
             if isinstance(arg, int):
