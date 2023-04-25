@@ -24,3 +24,10 @@ def gui_add_torque(solid, torque):
     solid.add_torque(torque)
     _, t, p = solid.external_actions.external[-1]
     plotting_torque_list.append((get_object(solid), t))
+
+
+def gather_points(system):
+    points = []
+    for s in system.sols:
+        points.append(s.origin)
+    return points

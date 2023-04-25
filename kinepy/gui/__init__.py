@@ -1,8 +1,11 @@
 import os
 import pygame as pg
 from kinepy.objects.system import System
+from kinepy.interface.decorators import get_object
 
 from kinepy.gui.camera import Camera
+from kinepy.gui.getters import *
+
 
 
 
@@ -173,7 +176,7 @@ SOLID_COLORS = (
 
 class GUI(Camera):
     running = True
-    animation_state, animation_speed = 0, .2
+    animation_state, animation_speed = 0, .6
 
     def __init__(self, system, *args):
         # Window setup
@@ -184,10 +187,12 @@ class GUI(Camera):
         # Clock for the frame rate
         self.clock = pg.time.Clock()
 
-        self.system = system
+        self.system = get_object(system)
 
         # Camera stuff
         Camera.__init__(self)
+        self.points = gather_points(self.system)
+        self.set_bound_box(self.points)
         self.set_scale()
         self.scale0 = self.scale
 
@@ -198,10 +203,13 @@ class GUI(Camera):
             Camera.manage(self, event)
 
     def draw(self):
-        pass
+        self.surface.fill((0, 0, 0))
+        for point in self.points:
+            pg.draw.circle(self.surface, (255, 255, 255), self.real_to_screen(point[:, int(self.animation_state)]), 5 * self.scale / self.scale0 * self.zoom, 2)
 
     def tick(self):
         self.animation_state = (self.animation_state + self.animation_speed) % self.system.n
+        print(f'\r{self.system_area}, {self.camera_area}, {self.scale}', end='')
 
     def main_loop(self):
         while self.running:
