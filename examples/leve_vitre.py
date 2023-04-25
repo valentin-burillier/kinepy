@@ -62,7 +62,8 @@ plt.show()
 #%%
 
 sys.solve_dynamics(angle, t)
-
+from kinepy.gui import display
+display(sys)
 #%%
 
 _ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])

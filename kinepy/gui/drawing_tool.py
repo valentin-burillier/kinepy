@@ -105,7 +105,7 @@ def draw_pri(self, pri, data):
     )
     rec = self.real_to_screen(p3[:, frame]) + np.einsum(
         'ik,lk->li',
-        rot(pri.s2.angle[frame] + pri.a2),
+        rot(-pri.s2.angle[frame] - pri.a2),
         PRISMATIC * self.scale / self.scale0 * self.zoom
     )
     pg.draw.polygon(
@@ -134,7 +134,7 @@ def draw_pin(self, pin, data):
     )
     rec = self.real_to_screen(p3[:, frame]) + np.einsum(
         'ik,lk->li',
-        rot(pin.s2.angle[frame]),
+        rot(-pin.s2.angle[frame]),
         PIN_SLOT * self.scale / self.scale0 * self.zoom
     )
     pg.draw.polygon(
