@@ -2,14 +2,19 @@ import kinepy.units as units
 from kinepy.interface.decorators import get_object
 
 plotting_point_list = []
+plotting_speed_list = []
 plotting_force_list = []
 plotting_torque_list = []
 
 
-def gui_get_point(solid, point):
-    """Behaves just like Solid.get_point but add the point to the plotting list"""
+def gui_add_point(solid, point):
+    """Adds the point to the plotting list"""
     plotting_point_list.append((get_object(solid), point * units.SYSTEM[units.LENGTH]))
-    return solid.get_point(point)
+
+
+def gui_add_speed(solid, point):
+    """Adds the point to the plotting list to display the speed of this point"""
+    plotting_speed_list.append((get_object(solid), point * units.SYSTEM[units.LENGTH]))
 
 
 def gui_add_force(solid, force, point):
@@ -22,7 +27,7 @@ def gui_add_force(solid, force, point):
 def gui_add_torque(solid, torque):
     """Behaves just like Solid.add_torque but adds the torque to the plotting list"""
     solid.add_torque(torque)
-    _, t, p = solid.external_actions.external[-1]
+    _, t, _ = solid.external_actions.external[-1]
     plotting_torque_list.append((get_object(solid), t))
 
 

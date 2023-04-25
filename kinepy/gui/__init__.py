@@ -1,11 +1,11 @@
 import os
 import pygame as pg
-from kinepy.objects.system import System
-from kinepy.interface.decorators import get_object
-
+import numpy as np
 from kinepy.gui.camera import Camera
 from kinepy.gui.getters import *
+from kinepy.gui.drawing_tool import draw_arrow1, draw_arrow2
 
+from kinepy.math.geometry import unit, z_cross
 
 
 
@@ -166,7 +166,7 @@ from kinepy.gui.getters import *
 #             self.draw_loop()
 #             self.clock.tick(30)
 
-
+FPS = 60
 PATH = os.path.dirname(__file__)
 SOLID_COLORS = (
     (225, 105, 97), (255, 180, 128), (248, 243, 141), (66, 214, 164), (8, 202, 209), (89, 173, 246), (157, 148, 255),
@@ -178,16 +178,18 @@ class GUI(Camera):
     running = True
     animation_state, animation_speed = 0, .6
 
-    def __init__(self, system, *args):
+    def __init__(self, system, background, animation_time,  *args):
+        self.system = get_object(system)
+
         # Window setup
         self.surface = pg.display.set_mode((640, 480), pg.RESIZABLE)
         pg.display.set_caption('Kinepy')
         pg.display.set_icon(pg.image.load(os.path.join(PATH, 'logo.ico')).convert_alpha())
+        self.background = background
+        self.animation_speed = self.system.n / animation_time / FPS
 
         # Clock for the frame rate
         self.clock = pg.time.Clock()
-
-        self.system = get_object(system)
 
         # Camera stuff
         Camera.__init__(self)
@@ -203,13 +205,25 @@ class GUI(Camera):
             Camera.manage(self, event)
 
     def draw(self):
-        self.surface.fill((0, 0, 0))
-        for point in self.points:
-            pg.draw.circle(self.surface, (255, 255, 255), self.real_to_screen(point[:, int(self.animation_state)]), 5 * self.scale / self.scale0 * self.zoom, 2)
+        self.surface.fill(self.background)
+        animation_index = int(self.animation_state)
+        # for index, point in enumerate(self.points):
+        #     pg.draw.circle(self.surface, SOLID_COLORS[index % len(SOLID_COLORS)], self.real_to_screen(point[:, animation_index]), max(1, 5 * self.scale / self.scale0 * self.zoom), 2)
+
+        # drawing references
+        for index, sol in enumerate(self.system.sols):
+            origin = self.real_to_screen(sol.origin[:, animation_index])
+            u = unit(-sol.angle[animation_index]) * 50 * self.scale / self.scale0 * self.zoom
+            draw_arrow2(self.surface, SOLID_COLORS[index % len(SOLID_COLORS)], origin, origin + u)
+            draw_arrow2(self.surface, SOLID_COLORS[index % len(SOLID_COLORS)], origin, origin - z_cross(u))
+
+
+    def draw_origins(self):
+        pass
+
 
     def tick(self):
         self.animation_state = (self.animation_state + self.animation_speed) % self.system.n
-        print(f'\r{self.system_area}, {self.camera_area}, {self.scale}', end='')
 
     def main_loop(self):
         while self.running:
@@ -222,10 +236,10 @@ class GUI(Camera):
             pg.display.flip()
 
             # 60 fps
-            self.clock.tick(60)
+            self.clock.tick(FPS)
 
 
-def display(system: System, additional_points=(), background=(255, 255, 255), grid=True):
+def display(system, additional_points=(), background=(0, 0, 0), grid=True, animation_time=2.):
     pg.init()
-    GUI(system, additional_points, background, grid).main_loop()
+    GUI(system, background, animation_time, additional_points, grid).main_loop()
     pg.quit()

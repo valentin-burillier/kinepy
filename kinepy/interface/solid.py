@@ -30,14 +30,14 @@ class Solid(obj.Solid, metaclass=MetaUnit):
             f = np.array(f)
             if f.shape == (2,):
                 f = f.reshape((2, 1))
-            self.external_actions.append((lambda: f * units.SYSTEM[FORCE]), ZERO_F, p)
+            return self.external_actions.append((lambda: f * units.SYSTEM[FORCE]), ZERO_F, p)
         elif isinstance(f, FUNCTION_TYPE):
-            self.external_actions.append((lambda: f() * units.SYSTEM[FORCE]), ZERO_F, p)
+            return self.external_actions.append((lambda: f() * units.SYSTEM[FORCE]), ZERO_F, p)
         raise TypeError("force must be either: ndarray, list, tuple of shape (2,), (2, 1) or (2, n) or a function returning one of these types")
 
     def add_torque(self, t):
         if isinstance(t, (int, float, np.ndarray)):
-            self.external_actions.append(ZERO_ARRAY_F, (lambda: t * units.SYSTEM[TORQUE]), self._object.g)
+            return self.external_actions.append(ZERO_ARRAY_F, (lambda: t * units.SYSTEM[TORQUE]), self._object.g)
         elif isinstance(t, FUNCTION_TYPE):
-            self.external_actions.append(ZERO_ARRAY_F, (lambda: t() * units.SYSTEM[TORQUE]), self._object.g)
+            return self.external_actions.append(ZERO_ARRAY_F, (lambda: t() * units.SYSTEM[TORQUE]), self._object.g)
         raise TypeError("torque must be either: int, float, ndarray of shape (), (1,) or (n,)  or a function returning one of these types")
