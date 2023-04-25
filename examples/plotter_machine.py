@@ -33,7 +33,7 @@ r4 = sys.add_revolute(5, 2)
 p3 = sys.add_prismatic(0, 6)
 p4 = sys.add_prismatic(6, 5, a1=np.pi/2, a2=np.pi/2)
 
-sys.pilot([p3, p4])
+sys.pilot(p3, p4)
 
 sys.compile()
 

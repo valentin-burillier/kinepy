@@ -15,6 +15,7 @@ class Camera:
         max_ = np.amax(points, axis=(0, 2))
         self.system_area = Rect(*min_, *(max_ - min_))
         self.system_area.scale(1.2, *self.system_area.center)
+        print(self.system_area)
 
         if self.system_area.w == 0. or self.system_area.h == 0:
             raise ValueError("System does not use any area")
