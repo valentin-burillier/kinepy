@@ -13,6 +13,8 @@ Le bâti est le seul solide déjà recensé dans le système. Il est possible d'
 
 On notera que la liaison `s1` est toujours le solide de référence pour l'expression des paramètres cinématiques ![torseur_kin](https://user-images.githubusercontent.com/93446869/189615627-341b0fba-b71b-4be0-bf09-58897f004286.svg) et dynamiques ![torseur_AM](https://user-images.githubusercontent.com/93446869/189615640-f62554b8-d0d5-4320-8f7f-635d015d2d6a.svg).
 
+- `bill_of_materials()` : Affiche la nomenclature des solides du système
+
 ## Ajout de relations
 
 - `add_gear(rev1, rev2, r, v0=0., pressure_angle=np.pi/9)` : Ajoute un engrenage en liant cinématiquement et dynamiquement deux liaisons pivots `rev1` et `rev2`. Retourne l'objet `Gear` correspondant. Pour connaître le détail des arguments et des fonctionnalités de cette classe, veuillez vous référer [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/objets/Gear.md).
