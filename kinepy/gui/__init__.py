@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May  1 15:09:01 2023
-
-@author: buril
-"""
-
 from kinepy.gui.grid_manager import GridManager, Camera
 from kinepy.gui.getters import *
 from kinepy.gui.drawing_tool import *
