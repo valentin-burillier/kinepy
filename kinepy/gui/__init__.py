@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May  1 15:09:01 2023
+
+@author: buril
+"""
+
 from kinepy.gui.grid_manager import GridManager, Camera
 from kinepy.gui.getters import *
 from kinepy.gui.drawing_tool import *
@@ -216,8 +223,8 @@ class GUI(GridManager):
             for index, sol in enumerate(self.system.sols):
                 origin = self.real_to_screen(sol.origin[:, frame])
                 u = unit(-sol.angle[frame]) * 40 * self.scale / self.scale0 * self.zoom
-                draw_arrow(self.surface, SOLID_COLORS[index % len(SOLID_COLORS)], origin, origin + u)
-                draw_arrow(self.surface, SOLID_COLORS[index % len(SOLID_COLORS)], origin, origin - z_cross(u))
+                draw_arrow(self.surface, solid_color(index), origin, origin + u)
+                draw_arrow(self.surface, solid_color(index), origin, origin - z_cross(u))
 
         for j, data in zip(self.system.joints, self.prepared_joints):
             if j.id_ not in draw_joint:
@@ -245,3 +252,4 @@ def display(system, additional_points=(), background=(0, 0, 0), display_frames_o
     pg.init()
     GUI(system, background, animation_time, display_frames_of_reference, additional_points).main_loop()
     pg.quit()
+
