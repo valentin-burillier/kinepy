@@ -56,7 +56,7 @@ def prepare_joints(joints):
     return [prepare[j.id_](j) if j.id_ in prepare else () for j in joints]
 
 
-COLORMAP = ((102, 102, 102), (61, 133, 198), (204, 0, 0), (106, 168, 79), (241, 194, 50), (227, 119, 194), (255, 127, 14), (148, 103, 189), (145, 220, 3), (26, 190, 207))
+COLORMAP = ((144, 144, 144), (61, 133, 198), (204, 0, 0), (106, 168, 79), (241, 194, 50), (227, 119, 194), (255, 127, 14), (148, 103, 189), (145, 220, 3), (26, 190, 207))
 solid_color = lambda index : COLORMAP[(index - 1)%(len(COLORMAP) - 1) + 1] if index else COLORMAP[0]
 
 
