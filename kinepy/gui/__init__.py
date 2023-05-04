@@ -209,7 +209,7 @@ class GUI(GridManager):
         self.surface.fill(self.background)
         frame = int(self.animation_state)
 
-        GridManager.draw_grid(self, (255, 255, 255))
+        GridManager.draw_grid(self, COLORMAP[0])
 
         if self.display_frames:
             # drawing frames
