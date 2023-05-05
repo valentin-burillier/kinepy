@@ -23,7 +23,7 @@ Des connaissances en science de l'ingénieur sont nécessaire pour utiliser Kine
 
 Nous vous invitons à aller voir ce [fichier](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md) montrant comment simuler un mécanisme. Il renvoit sur la documentation des éléments utiliser.
 
-La documentation des éléments permettant de créer un mécanisme est [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md).
+La documentation des éléments permettant de créer un mécanisme est [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md).
 
 # Exemples
 
@@ -51,15 +51,15 @@ KinePy est installable avec pip :
 pip install kinepy
 ```
 
-Notez que la version télécharger avec pip peut être bien antérieur au dépot le plus récent. Des fonctionnalités peuvent manquer.
+*Notez que la version télécharger avec pip peut être bien antérieur au dépot le plus récent. Des fonctionnalités peuvent manquer.*
 
-# Diclaimer
+# Disclaimer
 
-La bibliothèque est en développement. Il peut donc y avoir des bugs. Merci de les faire remonter aux développeurs afin de les corriger.
+La bibliothèque est en développement. Il peut donc y avoir des bugs. Merci de les faire remonter aux développeurs afin de les corriger. Actuellement, l'interface graphique est en train d'être codé. La représentation de schéma cinématique animé n'étant pas une tâche triviale, veuillez signaler si vous rencontrez des problèmes.
 
 De plus, les dévelopeurs seront très attentifs aux demandes d'intégration de nouvelles fonctionnalités.
 
-Nous vous encourageons à partager  aux développeurs les applications que vous faites de KinePy.
+Nous vous encourageons également à partager aux développeurs les applications que vous faites de KinePy.
 
 # Liens
 
