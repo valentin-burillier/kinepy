@@ -56,10 +56,8 @@ def prepare_joints(joints):
     return [prepare[j.id_](j) if j.id_ in prepare else () for j in joints]
 
 
-SOLID_COLORS = (
-    (225, 105, 97), (255, 180, 128), (248, 243, 141), (66, 214, 164), (8, 202, 209), (89, 173, 246), (157, 148, 255),
-    (199, 128, 232)
-)
+COLORMAP = ((144, 144, 144), (61, 131, 198), (204, 0, 0), (106, 167, 79), (241, 194, 57), (227, 119, 194), (255, 127, 14), (148, 103, 189), (145, 220, 3), (26, 190, 207))
+solid_color = lambda index : COLORMAP[(index - 1)%(len(COLORMAP) - 1) + 1] if index else COLORMAP[0]
 
 
 def draw_rev(self, rev, data):
@@ -71,7 +69,7 @@ def draw_rev(self, rev, data):
     )
     pg.draw.circle(
         self.surface,
-        SOLID_COLORS[rev.s2.rep % len(SOLID_COLORS)],
+        solid_color(rev.s2.rep),
         self.real_to_screen(data[:, int(self.animation_state)]),
         REVOLUTE_RADIUS * self.scale / self.scale0 * self.zoom, 2
     )
@@ -82,7 +80,7 @@ def draw_pri(self, pri, data):
     frame = int(self.animation_state)
     pg.draw.line(
         self.surface,
-        SOLID_COLORS[pri.s1.rep % len(SOLID_COLORS)],
+        solid_color(pri.s1.rep),
         self.real_to_screen(p1[:, frame]),
         self.real_to_screen(p2[:, frame]),
         2
@@ -100,7 +98,7 @@ def draw_pri(self, pri, data):
     )
     pg.draw.polygon(
         self.surface,
-        SOLID_COLORS[pri.s2.rep % len(SOLID_COLORS)],
+        solid_color(pri.s2.rep),
         rec,
         2
     )
@@ -111,7 +109,7 @@ def draw_pin(self, pin, data):
     frame = int(self.animation_state)
     pg.draw.line(
         self.surface,
-        SOLID_COLORS[pin.s1.rep % len(SOLID_COLORS)],
+        solid_color(pin.s1.rep),
         self.real_to_screen(p1[:, frame]),
         self.real_to_screen(p2[:, frame]),
         2
@@ -129,7 +127,7 @@ def draw_pin(self, pin, data):
     )
     pg.draw.polygon(
         self.surface,
-        SOLID_COLORS[pin.s2.rep % len(SOLID_COLORS)],
+        solid_color(pin.s2.rep),
         rec,
         2
     )

@@ -7,11 +7,17 @@
 Le paramétrage d'un engrenage s'effectue grâce à ces 5 attributs :
 - `rev1`, RevoluteJoint : Première pivots à accoupler
 - `rev2`, RevoluteJoint : Deuxième pivots à accoupler
-- `r`, float : Rapport de transmission
+- `r`, float : Rapport de transmission. Cette valeur peu être négative.
 - `v0`, float : Valeur du déphasage entre `rev1` et `rev2` quand l'angle de `rev1` vaut zéro. Par défaut, `v0` vaut zéro.
 - `pressure_angle`, float : Valeur de l'angle de pression entre les roues dentées. Par défaut, il est de 20° (ou pi/9 rad). (Voir figure ci-dessous)
 
 Les liaisons pivots `rev1` et `rev2` doivent avoir un solide en commun. Ici, cela correspond au solide jaune.
+
+Les engrenages internes peuvent aussi être simulés. Le signe de `r` détermine quel type d'engrenage est simulé (voir le paragraphe suivant).
+
+<p align="center" width="100%">
+    <img width="50%" src="https://user-images.githubusercontent.com/93446869/235699382-ee86aac3-a2bd-4676-a1df-5440793c688e.svg">
+</p>
 
 # Cinématique
 
