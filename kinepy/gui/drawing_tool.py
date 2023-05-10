@@ -56,8 +56,12 @@ def prepare_joints(joints):
     return [prepare[j.id_](j) if j.id_ in prepare else () for j in joints]
 
 
-COLORMAP = ((144, 144, 144), (61, 131, 198), (204, 0, 0), (106, 167, 79), (241, 194, 57), (227, 119, 194), (255, 127, 14), (148, 103, 189), (145, 220, 3), (26, 190, 207))
-solid_color = lambda index : COLORMAP[(index - 1)%(len(COLORMAP) - 1) + 1] if index else COLORMAP[0]
+COLORMAP = (
+    (144, 144, 144), (61, 131, 198), (204, 0, 0), (106, 167, 79), (241, 194, 57), (227, 119, 194), (255, 127, 14),
+    (148, 103, 189), (145, 220, 3), (26, 190, 207)
+)
+
+solid_color = lambda index: COLORMAP[(index - 1) % (len(COLORMAP) - 1) + 1] if index else COLORMAP[0]
 
 
 def draw_rev(self, rev, data):
