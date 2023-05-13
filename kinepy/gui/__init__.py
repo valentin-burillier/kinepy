@@ -39,7 +39,7 @@ class GUI:
             self.camera_pos = 0.15 * w, 0.05 * (h - 50)
             return self.surface.subsurface(pg.Rect(self.camera_pos, (.7 * w, 0.85 * (h - 50))))
         self.camera_pos = 0, 0
-        return self.surface.subsurface(pg.Rect(0, 0, 1. * w, 0.9 * h))
+        return self.surface.subsurface(pg.Rect(0, 0, 1. * w, h - 50))
 
     def do_nothing(self, event):
         pass
@@ -53,9 +53,11 @@ class GUI:
             h = 50
             self.surface = pg.display.set_mode((w, h), pg.RESIZABLE)
         self.camera.surface = self.replace_camera()
-        self.camera.set_scale()
-        self.grid.change_scale(self.camera)
-        self.grid.set_scale(self.camera)
+        r = self.camera.surface.get_rect()
+        if r.w * r.h:
+            self.camera.set_scale()
+            self.grid.change_scale(self.camera)
+            self.grid.set_scale(self.camera)
 
     def click(self, event):
         in_drawing_area = self.camera.surface.get_rect(topleft=self.camera_pos).collidepoint(event.pos)
@@ -84,7 +86,6 @@ class GUI:
             self.animating = not self.animating
             self.camera.animation_speed = self.animation_speed * self.animating
 
-
     event_dict = {
         pg.QUIT: 'quit',
         pg.VIDEORESIZE: 'resize',
@@ -105,9 +106,11 @@ class GUI:
         color = np.array(self.background)
         self.surface.fill(np.uint8((color > 128) * color * .8 + (255 - .8 * (255 - color)) * (color < 129)))
         self.camera.surface.fill(self.camera.background)
-        self.grid.draw_grid(self.camera, COLORMAP[0])
-        self.camera.draw()
-        self.grid.draw_graduations(self.surface, self.camera, COLORMAP[0], self.camera_pos)
+        r = self.camera.surface.get_rect()
+        if r.w * r.h:
+            self.grid.draw_grid(self.camera, COLORMAP[0])
+            self.camera.draw()
+            self.grid.draw_graduations(self.surface, self.camera, COLORMAP[0], self.camera_pos)
 
     def main_loop(self):
         while self.running:
@@ -123,7 +126,7 @@ class GUI:
             self.clock.tick(FPS)
 
 
-def display(system, additional_points=(), background=(255, 255, 255), display_frames_of_reference=True, animation_time=2.):
+def display(system, additional_points=(), background=(0, 0, 0), display_frames_of_reference=True, animation_time=2.):
     pg.init()
     GUI(system, background, animation_time, display_frames_of_reference, additional_points).main_loop()
     pg.quit()

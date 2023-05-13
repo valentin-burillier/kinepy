@@ -43,15 +43,24 @@ class GridManager:
         r, h = camera.surface.get_rect(topleft=camera_pos), surface.get_height() - 50
         pg.draw.rect(surface, color, r, 2)
         camera_center = camera.camera_area.center
+
         font = pg.font.SysFont('arial', int(h / 40))
+
+        # Horizontal graduations
         for x in range(self.borders[0], self.borders[2]):
+            # screen x position of the line
             line_x = r.left + (x * self.unit * units.SYSTEM[units.LENGTH] - camera_center[0]) * camera.scale * camera.zoom + camera.surface.get_rect().centerx
             pg.draw.line(surface, color, (line_x, r.bottom), (line_x, r.bottom + h * 0.02), 2)
+
             text = font.render(f'{x * self.unit:.1e} {units.get_unit(units.LENGTH)}', True, color)
             surface.blit(text, text.get_rect(midtop=(line_x, r.bottom + h * 0.02)))
+
+        # vertical graduations
         for y in range(self.borders[1], self.borders[3]):
+            # screen y position of the line
             line_y = r.top - (y * self.unit * units.SYSTEM[units.LENGTH] - camera_center[1]) * camera.scale * camera.zoom + camera.surface.get_rect().centery
             pg.draw.line(surface, color, (r.left, line_y), (r.left - surface.get_width() * 0.02, line_y), 2)
+
             text = font.render(f'{y * self.unit:.1e} {units.get_unit(units.LENGTH)} ', True, color)
             surface.blit(text, text.get_rect(midright=(r.left - surface.get_width() * 0.02, line_y)))
 
