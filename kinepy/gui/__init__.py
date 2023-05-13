@@ -62,7 +62,6 @@ class GUI:
     def click(self, event):
         in_drawing_area = self.camera.surface.get_rect(topleft=self.camera_pos).collidepoint(event.pos)
         if event.button in (pg.BUTTON_WHEELUP, pg.BUTTON_WHEELDOWN) and in_drawing_area:
-            print(self.camera_pos)
             event.pos -= np.array(self.camera_pos)
             self.camera.change_scale(event)
             self.grid.change_scale(self.camera)
