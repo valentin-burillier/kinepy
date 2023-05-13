@@ -1,14 +1,28 @@
-import pygame as pg
 from kinepy.gui.Rect import Rect
+from kinepy.gui.getters import *
+from kinepy.gui.drawing_tool import *
 import numpy as np
+from kinepy.math.geometry import unit, z_cross
 
 
 class Camera:
     scale = scale0 = zoom = 1.
-    surface: pg.Surface
+    animation_state, animation_speed = 0, .6
 
-    def __init__(self):
+    def __init__(self, surface, system, display_frames, background):
+        self.system = get_object(system)
+        self.display_frames = display_frames
+
+        self.surface = surface
+        self.background = background
         self.system_area = self.camera_area = Rect(0, 0, 0, 0)
+
+        self.points, self.solid_set = gather_points(self.system)
+        self.set_bound_box(self.points)
+        self.set_scale()
+        self.scale0 = self.scale
+
+        self.prepared_joints = prepare_joints(self.system.joints)
 
     def set_bound_box(self, points: tuple):
         min_ = np.amin(points, axis=(0, 2))
@@ -53,3 +67,17 @@ class Camera:
         return np.int32(
             (point - self.camera_area.center) * self.scale * self.zoom * (1, -1) + self.surface.get_rect().center
         )
+
+    def draw(self):
+        frame = int(self.animation_state)
+        if self.display_frames:
+            # drawing frames
+            for index, sol in enumerate(self.system.sols):
+                origin = self.real_to_screen(sol.origin[:, frame])
+                u = unit(-sol.angle[frame]) * 40 * self.scale / self.scale0 * self.zoom
+                draw_arrow(self.surface, solid_color(index), origin, origin + u)
+                draw_arrow(self.surface, solid_color(index), origin, origin - z_cross(u))
+        for j, data in zip(self.system.joints, self.prepared_joints):
+            if j.id_ not in draw_joint:
+                continue
+            draw_joint[j.id_](self, j, data)

@@ -9,70 +9,106 @@ FPS = 60
 PATH = os.path.dirname(__file__)
 
 
-class GUI(GridManager):
+class GUI:
     running = True
-    animation_state, animation_speed = 0, .6
+    allow_moving = False
+    camera_pos = 0, 0
 
-    def __init__(self, system, background, animation_time, display_frames,  *args):
-        self.system = get_object(system)
-        self.display_frames = display_frames
+    def __init__(self, system, background, animation_time, display_frames, *args):
+        self.grid = GridManager()
+        self.grid.use_grid = True
+        self.grid.use_graduation = True
 
         # Window setup
         self.surface = pg.display.set_mode((640, 480), pg.RESIZABLE)
+        self.camera = Camera(self.replace_camera(), system, display_frames, background)
+        self.grid.change_scale(self.camera)
+
         pg.display.set_caption('Kinepy')
         pg.display.set_icon(pg.image.load(os.path.join(PATH, 'logo.ico')).convert_alpha())
 
         self.background = background
-        self.animation_speed = self.system.n / animation_time / FPS
+        self.camera.animation_speed = get_object(system).n / animation_time / FPS
 
         # Clock for the frame rate
         self.clock = pg.time.Clock()
 
-        # Camera stuff
-        Camera.__init__(self)
-        self.points, self.solid_set = gather_points(self.system)
-        self.set_bound_box(self.points)
-        self.set_scale()
-        self.scale0 = self.scale
+    def replace_camera(self):
+        w, h = self.surface.get_size()
+        if self.grid.use_graduation:
+            self.camera_pos = 0.15 * w, 0.05 * (h - 50)
+            return self.surface.subsurface(pg.Rect(self.camera_pos, (.7 * w, 0.85 * (h - 50))))
+        self.camera_pos = 0, 0
+        return self.surface.subsurface(pg.Rect(0, 0, 1. * w, 0.9 * h))
 
-        self.prepared_joints = prepare_joints(self.system.joints)
+    def do_nothing(self, event):
+        pass
 
-        # Grid stuff
-        self.find_unit()
-        self.camera_borders()
+    def quit(self, event):
+        self.running = False
 
-    def events(self):
+    def resize(self, event):
+        w, h = self.surface.get_size()
+        if h < 50:
+            h = 50
+            self.surface = pg.display.set_mode((w, h), pg.RESIZABLE)
+        self.camera.surface = self.replace_camera()
+        self.camera.set_scale()
+        self.grid.change_scale(self.camera)
+        self.grid.set_scale(self.camera)
+
+    def click(self, event):
+        in_drawing_area = self.camera.surface.get_rect(topleft=self.camera_pos).collidepoint(event.pos)
+        if event.button in (pg.BUTTON_WHEELUP, pg.BUTTON_WHEELDOWN) and in_drawing_area:
+            self.camera.change_scale(event)
+            self.grid.change_scale(self.camera)
+        if event.button == pg.BUTTON_LEFT and in_drawing_area:
+            self.allow_moving = True
+
+    def click_release(self, event):
+        if event.button == pg.BUTTON_LEFT and self.allow_moving:
+            self.allow_moving = False
+
+    def mouse_motion(self, event):
+        if self.allow_moving and event.buttons == (1, 0, 0):
+            self.camera.move_camera(event)
+            self.grid.move_camera(self.camera)
+
+    def keydown(self, event):
+        if event.key == pg.K_TAB:
+            n = (self.grid.use_grid * 2 + self.grid.use_graduation) + 1
+            self.grid.use_grid = not not (n & 2)
+            self.grid.use_graduation = not not (n & 1)
+            self.camera.surface = self.replace_camera()Gradu
+
+    event_dict = {
+        pg.QUIT: 'quit',
+        pg.VIDEORESIZE: 'resize',
+        pg.MOUSEBUTTONDOWN: 'click',
+        pg.MOUSEBUTTONUP: 'click_release',
+        pg.MOUSEMOTION: 'mouse_motion',
+        pg.KEYDOWN: 'keydown'
+    }
+
+    def manage_events(self):
         for event in pg.event.get():
-            if event.type == pg.QUIT:
-                self.running = False
-            GridManager.manage(self, event)
-
-    def draw(self):
-        self.surface.fill(self.background)
-        frame = int(self.animation_state)
-
-        GridManager.draw_grid(self, COLORMAP[0])
-
-        if self.display_frames:
-            # drawing frames
-            for index, sol in enumerate(self.system.sols):
-                origin = self.real_to_screen(sol.origin[:, frame])
-                u = unit(-sol.angle[frame]) * 40 * self.scale / self.scale0 * self.zoom
-                draw_arrow(self.surface, solid_color(index), origin, origin + u)
-                draw_arrow(self.surface, solid_color(index), origin, origin - z_cross(u))
-
-        for j, data in zip(self.system.joints, self.prepared_joints):
-            if j.id_ not in draw_joint:
-                continue
-            draw_joint[j.id_](self, j, data)
+            getattr(self, self.event_dict.get(event.type, 'do_nothing'))(event)
 
     def tick(self):
-        self.animation_state = (self.animation_state + self.animation_speed) % self.system.n
+        self.camera.animation_state = (self.camera.animation_state + self.camera.animation_speed) % self.camera.system.n
+
+    def draw(self):
+        color = np.array(self.background)
+        self.surface.fill(np.uint8((color > 128) * color * .8 + (255 - .8 * (255 - color)) * (color < 129)))
+        self.camera.surface.fill(self.camera.background)
+        self.grid.draw_grid(self.camera, COLORMAP[0])
+        self.camera.draw()
+        self.grid.draw_graduations(self.surface, self.camera, COLORMAP[0], self.camera_pos)
 
     def main_loop(self):
         while self.running:
             # manage events
-            self.events()
+            self.manage_events()
 
             # do anything that needs to be done, then get displayed on the window
             self.tick()
@@ -83,7 +119,7 @@ class GUI(GridManager):
             self.clock.tick(FPS)
 
 
-def display(system, additional_points=(), background=(0, 0, 0), display_frames_of_reference=True, animation_time=2.):
+def display(system, additional_points=(), background=(255, 255, 255), display_frames_of_reference=True, animation_time=2.):
     pg.init()
     GUI(system, background, animation_time, display_frames_of_reference, additional_points).main_loop()
     pg.quit()
