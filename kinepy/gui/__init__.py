@@ -10,7 +10,7 @@ PATH = os.path.dirname(__file__)
 
 
 class GUI:
-    running = True
+    running, animating = True, True
     allow_moving = False
     camera_pos = 0, 0
 
@@ -28,7 +28,7 @@ class GUI:
         pg.display.set_icon(pg.image.load(os.path.join(PATH, 'logo.ico')).convert_alpha())
 
         self.background = background
-        self.camera.animation_speed = get_object(system).n / animation_time / FPS
+        self.animation_speed = self.camera.animation_speed = get_object(system).n / animation_time / FPS
 
         # Clock for the frame rate
         self.clock = pg.time.Clock()
@@ -80,6 +80,10 @@ class GUI:
             self.grid.use_grid = not not (n & 2)
             self.grid.use_graduation = not not (n & 1)
             self.camera.surface = self.replace_camera()
+        if event.key == pg.K_SPACE:
+            self.animating = not self.animating
+            self.camera.animation_speed = self.animation_speed * self.animating
+
 
     event_dict = {
         pg.QUIT: 'quit',
