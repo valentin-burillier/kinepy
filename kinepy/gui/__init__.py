@@ -86,7 +86,10 @@ class GUI:
         if event.key == pg.K_SPACE:
             self.animating = not self.animating
             self.camera.animation_speed = self.animation_speed * self.animating
-
+        if event.key == pg.K_LEFT and not self.animating:
+            self.camera.animation_state = (self.camera.animation_state - 1) % self.camera.system.n
+        if event.key == pg.K_RIGHT and not self.animating:
+            self.camera.animation_state = (self.camera.animation_state + 1) % self.camera.system.n
     event_dict = {
         pg.QUIT: 'quit',
         pg.VIDEORESIZE: 'resize',
