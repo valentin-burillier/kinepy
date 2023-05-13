@@ -9,7 +9,9 @@ class SystemManager:
         for s, point in (rev.s1, rev.p1), (rev.s2, rev.p2):
             # region matching
             p = np.array(point) * self.scale0 / REVOLUTE_RADIUS
-            if p[1] >= 2:
+            if not s.rep:
+                region = 0
+            elif p[1] >= 2:
                 region = 0
             elif p[1] <= -2:
                 region = 3
