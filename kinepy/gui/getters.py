@@ -52,16 +52,14 @@ get_points = {
 
 
 def gather_points(system):
-    points, solid_set = [], {}
+    # points is used to determine the window
+    points = []
     for s in system.sols:
         points.append(s.origin)
-        solid_set[s.rep] = [(0., 0.)]
     for s, point in plotting_point_list + plotting_speed_list:
         points.append(s.origin + rvec(s.angle, point))
-        solid_set[s.rep].append(point)
     for s, point, _ in plotting_force_list:
         points.append(s.origin + rvec(s.angle, point))
-        solid_set[s.rep].append(point)
 
     for joint in system.joints:
         if joint.id_ not in get_points:
@@ -69,7 +67,8 @@ def gather_points(system):
         p1, p2 = get_points[joint.id_](joint)
         points.append(joint.s1.origin + rvec(joint.s1.angle, p1))
         points.append(joint.s2.origin + rvec(joint.s2.angle, p2))
-        solid_set[joint.s1.rep].append(p1)
-        solid_set[joint.s2.rep].append(p2)
+    return points
 
-    return points, solid_set
+
+def get_additional_points():
+    return plotting_point_list + plotting_speed_list + [li[:2] for li in plotting_force_list]

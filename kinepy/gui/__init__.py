@@ -1,6 +1,7 @@
 from kinepy.gui.grid_manager import GridManager, Camera
 from kinepy.gui.getters import *
 from kinepy.gui.drawing_tool import *
+import os
 
 from kinepy.math.geometry import unit, z_cross
 
@@ -84,6 +85,7 @@ class GUI:
             self.grid.use_graduation = not not (n & 1)
             self.camera.surface = self.replace_camera()
             self.camera.set_scale()
+            self.grid.set_scale(self.camera)
             self.grid.change_scale(self.camera)
         if event.key == pg.K_SPACE:
             self.animating = not self.animating
@@ -133,7 +135,7 @@ class GUI:
             self.clock.tick(FPS)
 
 
-def display(system, additional_points=(), background=(255, 255, 255), display_frames_of_reference=True, animation_time=2.):
+def display(system, additional_points=(), background=(0, 0, 0), display_frames_of_reference=False, animation_time=2.):
     pg.init()
     GUI(system, background, animation_time, display_frames_of_reference, additional_points).main_loop()
     pg.quit()

@@ -5,7 +5,7 @@ import pygame as pg
 
 
 # Wanted size of grid cells in pixels
-GRID_CELL = 100
+GRID_CELL = 50
 SCALES = np.log10((1, 2, 5, 10))
 
 
@@ -15,9 +15,9 @@ class GridManager:
     borders = 0, 0, 0, 0
 
     def find_unit(self, camera):
-        log = np.log10(GRID_CELL / camera.zoom / camera.scale / units.SYSTEM[units.LENGTH])
+        log = np.log10(GRID_CELL / camera.zoom / camera.scale0 / units.SYSTEM[units.LENGTH])
         self.unit = 10 ** (min(SCALES, key=lambda x: abs(x - (log % 1))) + np.floor(log))
-        print(f'\r{self.unit:.1e} {units.get_unit(units.LENGTH)}', end='')
+        # print(f'\r{self.unit:.1e} {units.get_unit(units.LENGTH)}', end='')
 
     def camera_borders(self, camera):
         start_x = camera.camera_area.x / units.SYSTEM[units.LENGTH] // self.unit
@@ -46,22 +46,25 @@ class GridManager:
 
         font = pg.font.SysFont('arial', int(h / 40))
 
+        rounded_unit = float(f'{self.unit:.0e}')
+        unit = self.unit * units.SYSTEM[units.LENGTH]
+
         # Horizontal graduations
         for x in range(self.borders[0], self.borders[2]):
             # screen x position of the line
-            line_x = r.left + (x * self.unit * units.SYSTEM[units.LENGTH] - camera_center[0]) * camera.scale * camera.zoom + camera.surface.get_rect().centerx
+            line_x = r.left + (x * unit - camera_center[0]) * camera.scale * camera.zoom + r.w / 2
             pg.draw.line(surface, color, (line_x, r.bottom), (line_x, r.bottom + h * 0.02), 2)
 
-            text = font.render(f'{x * self.unit:.1e} {units.get_unit(units.LENGTH)}', True, color)
+            text = font.render(f'{str(rounded_unit * x).rstrip("0").rstrip(".")}', True, color)
             surface.blit(text, text.get_rect(midtop=(line_x, r.bottom + h * 0.02)))
 
         # vertical graduations
         for y in range(self.borders[1], self.borders[3]):
             # screen y position of the line
-            line_y = r.top - (y * self.unit * units.SYSTEM[units.LENGTH] - camera_center[1]) * camera.scale * camera.zoom + camera.surface.get_rect().centery
+            line_y = r.top - (y * unit - camera_center[1]) * camera.scale * camera.zoom + r.h / 2
             pg.draw.line(surface, color, (r.left, line_y), (r.left - surface.get_width() * 0.02, line_y), 2)
 
-            text = font.render(f'{y * self.unit:.1e} {units.get_unit(units.LENGTH)} ', True, color)
+            text = font.render(f'{str(rounded_unit * y).rstrip("0").rstrip(".")} ', True, color)
             surface.blit(text, text.get_rect(midright=(r.left - surface.get_width() * 0.02, line_y)))
 
     def change_scale(self, camera):
