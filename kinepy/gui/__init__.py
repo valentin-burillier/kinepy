@@ -62,6 +62,7 @@ class GUI:
     def click(self, event):
         in_drawing_area = self.camera.surface.get_rect(topleft=self.camera_pos).collidepoint(event.pos)
         if event.button in (pg.BUTTON_WHEELUP, pg.BUTTON_WHEELDOWN) and in_drawing_area:
+            event.pos -= np.array(self.camera_pos)
             self.camera.change_scale(event)
             self.grid.change_scale(self.camera)
         if event.button == pg.BUTTON_LEFT and in_drawing_area:
@@ -126,7 +127,7 @@ class GUI:
             self.clock.tick(FPS)
 
 
-def display(system, additional_points=(), background=(0, 0, 0), display_frames_of_reference=True, animation_time=2.):
+def display(system, additional_points=(), background=(255, 255, 255), display_frames_of_reference=True, animation_time=2.):
     pg.init()
     GUI(system, background, animation_time, display_frames_of_reference, additional_points).main_loop()
     pg.quit()
