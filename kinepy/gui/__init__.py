@@ -79,7 +79,7 @@ class GUI:
             n = (self.grid.use_grid * 2 + self.grid.use_graduation) + 1
             self.grid.use_grid = not not (n & 2)
             self.grid.use_graduation = not not (n & 1)
-            self.camera.surface = self.replace_camera()Gradu
+            self.camera.surface = self.replace_camera()
 
     event_dict = {
         pg.QUIT: 'quit',
