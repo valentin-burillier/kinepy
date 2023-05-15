@@ -1,4 +1,5 @@
 import kinepy.gui.gui_class as _g
+from PIL.Image import frombytes as _from_bytes
 
 
 _GUI_VARIABLES = {
@@ -56,3 +57,24 @@ def show():
     _g.pg.init()
     _g.GUI(**_GUI_VARIABLES).main_loop()
     _g.pg.quit()
+
+
+def save(file_name: str):
+    if _GUI_VARIABLES['system'] is None:
+        raise Exception('No system was set to be displayed')
+    if not file_name.endswith('.gif'):
+        raise ValueError('Kinepy can only save files as gif, ".gif" has to be the extension')
+
+    images = []
+    _g.pg.init()
+    gui = _g.GUI(**_GUI_VARIABLES, saving=True)
+
+    w, h = gui.surface.get_size()
+    size = w, h - 50
+    while gui.camera.animation_state < gui.camera.system.n:
+        gui.draw()
+        images.append(_from_bytes('RGB', size, _g.pg.image.tostring(gui.surface.subsurface((0, 0) + size), 'RGB', False)))
+        gui.camera.animation_state += gui.camera.animation_speed
+
+    print('duration', 1000. / _g.FPS)
+    images[0].save(file_name, append_images=images[1:], save_all=True, optimize=False, duration=1000. / _g.FPS, loop=0)

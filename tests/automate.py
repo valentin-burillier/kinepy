@@ -118,11 +118,10 @@ sys.solve_kinematics(a)
 # set_unit(LENGTH, GOAT_HEIGHT)
 
 gui.system(sys)
-gui.light_mode()
-gui.grid()
-gui.graduation()
-gui.animation_time(10.)
+gui.dark_mode()
+gui.animation_time(2.)
 gui.show()
+# gui.save('anim.gif')
 
 #
 # P = s4.get_point((saw, 0))
