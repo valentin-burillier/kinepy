@@ -33,6 +33,7 @@ On commence par importer les bibliothèques nécessaires. `units` comporte les �
 import kinepy as k
 from kinepy.units import *
 import kinepy.tools as to
+import kinepy.gui as kd
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -198,15 +199,22 @@ plt.show()
 
 # Affichage du mécanisme
 
-Ce paragraphe va changer lorsque les schémas cinématiques animés seront fonctionnels. Pour l'instant, on utilise la fonction `animate` de tools basée sur la fonction FuncAnimation de matplotlib. `animate` prend en argument une liste de liste de points. On obtient ces points en demandant soit le point de la liaison, soit l'origine du repère d'un solide ou soit avec la méthode `get_point`.
+On affiche maintenant le schéma cinématique animé de la simulation. On utilise plusieurs méthodes pour paramétrés l'animation (voir [doc schéma cinématique](https://github.com/valentin-burillier/kinepy/blob/main/docs/kinematics%20diagram.md)).
 
 ```python
-_ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])
-plt.show()
+kd.system(sys)
+
+kd.animation_time(t)
+kd.grid()
+kd.graduation()
+kd.frames_of_reference()
+kd.dark_mode()
+
+kd.show()
 ```
 
 <p align="center" width="100">
-    <img width="50%" src="https://user-images.githubusercontent.com/93446869/233808218-0c52631e-2058-4273-a98b-4561d62d450d.gif">
+    <img width="80%" src="https://github.com/valentin-burillier/kinepy/assets/93446869/ce2bb2f2-2b51-41de-ab27-f7c85f6ca306.gif">
 </p>
 
 # Récupération de données cinématiques
