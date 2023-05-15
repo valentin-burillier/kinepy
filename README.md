@@ -2,16 +2,17 @@
     <img width="70%" src="https://user-images.githubusercontent.com/93446869/234020322-1ef75f2b-1900-4b86-a83c-96becd308c8c.svg">
 </p>
 
-[![PyPI Downloads](https://img.shields.io/pypi/dm/kinepy.svg?label=PyPI%20downloads)](
-https://pypi.org/project/kinepy/)
+<p align="center" width="100%">
+    <img width="70%" src="https://github.com/valentin-burillier/kinepy/assets/93446869/a7faddd1-3816-4345-8965-eea9d503379c">
+</p>
 
-[mettre gif]
+[![PyPI Downloads](https://img.shields.io/pypi/dm/kinepy.svg?label=PyPI%20downloads)](https://pypi.org/project/kinepy/)
 
 KinePy est une librairie python dédiée à la simulation de mécanisme plan.
 
 - KinePy permet de simuler rapidement et précisément un mécanisme complexe constituer de plusieurs boucles cinématiques. Il est facile d'évaluer les performances d'un mécanisme que ce soit du point de vue de la position, de la vitesse des différents solides ou encore des efforts que subissent les pièces au niveau des liaisons. Cet outil est donc destiné pour réaliser le premier dimensionnement d'un mécanisme.
 
-- KinePy a été conçu pour pouvoir être utilisé avec des algorithme d'optimisation. En effet, après la création d'un mécanisme, l'utilisateur à la possibilité de modifier les dimensions d'un solide sans recréer un nouveau système. Cela fournit un modèle paramètrable où il est possible de créer une fonction coût. Cette dernière pourra être minimiser avec des algorithme d'optimisation fournit par d'autres bibliothèques : [scikit-learn](https://scikit-learn.org/stable/), [scipy](https://scipy.org/), 
+- KinePy a été conçu pour pouvoir être utilisé avec des algorithme d'optimisation. En effet, après la création d'un mécanisme, l'utilisateur à la possibilité de modifier les dimensions d'un solide sans recréer un nouveau système. Cela fournit un modèle paramètrable où il est possible de créer une fonction coût. Cette dernière pourra être minimiser avec des algorithme d'optimisation fournit par d'autres bibliothèques : [scikit-learn](https://scikit-learn.org/stable/), [scipy](https://scipy.org/)...
 
 - De plus, KinePy permet de réaliser la cinématique inverse d'un mécanisme. En ajoutant des liaisons pilotés ne faisant pas partie du mécanisme, on peut trouver le pilotage d'actionneurs.  
 
