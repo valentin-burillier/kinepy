@@ -121,6 +121,7 @@ gui.system(sys)
 gui.light_mode()
 gui.grid()
 gui.graduation()
+gui.animation_time(10.)
 gui.show()
 
 #

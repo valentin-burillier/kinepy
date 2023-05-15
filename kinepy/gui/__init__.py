@@ -51,6 +51,8 @@ def dark_mode():
 
 
 def show():
+    if _GUI_VARIABLES['system'] is None:
+        raise Exception('No system was set to be displayed')
     _g.pg.init()
     _g.GUI(**_GUI_VARIABLES).main_loop()
     _g.pg.quit()
