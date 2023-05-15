@@ -99,6 +99,9 @@ gear = sys.add_gear(r0, r5, r=1, v0=-0.5)
 
 
 sys.pilot(r0)
+
+sys.bill_of_materials()
+
 sys.compile()
 
 
@@ -107,7 +110,7 @@ sys.compile()
 # en mode PS
 sys._object.signs = {'3 RRR': -1, '4 RRR': -1, '5 RRR': 1, '6 RRR': -1, '7 RRR': 1, '8 RRP': 1, '9 RRR': -1}
 
-a = t.sinusoidal_input(0, 2*np.pi, 2, 101, v_max=4)
+a = t.sinusoidal_input(0, 2*np.pi, 2, 1001, v_max=4)
 
 #%%
 

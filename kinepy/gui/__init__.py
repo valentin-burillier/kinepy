@@ -3,8 +3,6 @@ from kinepy.gui.getters import *
 from kinepy.gui.drawing_tool import *
 import os
 
-from kinepy.math.geometry import unit, z_cross
-
 
 FPS = 60
 PATH = os.path.dirname(__file__)
@@ -80,9 +78,10 @@ class GUI:
 
     def keydown(self, event):
         if event.key == pg.K_TAB:
-            n = (self.grid.use_grid * 2 + self.grid.use_graduation) + 1
-            self.grid.use_grid = not not (n & 2)
-            self.grid.use_graduation = not not (n & 1)
+            shifter = (1, 3, 0, 2)
+            n = shifter[self.grid.use_grid + self.grid.use_graduation * 2]
+            self.grid.use_grid = not not (n & 1)
+            self.grid.use_graduation = not not (n & 2)
             self.camera.surface = self.replace_camera()
             self.camera.set_scale()
             self.grid.set_scale(self.camera)

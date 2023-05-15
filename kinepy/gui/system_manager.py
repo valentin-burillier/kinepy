@@ -1,4 +1,5 @@
 from kinepy.gui.drawing_tool import *
+from kinepy.math.geometry import unit, z_cross
 
 
 class SystemManager:
@@ -9,9 +10,7 @@ class SystemManager:
         for s, point in (rev.s1, rev.p1), (rev.s2, rev.p2):
             # region matching
             p = np.array(point) * self.scale0 / REVOLUTE_RADIUS
-            if not s.rep:
-                region = 0
-            elif p[1] >= 2:
+            if not s.rep or p[1] >= 2:
                 region = 0
             elif p[1] <= -2:
                 region = 3
@@ -31,8 +30,47 @@ class SystemManager:
                 self.solid_data_step1[s.rep].append(('lines', np.array(((0., 0.), (0., m_point[1]), m_point))))
         self.solid_data_step2[rev.s2.rep].append(('circle', (rev.p2, REVOLUTE_RADIUS)))
 
+    def pin_slot_data(self, pin):
+        # Regions: GREEN, BLUE, RED, YELLOW
+
+        # s1
+        offset = REVOLUTE_RADIUS / self.scale0
+        u = unit(pin.a1)
+        v = z_cross(u) * pin.d1
+        min_sliding, max_sliding = min(pin.sliding) - offset, max(pin.sliding) + offset
+        min_point, m_point, max_point = (
+            u * min_sliding + v, u * (min_sliding + max_sliding) * .5 + v, u * max_sliding + v
+        )
+        self.solid_data_step1[pin.s1.rep].append(('line', np.array((min_point, max_point))))
+        if pin.s1.rep:
+            self.solid_data_step1[pin.s1.rep].append(('lines', np.array(((0., 0.), (m_point[0], 0), m_point))))
+        else:
+            self.solid_data_step1[pin.s1.rep].append(('ground', m_point))
+
+        # s2 region matching
+        p2 = np.array(pin.p2) * self.scale0 / REVOLUTE_RADIUS
+        if not pin.s2.rep or p2[1] >= 1 + 3 ** .5:
+            region2 = 0
+        elif p2[1] <= -1 - 3 ** .5:
+            region2 = 3
+        elif p2[0] > 0:
+            region2 = 2
+        else:
+            region2 = 1
+        offset_angles2 = np.pi * .5, np.pi, 0., -np.pi * .5
+        shape2 = np.einsum('ik,lk->li', rot(offset_angles2[region2]), PIN_SLOT) / self.scale0 + pin.p2
+        m_point = shape2[PIN_SLOT_MOUNTING_POINT]
+        self.solid_data_step2[pin.s2.rep].append(('polygon', shape2))
+        if not pin.s2.rep:
+            self.solid_data_step1[pin.s2.rep].append(('ground', m_point))
+        elif region2 in (0, 3):
+            self.solid_data_step1[pin.s2.rep].append(('lines', np.array(((0., 0.), (m_point[0], 0), m_point))))
+        else:
+            self.solid_data_step1[pin.s2.rep].append(('lines', np.array(((0., 0.), (0., m_point[1]), m_point))))
+
     get_data_dict = {
         1: 'revolute_data',
+        3: 'pin_slot_data'
     }
 
     def get_data(self, joint):
@@ -100,6 +138,22 @@ class SystemManager:
         )
 
     @staticmethod
+    def polygon(camera, color, solid, polygon):
+        poly = SystemManager.shape_to_screen(camera, solid, polygon)
+        pg.draw.polygon(
+            camera.surface,
+            camera.background,
+            poly,
+            0
+        )
+        pg.draw.polygon(
+            camera.surface,
+            color,
+            poly,
+            2
+        )
+
+    @staticmethod
     def ground(camera, color, solid, point):
         p = camera.real_to_screen(point)
         ground = p + GROUND * (1, -1) * camera.scale * camera.zoom / camera.scale0
@@ -111,7 +165,6 @@ class SystemManager:
                 ground[i + 1],
                 2
             )
-
 
     def draw(self, camera):
         for solid, solid_data in zip(self.sols, self.solid_data_step1):

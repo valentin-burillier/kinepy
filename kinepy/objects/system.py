@@ -28,27 +28,6 @@ class System:
         Prepares resolution for dynamics and kinematics
         """
         self.compiler()
-        # self.signs, self.tags = {}, {}
-        #
-        # for index, sol in enumerate(self.sols):
-        #     sol.rep = index
-        # for index, joint in enumerate(self.joints):
-        #     joint.rep = index
-        #
-        # piloted = tuple(j.rep for j in self.piloted)
-        # blocked = tuple(j.rep for j in self.blocked)
-        #
-        # if not blocked or set(blocked) == set(piloted):
-        #     lst, dct, g = make_sets(self, piloted)
-        #     self.kin_sols = self.dyn_sols = lst
-        #     self.kin_joints = self.dyn_joints = dct
-        #     self.kin_ghosted = self.dyn_ghosted = g
-        #     self.kin_instr, self.dyn_instr = compiler(self, BOTH)
-        #     print(*self.kin_instr, sep='\n')
-        # else:
-        #     self.kin_sols, self.kin_joints, self.kin_ghosted = make_sets(self, piloted)
-        #     self.dyn_sols, self.dyn_joints, self.dyn_ghosted = make_sets(self, blocked)
-        #     self.kin_instr, self.dyn_instr = compiler(self, KINEMATICS), compiler(self, DYNAMICS)
 
     def solve_kinematics(self, inputs: np.ndarray):
         self.reset(inputs.shape[1])
