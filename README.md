@@ -30,7 +30,10 @@ La documentation des éléments permettant de créer un mécanisme est [ici](htt
 
 Vous pourrez trouver [ici](https://github.com/valentin-burillier/kinepy/tree/main/examples) des exemples d'application de KinePy sur des systèmes réels.
 
-[mettre gif]
+- Simulation cinématique du bras d'une pelleteuse :
+<p align="center" width="100%">
+    <img width="70%" src="https://github.com/valentin-burillier/kinepy/assets/93446869/86fb79ad-6ebd-40fd-b010-c2c279667e6f">
+</p>
 
 # Hypothèses
 
