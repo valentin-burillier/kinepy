@@ -1,11 +1,10 @@
 import kinepy as k
 from kinepy.units import *
 import kinepy.tools as to
+import kinepy.gui as kd
 
 import numpy as np
 import matplotlib.pyplot as plt
-import kinepy.gui as gui
-
 
 #%%
 
@@ -54,20 +53,56 @@ sys.change_signs({'2 RRR': 1, '3 RRR': -1,'4 RRR': -1, '5 RRR': -1})
 
 #%%
 
-n, t = 1001, 10
+def phase(p, num, value, n):
+    num -= 1
+    M = np.zeros((3, n))
+    M[num] = np.linspace(p[num], value, n)
+    p[num] = value
+    M[(num+1)%3] = np.full((n,), p[(num+1)%3])
+    M[(num+2)%3] = np.full((n,), p[(num+2)%3])
+    return M
 
-l1 = np.linspace(3, 4.5, n)[::-1]
-l2 = np.linspace(3.5, 5.5, n)
-l3 = np.linspace(3, 3.98, n)
+def shape(n):
+    n //= 6
+    phases = []
+    p = [3, 3.5, 3] # 3-4.5, 3.5-5.5, 3-3.98
+    phases.append(phase(p, 2, 5.5, n))
+    phases.append(phase(p, 3, 3.98, n))
+    phases.append(phase(p, 1, 4.5, n))
+    phases.append(phase(p, 2, 3.5, n))
+    phases.append(phase(p, 3, 3, n))    
+    phases.append(phase(p, 1, 3, n))
+    return np.concatenate(phases, axis=1)
 
-sys.solve_kinematics([l1, l2, l3])
+def fill(n):
+    n = int(n**0.333)
+    L = []
+    for x1 in np.linspace(3, 4.5, n):
+        for x2 in np.linspace(3.5, 5.5, n):
+            for x3 in np.linspace(3, 3.98, n):
+                L.append([x1, x2, x3])
+    return np.array(L).T
+#%%
+sys.solve_kinematics(shape(1000))
+
+kd.system(sys)
+
+kd.figure_size((800, 800))
+kd.animation_time(10)
+kd.grid()
+kd.graduation()
+kd.dark_mode()
+kd.frames_of_reference()
+
+kd.show()
+
+#kd.save('pelleteuse.gif')
 
 #%%
 
-gui.system(sys)
-gui.show()
+plt.axis('equal')
 
-
-
-
-
+sys.solve_kinematics(fill(10000))
+p = s3.get_point((-0.5, -1))
+plt.scatter(p[0], p[1])
+plt.plot((-5, 0), (0, 0))
