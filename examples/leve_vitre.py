@@ -62,8 +62,9 @@ plt.ylabel(f'Input angular velocity (in {get_unit(ANGULAR_VELOCITY)})')
 #%%
 
 sys.solve_dynamics(angle, t)
-from kinepy.gui import display
-display(sys)
+import kinepy.gui as gui
+gui.system(sys)
+gui.show()
 #%%
 
 _ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])

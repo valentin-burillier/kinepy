@@ -30,6 +30,30 @@ class SystemManager:
                 self.solid_data_step1[s.rep].append(('lines', np.array(((0., 0.), (0., m_point[1]), m_point))))
         self.solid_data_step2[rev.s2.rep].append(('circle', (rev.p2, REVOLUTE_RADIUS)))
 
+    def prismatic_data(self, pri):
+        u1, u2 = unit(pri.a1), unit(pri.a2)
+        v1, v2 = pri.d1 * z_cross(u1), pri.d2 * z_cross(u2)
+
+        shape1 = np.einsum('ik,lk->li', rot(pri.a1 + np.pi * (pri.d1 > 0)), PRISMATIC) / self.scale0 + v1
+        m_point = shape1[PRISMATIC_MOUNTING_POINT]
+        self.solid_data_step2[pri.s1.rep].append(('polygon', shape1))
+        if not pri.s1.rep:
+            self.solid_data_step1[pri.s1.rep].append(('ground', m_point))
+        else:
+            self.solid_data_step1[pri.s1.rep].append(('lines', np.array(((0., 0.), (m_point[0], 0), m_point))))
+
+        offset = 3 * REVOLUTE_RADIUS / self.scale0
+        min_sliding, max_sliding = -min(pri.sliding) + offset, -max(pri.sliding) - offset
+        min_point, m_point, max_point = (
+            u2 * min_sliding + v2, u2 * (min_sliding + max_sliding) * .5 + v2, u2 * max_sliding + v2
+        )
+
+        self.solid_data_step1[pri.s2.rep].append(('line', np.array((min_point, max_point))))
+        if pri.s2.rep:
+            self.solid_data_step1[pri.s2.rep].append(('lines', np.array(((0., 0.), (m_point[0], 0), m_point))))
+        else:
+            self.solid_data_step1[pri.s2.rep].append(('ground', m_point))
+
     def pin_slot_data(self, pin):
         # Regions: GREEN, BLUE, RED, YELLOW
 
@@ -70,6 +94,7 @@ class SystemManager:
 
     get_data_dict = {
         1: 'revolute_data',
+        2: 'prismatic_data',
         3: 'pin_slot_data'
     }
 

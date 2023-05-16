@@ -4,7 +4,7 @@ import kinepy.tools as to
 
 import numpy as np
 import matplotlib.pyplot as plt
-from kinepy.gui import display
+import kinepy.gui as gui
 
 
 #%%
@@ -64,7 +64,8 @@ sys.solve_kinematics([l1, l2, l3])
 
 #%%
 
-display(sys, animation_time=t)
+gui.system(sys)
+gui.show()
 
 
 
