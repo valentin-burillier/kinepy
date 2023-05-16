@@ -1,6 +1,7 @@
 import kinepy as k
 from kinepy.units import *
 import kinepy.tools as to
+import kinepy.gui as kd
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,13 +63,19 @@ plt.ylabel(f'Input angular velocity (in {get_unit(ANGULAR_VELOCITY)})')
 #%%
 
 sys.solve_dynamics(angle, t)
-import kinepy.gui as gui
-gui.system(sys)
-gui.show()
+
 #%%
 
-_ = to.animate([[s2.get_point((-rB, 0)), ps2.point, r4.point, ps1.point], [s1.get_point((-rA, 0)), s1.origin]])
-# plt.show()
+kd.system(sys)
+
+kd.animation_time(t)
+kd.grid()
+kd.graduation()
+kd.light_mode()
+kd.dark_mode()
+kd.frames_of_reference()
+
+kd.show()
 
 #%%
 
@@ -131,8 +138,6 @@ plt.grid()
 plt.plot(time, input_torque)
 plt.xlabel(f'Time (in {get_unit(TIME)})')
 plt.ylabel(f'Input torque (in {get_unit(TORQUE)})')
-
-# plt.show()
 
 #%%
 
