@@ -71,7 +71,7 @@ On considère le schéma cinématique du lève-vitre suivant :
     <img width="50%" src="https://user-images.githubusercontent.com/93446869/231535482-95562610-c59b-4ea4-958c-6272ee5c9cb6.svg">
 </p>
 
-On se place dans les hypothèses de KinePy. On crée un système et l'on ajoute tous les solides qui composent le mécanisme ([doc ajout de solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-solide)). On approxime l'inertie des solides : la roue d'entrée est concidérée comme un cylindre et les deux bras comme des parallélépipèdes ([doc calcul de masse et d'inertie](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masse-et-dinertie)).
+On se place dans les hypothèses de KinePy. On crée un système et l'on ajoute tous les solides qui composent le mécanisme ([doc ajout de solide](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#ajout-de-solide)). On approxime l'inertie des solides : la roue d'entrée est concidérée comme un cylindre et les deux bras comme des parallélépipèdes ([doc calcul de masse et d'inertie](https://github.com/valentin-burillier/kinepy/blob/main/docs/tools.md#calcul-de-masse-et-dinertie)).
 
 ```python
 rA, rB, l = 7, 70, 130
@@ -99,9 +99,9 @@ N°	| Names
 4	| Glass
 ```
 
-On intègre chaque liaison au mécanisme avec un paramétrage correspondant au schéma cinématique ([doc ajout de liaisons](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-liaisons)).
+On intègre chaque liaison au mécanisme avec un paramétrage correspondant au schéma cinématique ([doc ajout de liaisons](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#ajout-de-liaisons)).
 
-Le mécanisme est composé d'un train d'engrenage simple. Cette relation lie le mouvement de la liaison `r1` à celui de `r2`. On considère un angle de pression de 20° et l'on met une valeur initiale de l'angle à 180° pour faciliter le pilotage ([doc engrenage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#ajout-de-relations)).
+Le mécanisme est composé d'un train d'engrenage simple. Cette relation lie le mouvement de la liaison `r1` à celui de `r2`. On considère un angle de pression de 20° et l'on met une valeur initiale de l'angle à 180° pour faciliter le pilotage ([doc engrenage](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#ajout-de-relations)).
 
 ```python
 r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
@@ -113,7 +113,7 @@ ps1 = sys.add_pin_slot(0, 3)
 ps2 = sys.add_pin_slot(4, 2, p2=(2*l, 0))
 ```
 
-Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur et cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#pilotage-et-blocage-du-mécanisme)).
+Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur et cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#pilotage-et-blocage-du-mécanisme)).
 
 ```
 sys.pilot(r1)
@@ -123,7 +123,7 @@ Current input order:
 (Rev(1/0): Angle)
 ```
 
-On peut maintenant établir les stratégies de résolution cinématique et dynamique ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#compilation)).
+On peut maintenant établir les stratégies de résolution cinématique et dynamique ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#compilation)).
 
 ```python
 sys.compile()
@@ -154,7 +154,7 @@ Current signs :
 4 RRP: 1
 ```
 
-Le système présente 2 boucles cinématiques signées. Pour déterminer les bons signes, on lance la suite du programme permettant de visualiser le système. Ainsi, on peut  savoir de manière simple si le mécanisme correspond au schéma cinématique. Après cette étape, on se rend compte qu'il est nécessaire de les changer. Pour ce faire, on utilise `change_signs()` ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/System.md#compilation)).
+Le système présente 2 boucles cinématiques signées. Pour déterminer les bons signes, on lance la suite du programme permettant de visualiser le système. Ainsi, on peut  savoir de manière simple si le mécanisme correspond au schéma cinématique. Après cette étape, on se rend compte qu'il est nécessaire de les changer. Pour ce faire, on utilise `change_signs()` ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#compilation)).
 
 ```python
 sys.change_signs({'3 RRP':-1, '4 RRP':-1})
