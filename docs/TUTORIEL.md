@@ -2,15 +2,15 @@ Ce fichier montre les fonctionnalités et la manière d'utiliser kinepy à trave
 
 # Sommaire
 
-- [Présentation du système](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#présentation-du-système)
-- [Initialisation de l'environement de travail](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#initialisation-de-lenvironement-de-travail)
-- [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#modélisation-du-mécanisme)
-- [Ajout d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#ajout-defforts-extérieurs)
-- [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#simulation-du-mécanisme)
-- [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#affichage-du-mécanisme)
-- [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#récupération-de-données-cinématiques)
-- [Récupération de données sur les efforts internes](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#récupération-de-données-sur-les-efforts-internes)
-- [Optimisation de paramètres](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md#optimisation-de-paramètres)
+- [Présentation du système](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#présentation-du-système)
+- [Initialisation de l'environement de travail](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#initialisation-de-lenvironement-de-travail)
+- [Modélisation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#modélisation-du-mécanisme)
+- [Ajout d'efforts extérieurs](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#ajout-defforts-extérieurs)
+- [Simulation du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#simulation-du-mécanisme)
+- [Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#affichage-du-mécanisme)
+- [Récupération de données cinématiques](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#récupération-de-données-cinématiques)
+- [Récupération de données sur les efforts internes](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#récupération-de-données-sur-les-efforts-internes)
+- [Optimisation de paramètres](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#optimisation-de-paramètres)
 
 # Présentation du système
 
@@ -154,7 +154,7 @@ Current signs :
 4 RRP: 1
 ```
 
-Le système présente 2 boucles cinématiques signées. Pour déterminer les bons signes, on lance la suite du programme permettant de visualiser le système. Ainsi, on peut  savoir de manière simple si le mécanisme correspond au schéma cinématique. Après cette étape, on se rend compte qu'il est nécessaire de les changer. Pour ce faire, on utilise `change_signs()` ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#compilation)).
+Le système présente 2 boucles cinématiques signées. Pour déterminer les bons signes, on lance la suite du programme permettant de visualiser le système ([Affichage du mécanisme](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md#affichage-du-mécanisme)). Ainsi, on peut savoir de manière simple si le mécanisme correspond au schéma cinématique. Après cette étape, on se rend compte qu'il est nécessaire de les changer. Pour ce faire, on utilise `change_signs()` ([doc compilation](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#compilation)).
 
 ```python
 sys.change_signs({'3 RRP':-1, '4 RRP':-1})
@@ -199,7 +199,7 @@ plt.show()
 
 # Affichage du mécanisme
 
-On affiche maintenant le schéma cinématique animé de la simulation. On utilise plusieurs méthodes pour paramétrés l'animation (voir [doc schéma cinématique](https://github.com/valentin-burillier/kinepy/blob/main/docs/kinematics%20diagram.md)).
+On affiche maintenant le schéma cinématique animé de la simulation. On utilise plusieurs méthodes pour paramétrés l'animation ([doc schéma cinématique](https://github.com/valentin-burillier/kinepy/blob/main/docs/kinematics%20diagram.md)).
 
 ```python
 kd.system(sys)
