@@ -11,5 +11,6 @@ setup(
     url='https://github.com/valentin-burillier/kinepy',
     requires=['numpy', 'matplotlib', 'pygame'],
     keywords=['robotics', 'simulation', 'dynamics', 'kinematics', 'statics', 'inverse-kinematics', 'mechanism'],
-    package_data={'kinepy.gui': ['logo.ico']}
+    package_data={'kinepy.gui': ['logo.ico']},
+    long_description='README.md'
 )
