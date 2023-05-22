@@ -5,7 +5,7 @@ setup(
     packages=[
         'kinepy', 'kinepy.interface', 'kinepy.gui', 'kinepy.objects', 'kinepy.math', 'kinepy.compilation'
     ],
-    version='0.1.1',
+    version='0.1.2',
     description='Python library dedicated to plane mechanism simulation',
     author='Loïc Chevalier - Valentin Burillier',
     url='https://github.com/valentin-burillier/kinepy',
