@@ -1,5 +1,9 @@
 from setuptools import setup
 
+with open('README.md') as README:
+    long_desc = README.read()
+
+
 setup(
     name='kinepy',
     packages=[
@@ -12,6 +16,6 @@ setup(
     requires=['numpy', 'matplotlib', 'pygame'],
     keywords=['robotics', 'simulation', 'dynamics', 'kinematics', 'statics', 'inverse-kinematics', 'mechanism'],
     package_data={'kinepy.gui': ['logo.ico']},
-    long_description='README.md',
+    long_description=long_desc,
     long_description_content_type='text/markdown'
 )
