@@ -1,6 +1,7 @@
 import kinepy.gui.gui_class as _g
 from PIL.Image import frombytes as _from_bytes
-
+from kinepy.interface.decorators import physics_input_function as _phy
+from kinepy.units import TIME as _TIME
 
 _GUI_VARIABLES = {
     'frames_of_reference': False,
@@ -38,6 +39,7 @@ def figure_size(value=(640, 480)):
     _GUI_VARIABLES['figure_size'] = value
 
 
+@_phy(_TIME)
 def animation_time(value=1.):
     """sets the duration of the animation in seconds"""
     _GUI_VARIABLES['animation_time'] = value

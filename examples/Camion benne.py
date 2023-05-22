@@ -4,7 +4,7 @@ import kinepy.tools as to
 
 import numpy as np
 import matplotlib.pyplot as plt
-from kinepy.gui import display
+import kinepy.gui as gui
 
 
 #%%
@@ -48,7 +48,11 @@ sys.solve_statics(l)
 
 #%%
 
-display(sys, animation_time=t)
+gui.system(sys)
+gui.grid()
+gui.graduation()
+gui.animation_time(t)
+gui.show()
 
 #%%
 
