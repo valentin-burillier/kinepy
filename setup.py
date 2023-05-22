@@ -12,5 +12,6 @@ setup(
     requires=['numpy', 'matplotlib', 'pygame'],
     keywords=['robotics', 'simulation', 'dynamics', 'kinematics', 'statics', 'inverse-kinematics', 'mechanism'],
     package_data={'kinepy.gui': ['logo.ico']},
-    long_description='README.md'
+    long_description='README.md',
+    long_description_content_type='text/markdown'
 )
