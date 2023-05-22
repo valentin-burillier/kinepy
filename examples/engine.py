@@ -43,7 +43,7 @@ kd.animation_time(t)
 kd.grid()
 kd.graduation()
 kd.light_mode()
-kd.dark_mode()
+# kd.dark_mode()
 kd.frames_of_reference()
 
 kd.show()
