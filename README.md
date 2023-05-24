@@ -17,7 +17,7 @@
 
 # Documentation et pré-requis
 
-Nous vous invitons à aller voir le fichier [tutoriel](https://github.com/valentin-burillier/kinepy/blob/main/docs/utiliser_kinepy.md) montrant dans le détail comment simuler un mécanisme. Ce fichier renvoit sur la documentation des éléments utiliser.
+Nous vous invitons à aller voir le fichier [tutoriel](https://github.com/valentin-burillier/kinepy/blob/main/docs/TUTORIEL.md) montrant dans le détail comment simuler un mécanisme. Ce fichier renvoit sur la documentation des éléments utiliser.
 
 La documentation compléte est accessible [ici](https://github.com/valentin-burillier/kinepy/blob/main/docs).
 
