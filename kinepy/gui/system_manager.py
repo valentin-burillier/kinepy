@@ -4,7 +4,9 @@ from kinepy.math.calculus import derivative_vec
 
 
 class SystemManager:
-    def __init__(self, system, scale0, points, speeds, forces, torques):
+    force_scale = speed_scale = 0.
+
+    def __init__(self, system, scale0, points, speeds, forces, torques,  joint_efforts):
         self.scale0 = scale0
 
         # shapes, mounting points of joints
@@ -22,8 +24,16 @@ class SystemManager:
             self.point_data(s, p)
             if trace:
                 self.traces.append((s, s.origin + rvec(s.angle, p)))
+
+        for s, p in speeds:
+            self.update_speed_scale(s, p)
         for s, p in speeds:
             self.speed_data(s, p)
+
+        for j, rev in joint_efforts:
+            self.effort_scales(j)
+        for j, rev in joint_efforts:
+            self.effort_data(j, rev)
 
     def revolute_data(self, rev):
         # Regions: GREEN, BLUE, RED, YELLOW
@@ -135,8 +145,57 @@ class SystemManager:
         mag = sq_mag(speed) ** .5
         angle = np.arccos(speed[0] / mag) * (2 * (speed[1] > 0) - 1)
 
-        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag * 20
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.speed_scale
         self.solid_data_step2[solid.rep].append(('arrow', (real_point, shape)))
+
+    def rev_effort(self, rev, reverse):
+        real_point = rev.s1.origin + rvec(rev.s1.angle, rev.p1)
+        mag = sq_mag(rev.force) ** .5
+        f = (1, -1)[reverse]
+        angle = np.arccos(f * rev.force[0] / mag) * (2 * (f * rev.force[1] > 0) - 1)
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
+
+        self.solid_data_step2[(rev.s1.rep, rev.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
+
+    def pri_effort(self, pri, reverse):
+        pass
+
+    def pin_effort(self, pin, reverse):
+        pass
+
+    effort_data_dict = {
+        1: 'rev_effort',
+        2: 'pri_effort',
+        3: 'pin_effort'
+    }
+
+    def effort_data(self, j, reverse):
+        getattr(self, self.effort_data_dict[j.id_])(j, reverse)
+
+    def rev_scales(self, rev):
+        mag = sq_mag(rev.force) ** .5
+        self.force_scale = max(self.force_scale, mag.max())
+
+    def pri_scales(self, pri):
+        pass
+
+    def pin_scales(self, pin):
+        pass
+
+    effort_scales_dict = {
+        1: 'rev_scales',
+        2: 'pri_scales',
+        3: 'pin_scales'
+    }
+
+    def effort_scales(self, j):
+        getattr(self, self.effort_scales_dict[j.id_])(j)
+
+    def update_speed_scale(self, solid, point):
+        real_point = solid.origin + rvec(solid.angle, point)
+        speed = derivative_vec(real_point, 1.)
+        mag = sq_mag(speed) ** .5
+        self.speed_scale = max(self.speed_scale, mag[1:-1].max())
 
     @staticmethod
     def arrow(camera, color, solid, data):

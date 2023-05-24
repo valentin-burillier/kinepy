@@ -15,7 +15,8 @@ _GUI_VARIABLES = {
     'points': [],
     'speeds': [],
     'forces': [],
-    'torques': []
+    'torques': [],
+    'joint_efforts': []
 }
 
 
@@ -37,6 +38,10 @@ def add_force(solid, force, point):
     solid.add_force(force, point)
     f, _, p = solid.external_actions.external[-1]
     _GUI_VARIABLES['forces'].append((_get_obj(solid), p, f))
+
+
+def add_joint_effort(joint, reverse=False):
+    _GUI_VARIABLES['joint_efforts'].append((_get_obj(joint), reverse))
 
 
 def add_torque(solid, torque):
@@ -105,5 +110,5 @@ def save(file_name: str):
         images.append(_from_bytes('RGB', size, _g.pg.image.tostring(gui.surface.subsurface((0, 0) + size), 'RGB', False)))
         gui.camera.animation_state += gui.camera.animation_speed
 
-    print('duration', 1000. / _g.FPS)
+    # print('duration', 1000. / _g.FPS)
     images[0].save(file_name, append_images=images[1:], save_all=True, optimize=False, duration=1000. / _g.FPS, loop=0)
