@@ -1,8 +1,29 @@
 from kinepy.gui.drawing_tool import *
-from kinepy.math.geometry import unit, z_cross
+from kinepy.math.geometry import unit, z_cross, rvec, sq_mag
+from kinepy.math.calculus import derivative_vec
 
 
 class SystemManager:
+    def __init__(self, system, scale0, points, speeds, forces, torques):
+        self.scale0 = scale0
+
+        # shapes, mounting points of joints
+        self.solid_data_step1 = tuple([] for _ in system.sols)
+        self.solid_data_step2 = tuple([] for _ in system.sols)
+        self.sols = system.sols
+
+        for joint in system.joints:
+            if joint.id_ in self.get_data_dict:
+                self.get_data(joint)
+
+        self.traces = []
+
+        for s, p, trace in points:
+            self.point_data(s, p)
+            if trace:
+                self.traces.append((s, s.origin + rvec(s.angle, p)))
+        for s, p in speeds:
+            self.speed_data(s, p)
 
     def revolute_data(self, rev):
         # Regions: GREEN, BLUE, RED, YELLOW
@@ -101,17 +122,33 @@ class SystemManager:
     def get_data(self, joint):
         getattr(self, self.get_data_dict[joint.id_])(joint)
 
-    def __init__(self, system, additional_points, scale0):
-        self.scale0 = scale0
+    def point_data(self, solid, point):
+        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5)))
+        self.solid_data_step1[solid.rep].append(('lines', np.array(((0., 0.), (point[0], 0), point))))
 
-        # shapes, mounting points of joints
-        self.solid_data_step1 = tuple([] for _ in system.sols)
-        self.solid_data_step2 = tuple([] for _ in system.sols)
-        self.sols = system.sols
+    def speed_data(self, solid, point):
+        self.solid_data_step1[solid.rep].append(('lines', np.array(((0., 0.), (point[0], 0), point))))
+        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5)))
 
-        for joint in system.joints:
-            if joint.id_ in self.get_data_dict:
-                self.get_data(joint)
+        real_point = solid.origin + rvec(solid.angle, point)
+        speed = derivative_vec(real_point, 1.)
+        mag = sq_mag(speed) ** .5
+        angle = np.arccos(speed[0] / mag) * (2 * (speed[1] > 0) - 1)
+
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag * 20
+        self.solid_data_step2[solid.rep].append(('arrow', (real_point, shape)))
+
+    @staticmethod
+    def arrow(camera, color, solid, data):
+        frame = int(camera.animation_state)
+        point, shape = data
+        shape = camera.real_to_screen(point[:, frame]) + shape[:, :, frame] * camera.scale * camera.zoom
+        pg.draw.polygon(
+            camera.surface,
+            color,
+            shape,
+            0
+        )
 
     @staticmethod
     def shape_to_screen(camera, solid, shape):
@@ -192,6 +229,21 @@ class SystemManager:
             )
 
     def draw(self, camera):
+        cam_center, surf_center = (
+            np.array(camera.camera_area.center)[:, None], np.array(camera.surface.get_rect().center)[:, None]
+        )
+
+        for s, trace in self.traces:
+            pg.draw.lines(
+                camera.surface,
+                solid_color(s.rep),
+                False,
+                np.swapaxes(np.int32(
+                    (trace - cam_center) * camera.scale * camera.zoom * ((1,), (-1,)) + surf_center
+                ), 0, 1),
+                2
+            )
+
         for solid, solid_data in zip(self.sols, self.solid_data_step1):
             color = solid_color(solid.rep)
             for shape, data in solid_data:

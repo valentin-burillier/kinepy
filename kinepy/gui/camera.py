@@ -9,7 +9,7 @@ class Camera:
     scale = scale0 = zoom = 1.
     animation_state, animation_speed = 0, .6
 
-    def __init__(self, surface, system, display_frames, background):
+    def __init__(self, surface, system, display_frames, background, points, speeds, forces, torques):
         self.system = get_object(system)
         self.display_frames = display_frames
 
@@ -17,12 +17,12 @@ class Camera:
         self.background = background
         self.system_area = self.camera_area = Rect(0, 0, 0, 0)
 
-        self.points = gather_points(self.system)
+        self.points = gather_points(self.system, points, speeds, forces)
         self.set_bound_box(self.points)
         self.set_scale()
         self.scale0 = self.scale
 
-        self.sys_mgr = SystemManager(self.system, (), self.scale0)
+        self.sys_mgr = SystemManager(self.system, self.scale0, points, speeds, forces, torques)
 
     def set_bound_box(self, points: tuple):
         min_ = np.amin(points, axis=(0, 2))

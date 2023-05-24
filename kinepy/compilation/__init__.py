@@ -132,7 +132,7 @@ class Compiler:
         self.solved = [False] * len(joints)
         # eqs are the equivalence classes of the relation: "<x>'s and <y>'s relative positions are solved"
         self.eqs = [(i,) for i in range(len(solids))]
-        # correspondance of solid and eqs, eqs are also joint_graph's vertices
+        # correspondence of solid and eqs, eqs are also joint_graph's vertices
         self.before_pilot_mapping = self.sol_to_vertex = list(range(len(solids)))
 
         running = True

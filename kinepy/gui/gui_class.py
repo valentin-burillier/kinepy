@@ -12,8 +12,9 @@ class GUI:
     allow_moving = False
     camera_pos = 0, 0
 
-    def __init__(self, system, background_color, animation_time, frames_of_reference, grid, graduations, figure_size, saving=False):
+    def __init__(self, system, background_color, animation_time, frames_of_reference, grid, graduations, figure_size, points, speeds, forces, torques, saving=False):
         self.grid = GridManager()
+
         self.grid.use_grid = grid
         self.grid.use_graduation = graduations
 
@@ -21,7 +22,7 @@ class GUI:
         w, h = figure_size
         w, h = w if not graduations else int(w / .7), h + 50 if not graduations else int(h / .85 + 50)
         self.surface = pg.display.set_mode((w, h),  pg.RESIZABLE) if not saving else pg.Surface((w, h))
-        self.camera = Camera(self.replace_camera(), system, frames_of_reference, background_color)
+        self.camera = Camera(self.replace_camera(), system, frames_of_reference, background_color, points, speeds, forces, torques)
         self.grid.change_scale(self.camera)
 
         if not saving:
