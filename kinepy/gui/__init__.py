@@ -20,6 +20,24 @@ _GUI_VARIABLES = {
 }
 
 
+def _reset():
+    for key, var in {
+        'frames_of_reference': False,
+        'grid': False,
+        'graduations': False,
+        'figure_size': (640, 480),
+        'background_color': (0, 0, 0),
+        'animation_time': 5.,
+        'system': None,
+        'points': [],
+        'speeds': [],
+        'forces': [],
+        'torques': [],
+        'joint_efforts': []
+    }.items():
+        _GUI_VARIABLES[key] = var
+
+
 def system(s):
     """sets the system to be displayed"""
     _GUI_VARIABLES['system'] = s
@@ -91,6 +109,7 @@ def show():
     _g.pg.init()
     _g.GUI(**_GUI_VARIABLES).main_loop()
     _g.pg.quit()
+    _reset()
 
 
 def save(file_name: str):
@@ -112,3 +131,4 @@ def save(file_name: str):
 
     # print('duration', 1000. / _g.FPS)
     images[0].save(file_name, append_images=images[1:], save_all=True, optimize=False, duration=1000. / _g.FPS, loop=0)
+    _reset()

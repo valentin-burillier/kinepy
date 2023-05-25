@@ -174,7 +174,7 @@ class SystemManager:
 
     def rev_scales(self, rev):
         mag = sq_mag(rev.force) ** .5
-        self.force_scale = max(self.force_scale, mag.max())
+        self.force_scale = max(self.force_scale, np.nanmax(mag))
 
     def pri_scales(self, pri):
         pass
@@ -195,7 +195,7 @@ class SystemManager:
         real_point = solid.origin + rvec(solid.angle, point)
         speed = derivative_vec(real_point, 1.)
         mag = sq_mag(speed) ** .5
-        self.speed_scale = max(self.speed_scale, mag[1:-1].max())
+        self.speed_scale = max(self.speed_scale, np.nanmax(mag))
 
     @staticmethod
     def arrow(camera, color, solid, data):

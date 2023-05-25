@@ -93,6 +93,7 @@ kd.grid()
 kd.graduation()
 kd.dark_mode()
 kd.frames_of_reference()
+kd.add_point(s3, (0., -2), True, False)
 
 kd.show()
 
