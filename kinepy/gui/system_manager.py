@@ -151,19 +151,17 @@ class SystemManager:
     def rev_effort(self, rev, reverse):
         real_point = rev.s1.origin + rvec(rev.s1.angle, rev.p1)
         mag = sq_mag(rev.force) ** .5
-        f = (-1, 1)[reverse]
+        f = (1, -1)[reverse]
         angle = np.arccos(f * rev.force[0] / mag) * (2 * (f * rev.force[1] > 0) - 1)
         shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
 
-        self.solid_data_step2[(rev.s1.rep, rev.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
+        self.solid_data_step2[(rev.s2.rep, rev.s1.rep)[reverse]].append(('arrow', (real_point, shape)))
 
     def pri_effort(self, pri, reverse):
         real_point = pri.s1.origin + pri.d1 * z_cross(unit(pri.s1.angle + pri.a1))
         mag, angle = np.abs(pri.normal), pri.s1.angle + pri.a1 + np.pi * .5 * (1, -1)[reverse]
-        print(mag)
         shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
-        print(shape)
-        self.solid_data_step2[(pri.s1.rep, pri.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
+        self.solid_data_step2[(pri.s2.rep, pri.s1.rep)[reverse]].append(('arrow', (real_point, shape)))
 
         torque = pri.torque * (1, -1)[reverse]
 
@@ -172,7 +170,7 @@ class SystemManager:
         real_point = pin.s1.origin + pin.d1 * z_cross(u1) + pin.sliding * u1
         mag, angle = np.abs(pin.normal) ** .5, pin.s1.angle + pin.a1 + np.pi * .5 * (1, -1)[reverse]
         shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
-        self.solid_data_step2[(pin.s1.rep, pin.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
+        self.solid_data_step2[(pin.s2.rep, pin.s1.rep)[reverse]].append(('arrow', (real_point, shape)))
 
     effort_data_dict = {
         1: 'rev_effort',

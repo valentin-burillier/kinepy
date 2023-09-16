@@ -17,19 +17,39 @@ class Spring(obj.Spring, metaclass=MetaUnit):
 class SolidExternal:
     def __init__(self, solid):
         self.solid = solid
-        self.externals = []
+        self.externals, self.removed_indices = [], []
 
     def append(self, force, torque, point):
+        if self.removed_indices:
+            index = self.removed_indices.pop()
+            self.externals[index] = (
+                (lambda: force() * units.SYSTEM[FORCE]),
+                (lambda: torque() * units.SYSTEM[TORQUE]),
+                point
+            )
+            return self, index
+
         self.externals.append((
             (lambda: force() * units.SYSTEM[FORCE]),
             (lambda: torque() * units.SYSTEM[TORQUE]),
             point
         ))
+        return self, len(self.externals) - 1
+
+    def remove(self, key):
+        solid, index = key
+        if solid is not self:
+            raise ValueError('This mechanical action does not belong to this solid.')
+        if index in self.removed_indices:
+            raise ValueError('This mechanical action has already been removed.')
+        self.externals[index] = None, None, None
+        self.removed_indices.append(index)
 
     def set_ma(self, _):
         sol: obj.Solid = get_object(self.solid)
         for f, t, p in self.externals:
-            sol.add_mech_action(f(), sol.origin + rvec(sol.angle, p), t())
+            if f is not None and t is not None and p is not None:
+                sol.add_mech_action(f(), sol.origin + rvec(sol.angle, p), t())
 
 
 class RevoluteTorque:
