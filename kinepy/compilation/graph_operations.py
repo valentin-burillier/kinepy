@@ -70,7 +70,7 @@ def can_match(source_graph, dest_graph, vertex_map):
     return True
 
 
-def isomorph(src_graph, dest_graph, src_deg, dest_deg, vertex_map):
+def isomorphic(src_graph, dest_graph, src_deg, dest_deg, vertex_map):
     """
     Searches a sub-graph of dest that is isomorphic to src
     """
@@ -78,7 +78,7 @@ def isomorph(src_graph, dest_graph, src_deg, dest_deg, vertex_map):
         return vertex_map
     for vertex in range(len(dest_graph)):
         if vertex not in vertex_map and inf(src_deg[len(vertex_map)], dest_deg[vertex]) and can_match(src_graph, dest_graph, vertex_map + (vertex,)):
-            new_map = isomorph(src_graph, dest_graph, src_deg, dest_deg, vertex_map + (vertex,))
+            new_map = isomorphic(src_graph, dest_graph, src_deg, dest_deg, vertex_map + (vertex,))
             if new_map:
                 return new_map
     return ()
@@ -87,7 +87,7 @@ def isomorph(src_graph, dest_graph, src_deg, dest_deg, vertex_map):
 def match_graph(joint_graph) -> tuple[int, tuple]:
     dest_deg = degrees(joint_graph)
     for index, (graph, src_deg) in enumerate(zip(GRAPHS, DEGREES)):
-        vertex_map = isomorph(graph, joint_graph, src_deg, dest_deg, ())
+        vertex_map = isomorphic(graph, joint_graph, src_deg, dest_deg, ())
         if vertex_map:
             return index, vertex_map
     # s = '\n'.join(map(str, joint_graph))
@@ -96,7 +96,7 @@ def match_graph(joint_graph) -> tuple[int, tuple]:
 
 
 def vertices_fusion(joint_graph, vertices, eqs, sol_to_vertex):
-    """merges all eqs descriped in vertices, vertices is sorted"""
+    """merges all eqs described in vertices, vertices is sorted"""
     dest_vertex = vertices[0]
 
     # going in the reverse order, dest_vertiex is excluded

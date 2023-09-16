@@ -1,4 +1,4 @@
-from kinepy.compilation.graph_operations import isomorph, degrees, distances, vertices_fusion, make_joint_graph, \
+from kinepy.compilation.graph_operations import isomorphic, degrees, distances, vertices_fusion, make_joint_graph, \
     make_relation_graph, match_graph
 from kinepy.compilation.graphs import GRAPHS, DEGREES, SOLVED, NAMES, EDGES, SIGNS
 from kinepy.compilation.preparation import *
@@ -45,7 +45,7 @@ Solved relation {}
 
 DYNAMICS, KINEMATICS, BOTH = 0, 1, 2
 
-SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CSA, SET_ORIGIN, REC_GHOSTS = range(6)
+SOLVE_PILOT, SOLVE_GRAPH, SOLVE_RELATION, CONTINUOUS_SOLID_ANGLE, SET_ORIGIN, REC_GHOSTS = range(6)
 SOLVE_BLOCK, _, _, COMPUTE_MA, COMPUTE_INERTIA, _ = range(6)
 
 
@@ -170,7 +170,7 @@ class Compiler:
         if mode:
             print("Compiling done.\n")
         system = self.system
-        self.kin_instr += [(CSA, system), (SET_ORIGIN, system), (REC_GHOSTS, system)]
+        self.kin_instr += [(CONTINUOUS_SOLID_ANGLE, system), (SET_ORIGIN, system), (REC_GHOSTS, system)]
         self.dyn_instr = [(COMPUTE_INERTIA, system), (COMPUTE_MA, system), *self.dyn_instr, (REC_GHOSTS, system)]
         return (self.dyn_instr, self.kin_instr, (self.kin_instr, self.dyn_instr))[mode]
 
@@ -231,9 +231,11 @@ class Compiler:
         self.distances = distances(self.joint_graph)
 
     def _common_eq(self, joint1, joint2):
+        """Determines if 2 joints share exactly one eq. Returns their solids that belong to this eq.
+        Used for solving relations."""
         found = None
         for i, s_rep1 in enumerate((joint1.s1.rep, joint1.s2.rep)):
-            for j,  s_rep2 in enumerate((joint2.s1.rep, joint2.s2.rep)):
+            for j, s_rep2 in enumerate((joint2.s1.rep, joint2.s2.rep)):
                 if self.before_pilot_mapping[s_rep1] == self.before_pilot_mapping[s_rep2]:
                     if found is not None:
                         return

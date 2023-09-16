@@ -218,17 +218,20 @@ def set_unit(phy, value, unit='Unnamed unit'):
         value, unit = value
     SYSTEM.set(phy, value, unit)
     
-def get_unit(phy):
-    return SYSTEM.dct[phy][1]
-
-def get_value(phy):
-    return SYSTEM.dct[phy][0]
 
 set_unit.__doc__ = f"""Changes the unit
 phy is the physical quantity among {', '.join(PHYSICAL_QUANTITIES)}
 value is hom much of the SI unit your unit is: ex. 1 mm is 0.001 m so value is 0.001
 name is the name of your unit.
 You can use units imported from units.py"""
+
+
+def get_unit(phy):
+    return SYSTEM.dct[phy][1]
+
+
+def get_value(phy):
+    return SYSTEM.dct[phy][0]
 
 
 def set_unit_system(unit_system: dict):

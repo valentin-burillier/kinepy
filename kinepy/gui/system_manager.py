@@ -4,7 +4,7 @@ from kinepy.math.calculus import derivative_vec
 
 
 class SystemManager:
-    force_scale = speed_scale = 0.
+    force_scale = speed_scale = torque_scale = 0.
 
     def __init__(self, system, scale0, points, speeds, forces, torques,  joint_efforts):
         self.scale0 = scale0
@@ -151,17 +151,28 @@ class SystemManager:
     def rev_effort(self, rev, reverse):
         real_point = rev.s1.origin + rvec(rev.s1.angle, rev.p1)
         mag = sq_mag(rev.force) ** .5
-        f = (1, -1)[reverse]
+        f = (-1, 1)[reverse]
         angle = np.arccos(f * rev.force[0] / mag) * (2 * (f * rev.force[1] > 0) - 1)
         shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
 
         self.solid_data_step2[(rev.s1.rep, rev.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
 
     def pri_effort(self, pri, reverse):
-        pass
+        real_point = pri.s1.origin + pri.d1 * z_cross(unit(pri.s1.angle + pri.a1))
+        mag, angle = np.abs(pri.normal), pri.s1.angle + pri.a1 + np.pi * .5 * (1, -1)[reverse]
+        print(mag)
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
+        print(shape)
+        self.solid_data_step2[(pri.s1.rep, pri.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
+
+        torque = pri.torque * (1, -1)[reverse]
 
     def pin_effort(self, pin, reverse):
-        pass
+        u1 = unit(pin.s1.angle + pin.a1)
+        real_point = pin.s1.origin + pin.d1 * z_cross(u1) + pin.sliding * u1
+        mag, angle = np.abs(pin.normal) ** .5, pin.s1.angle + pin.a1 + np.pi * .5 * (1, -1)[reverse]
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.force_scale
+        self.solid_data_step2[(pin.s1.rep, pin.s2.rep)[reverse]].append(('arrow', (real_point, shape)))
 
     effort_data_dict = {
         1: 'rev_effort',
@@ -177,10 +188,14 @@ class SystemManager:
         self.force_scale = max(self.force_scale, np.nanmax(mag))
 
     def pri_scales(self, pri):
-        pass
+        mag = np.abs(pri.normal)
+        self.force_scale = max(self.force_scale, np.nanmax(mag))
+        mag = np.abs(pri.torque)
+        self.torque_scale = max(self.torque_scale, np.nanmax(mag))
 
     def pin_scales(self, pin):
-        pass
+        mag = np.abs(pin.normal)
+        self.force_scale = max(self.force_scale, np.nanmax(mag))
 
     effort_scales_dict = {
         1: 'rev_scales',

@@ -5,9 +5,9 @@ from kinepy.interface.decorators import physics_input_function as _phy, get_obje
 
 
 _GUI_VARIABLES = {
-    'frames_of_reference': False,
-    'grid': False,
-    'graduations': False,
+    'frames_of_reference': True,
+    'grid': True,
+    'graduations': True,
     'figure_size': (640, 480),
     'background_color': (0, 0, 0),
     'animation_time': 5.,
@@ -22,13 +22,6 @@ _GUI_VARIABLES = {
 
 def _reset():
     for key, var in {
-        'frames_of_reference': False,
-        'grid': False,
-        'graduations': False,
-        'figure_size': (640, 480),
-        'background_color': (0, 0, 0),
-        'animation_time': 5.,
-        'system': None,
         'points': [],
         'speeds': [],
         'forces': [],
