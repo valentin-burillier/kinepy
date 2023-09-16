@@ -1,6 +1,6 @@
 import pygame as pg
 import numpy as np
-from kinepy.math.geometry import rot, rvec
+from kinepy.math.geometry import rot, rvec, unit
 
 
 # --------------------------------------------- Predefined shapes ------------------------------------------------------
@@ -44,6 +44,11 @@ GROUND = np.array((
     (.5, -2), (1, -1)
 ), float) * REVOLUTE_RADIUS
 
+CIRCLE_ARROW = np.concatenate((
+    2.05 * unit(np.linspace(0, 3 * np.pi / 2, 20)),
+    ((0., 0.3, 0.), (-2.2, -2., -1.8)),
+    1.95 * unit(np.linspace(3 * np.pi / 2, 0, 20))
+), axis=1).swapaxes(0, 1) * REVOLUTE_RADIUS
 
 # -------------------------------------------------- Colors ------------------------------------------------------------
 

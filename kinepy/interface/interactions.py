@@ -37,7 +37,7 @@ class SolidExternal:
         return self, len(self.externals) - 1
 
     def remove(self, key):
-        solid, index = key
+        solid, index, *_ = key
         if solid is not self:
             raise ValueError('This mechanical action does not belong to this solid.')
         if index in self.removed_indices:

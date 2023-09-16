@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.gui.drawing_tool import *
 from kinepy.math.geometry import unit, z_cross, rvec, sq_mag
 from kinepy.math.calculus import derivative_vec
@@ -164,6 +166,11 @@ class SystemManager:
         self.solid_data_step2[(pri.s2.rep, pri.s1.rep)[reverse]].append(('arrow', (real_point, shape)))
 
         torque = pri.torque * (1, -1)[reverse]
+        shape = np.einsum(
+            'ikn,lk->lin',
+            rot(-(pri.s1.angle + pri.a1)), CIRCLE_ARROW / self.scale0
+        ) * torque / self.torque_scale + pri.d1 * z_cross(unit(pri.s1.angle + pri.a1))
+        self.solid_data_step2[(pri.s2.rep, pri.s1.rep)[reverse]].append(('arrow', (pri.s1.origin, shape)))
 
     def pin_effort(self, pin, reverse):
         u1 = unit(pin.s1.angle + pin.a1)

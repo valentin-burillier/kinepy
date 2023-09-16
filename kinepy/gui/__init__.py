@@ -44,22 +44,15 @@ def add_point(solid, point, trace=True, speed=False):
     _GUI_VARIABLES['speeds'].append((_get_obj(solid), point * _units.SYSTEM[_units.LENGTH]))
 
 
-def add_force(solid, force, point):
-    """Behaves just like Solid.add_force but adds the point and the force to the plotting list"""
-    solid.add_force(force, point)
-    f, _, p = solid.external_actions.external[-1]
-    _GUI_VARIABLES['forces'].append((_get_obj(solid), p, f))
-
-
-def add_joint_effort(joint, reverse=False):
+def display_joint_efforts(joint, reverse=False):
     _GUI_VARIABLES['joint_efforts'].append((_get_obj(joint), reverse))
 
 
-def add_torque(solid, torque):
-    """Behaves just like Solid.add_torque but adds the torque to the plotting list"""
-    solid.add_torque(torque)
-    _, t, _ = solid.external_actions.external[-1]
-    _GUI_VARIABLES['torques'].append((_get_obj(solid), t))
+def display_mechanical_action(key):
+    """Displays the given mechanical action represented by the key returned by Solid.add_torque/Solid.add_force"""
+    solid_external, index, _type, *_ = key
+    force, torque, point = solid_external.externals[index]
+    _GUI_VARIABLES[f'{_type}s'].append((_get_obj(solid_external.solid), point, force if _type == 'force' else torque))
 
 
 def grid(value=True):
