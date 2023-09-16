@@ -45,9 +45,9 @@ GROUND = np.array((
 ), float) * REVOLUTE_RADIUS
 
 CIRCLE_ARROW = np.concatenate((
-    2.05 * unit(np.linspace(0, 3 * np.pi / 2, 20)),
-    ((0., 0.3, 0.), (-2.2, -2., -1.8)),
-    1.95 * unit(np.linspace(3 * np.pi / 2, 0, 20))
+    2.12 * unit(np.linspace(0, 3 * np.pi / 2, 40)),
+    ((-0.2, 0.5, -0.2), (-2.4, -2., -1.6)),
+    1.88 * unit(np.linspace(3 * np.pi / 2, 0, 40))
 ), axis=1).swapaxes(0, 1) * REVOLUTE_RADIUS
 
 # -------------------------------------------------- Colors ------------------------------------------------------------
@@ -73,111 +73,3 @@ def draw_arrow(surface, color, start, end):
     polygon = np.einsum('ik,lk->li', rot(angle), ARROW * magnitude / 300) + start
     pg.draw.polygon(surface, color, polygon, 0)
 
-
-def prepare_rev(rev):
-    return rev.s2.origin + rvec(rev.s2.angle, rev.p2)
-
-
-def prepare_pri(pri):
-    p11 = rvec(pri.a1 + pri.s1.angle, (min(pri.sliding), pri.d1))
-    p12 = rvec(pri.a1 + pri.s1.angle, (max(pri.sliding), pri.d1))
-    p2 = rvec(pri.s2.angle + pri.a2, (0., pri.d2))
-    return pri.s1.origin + p11, pri.s1.origin + p12, pri.s2.origin + p2
-
-
-def prepare_pin(pin):
-    p11 = rvec(pin.a1 + pin.s1.angle, (min(pin.sliding), pin.d1))
-    p12 = rvec(pin.a1 + pin.s1.angle, (max(pin.sliding), pin.d1))
-    p2 = rvec(pin.s2.angle, pin.p2)
-    return pin.s1.origin + p11, pin.s1.origin + p12, pin.s2.origin + p2
-
-
-prepare = {
-    1: prepare_rev,
-    2: prepare_pri,
-    3: prepare_pin
-}
-
-
-def prepare_joints(joints):
-    return [prepare[j.id_](j) if j.id_ in prepare else () for j in joints]
-
-
-def draw_rev(self, rev, data):
-    pg.draw.circle(
-        self.surface,
-        self.background,
-        self.real_to_screen(data[:, int(self.animation_state)]),
-        REVOLUTE_RADIUS * self.scale / self.scale0 * self.zoom
-    )
-    pg.draw.circle(
-        self.surface,
-        solid_color(rev.s2.rep),
-        self.real_to_screen(data[:, int(self.animation_state)]),
-        REVOLUTE_RADIUS * self.scale / self.scale0 * self.zoom, 2
-    )
-
-
-def draw_pri(self, pri, data):
-    p1, p2, p3 = data
-    frame = int(self.animation_state)
-    pg.draw.line(
-        self.surface,
-        solid_color(pri.s1.rep),
-        self.real_to_screen(p1[:, frame]),
-        self.real_to_screen(p2[:, frame]),
-        2
-    )
-    rec = self.real_to_screen(p3[:, frame]) + np.einsum(
-        'ik,lk->li',
-        rot(-pri.s2.angle[frame] - pri.a2),
-        PRISMATIC * self.scale / self.scale0 * self.zoom
-    )
-    pg.draw.polygon(
-        self.surface,
-        self.background,
-        rec,
-        0
-    )
-    pg.draw.polygon(
-        self.surface,
-        solid_color(pri.s2.rep),
-        rec,
-        2
-    )
-
-
-def draw_pin(self, pin, data):
-    p1, p2, p3 = data
-    frame = int(self.animation_state)
-    pg.draw.line(
-        self.surface,
-        solid_color(pin.s1.rep),
-        self.real_to_screen(p1[:, frame]),
-        self.real_to_screen(p2[:, frame]),
-        2
-    )
-    rec = self.real_to_screen(p3[:, frame]) + np.einsum(
-        'ik,lk->li',
-        rot(-pin.s2.angle[frame]),
-        PIN_SLOT * self.scale / self.scale0 * self.zoom
-    )
-    pg.draw.polygon(
-        self.surface,
-        self.background,
-        rec,
-        0
-    )
-    pg.draw.polygon(
-        self.surface,
-        solid_color(pin.s2.rep),
-        rec,
-        2
-    )
-
-
-draw_joint = {
-    1: draw_rev,
-    2: draw_pri,
-    3: draw_pin
-}
