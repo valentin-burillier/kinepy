@@ -10,7 +10,7 @@ ARROW = np.array((
     (0, 10), (250., 10), (230, 40), (300., 0), (230, -40), (250., -10), (0, -10)
 )) * (1, .5)
 
-REVOLUTE_RADIUS = 8.
+REVOLUTE_RADIUS = 2.
 
 REVOLUTE = np.array((
     #       Mounting point

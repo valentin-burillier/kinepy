@@ -6,7 +6,8 @@ from kinepy.math.dynamic import trd, tmd
 
 
 class Joint:
-    tag, id_, dof, interaction, inputs, rep = 'Joint', 0, None, None, (), None
+    IDS = GENERIC, REVOLUTE, PRISMATIC, PIN_SLOT, RECTANGULAR = range(5)
+    tag, id_, dof, interaction, inputs, rep = 'Joint', GENERIC, None, None, (), None
     s1: Solid
     s2: Solid
 
@@ -24,7 +25,7 @@ class Joint:
 
 
 class RevoluteJoint(Joint):
-    id_, tag, dof, inputs = 1, 'Rev', 1, (ANGLE,)
+    id_, tag, dof, inputs = Joint.REVOLUTE, 'Rev', 1, (ANGLE,)
     force = torque = angle = None
 
     def __init__(self, s1, s2, p1, p2, name):
@@ -65,7 +66,7 @@ class RevoluteJoint(Joint):
 
 
 class PrismaticJoint(Joint):
-    id_, tag, dof, inputs = 2, 'Pri', 1, (LENGTH,)
+    id_, tag, dof, inputs = Joint.PRISMATIC, 'Pri', 1, (LENGTH,)
     normal = tangent = torque = sliding = None
 
     def __init__(self, s1, s2, a1, d1, a2, d2, name):
@@ -146,7 +147,7 @@ class GhostPrismatic(Joint):
 
 
 class PinSlotJoint(Joint):
-    id_, tag, dof, inputs = 3, 'PinSlot', 2, (LENGTH, ANGLE)
+    id_, tag, dof, inputs = Joint.PIN_SLOT, 'PinSlot', 2, (LENGTH, ANGLE)
     normal = tangent = torque = sliding = angle = None
 
     def __init__(self, s1, s2, a1, d1, p2, name):
@@ -192,7 +193,7 @@ class PinSlotJoint(Joint):
 
 
 class RectangularJoint(Joint):
-    id_, tag, dof, inputs = 4, 'Rec', 2, (f'X ({LENGTH})', f'Y ({LENGTH})')
+    id_, tag, dof, inputs = Joint.RECTANGULAR, 'Rec', 2, (f'X ({LENGTH})', f'Y ({LENGTH})')
     torque = sliding = force_x = force_y = None
 
     def __init__(self, s1, s2, angle, a1, a2, p1, p2, name):

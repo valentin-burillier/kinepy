@@ -29,7 +29,7 @@ def gather_points(system, points, speeds, forces):
         points_.append(s.origin)
     for s, point in speeds:
         points_.append(s.origin + rvec(s.angle, point))
-    for s, point, _ in forces + points:
+    for s, point, *_ in forces + points:
         points_.append(s.origin + rvec(s.angle, point))
 
     for joint in system.joints:

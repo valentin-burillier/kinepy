@@ -1,8 +1,9 @@
 import numpy as np
-
 from kinepy.gui.drawing_tool import *
-from kinepy.math.geometry import unit, z_cross, rvec, sq_mag
+from kinepy.math.geometry import unit, z_cross, rvec, sq_mag, get_point
 from kinepy.math.calculus import derivative_vec
+from kinepy.objects.joints import Joint
+from kinepy.objects.relations import LinearRelation
 
 
 class SystemManager:
@@ -16,12 +17,13 @@ class SystemManager:
         self.solid_data_step2 = tuple([] for _ in system.sols)
         self.sols = system.sols
 
+        for relation in system.relations:
+            self.get_relation_data(relation)
+
         for joint in system.joints:
-            if joint.id_ in self.get_data_dict:
-                self.get_data(joint)
+            self.get_joint_data(joint)
 
         self.traces = []
-
         for s, p, trace in points:
             self.point_data(s, p)
             if trace:
@@ -32,11 +34,49 @@ class SystemManager:
         for s, p in speeds:
             self.speed_data(s, p)
 
+        for s, p, f in forces:
+            self.update_force_scale(f())
+        for s, p, f in forces:
+            self.force_data(s, p, f())
+
+        for s, p, t in torques:
+            self.update_torque_scale(t())
+        for s, p, t in torques:
+            self.torque_data(s, t())
+
         for j, rev in joint_efforts:
             self.effort_scales(j)
         for j, rev in joint_efforts:
             self.effort_data(j, rev)
 
+    def do_nothing(self, *args, **kwargs):
+        """Void function"""
+
+    # relation positional data
+    # region
+    def gears_data(self, gear):
+        r1, r2 = gear.get_radii()
+        d = np.nanmax(sq_mag(get_point(gear.j1, 0) - get_point(gear.j2, 0)) ** .5)
+        print(r1 * self.scale0, r2 * self.scale0)
+        s1, p1 = (gear.j1.s1, gear.j1.s2)[not gear.common_eq[0]], (gear.j1.p1, gear.j1.p2)[not gear.common_eq[0]]
+        self.solid_data_step1[s1.rep].append(('circle', (p1, r1 * d * self.scale0, False)))
+        self.solid_data_step1[s1.rep].append(('lines', np.array((p1, p1 + r1 * d * unit(0)))))
+
+        s2, p2 = (gear.j2.s1, gear.j2.s2)[not gear.common_eq[1]], (gear.j2.p1, gear.j2.p2)[not gear.common_eq[1]]
+        self.solid_data_step1[s2.rep].append(('circle', (p2, r2 * d * self.scale0, False)))
+        self.solid_data_step1[s2.rep].append(('lines', np.array((p2, p2 + r2 * d * unit(gear.v0)))))
+
+    relation_data = {
+        LinearRelation.GEAR: 'gears_data',
+    }
+
+    def get_relation_data(self, rel: LinearRelation):
+        getattr(self, self.relation_data.get(rel.id_, 'do_nothing'))(rel)
+
+    # endregion
+
+    # joint positional data
+    # region
     def revolute_data(self, rev):
         # Regions: GREEN, BLUE, RED, YELLOW
         offset_angles = -np.pi * .5, 0, np.pi, np.pi * .5
@@ -61,7 +101,7 @@ class SystemManager:
                 self.solid_data_step1[s.rep].append(('lines', np.array(((0., 0.), (m_point[0], 0), m_point))))
             else:
                 self.solid_data_step1[s.rep].append(('lines', np.array(((0., 0.), (0., m_point[1]), m_point))))
-        self.solid_data_step2[rev.s2.rep].append(('circle', (rev.p2, REVOLUTE_RADIUS)))
+        self.solid_data_step2[rev.s2.rep].append(('circle', (rev.p2, REVOLUTE_RADIUS, True)))
 
     def prismatic_data(self, pri):
         u1, u2 = unit(pri.a1), unit(pri.a2)
@@ -126,21 +166,24 @@ class SystemManager:
             self.solid_data_step1[pin.s2.rep].append(('lines', np.array(((0., 0.), (0., m_point[1]), m_point))))
 
     get_data_dict = {
-        1: 'revolute_data',
-        2: 'prismatic_data',
-        3: 'pin_slot_data'
+        Joint.REVOLUTE: 'revolute_data',
+        Joint.PRISMATIC: 'prismatic_data',
+        Joint.PIN_SLOT: 'pin_slot_data'
     }
 
-    def get_data(self, joint):
-        getattr(self, self.get_data_dict[joint.id_])(joint)
+    def get_joint_data(self, joint):
+        getattr(self, self.get_data_dict.get(joint.id_, 'do_nothing'))(joint)
+    # endregion
 
+    # single objects data
+    # region
     def point_data(self, solid, point):
-        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5)))
+        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5, True)))
         self.solid_data_step1[solid.rep].append(('lines', np.array(((0., 0.), (point[0], 0), point))))
 
     def speed_data(self, solid, point):
         self.solid_data_step1[solid.rep].append(('lines', np.array(((0., 0.), (point[0], 0), point))))
-        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5)))
+        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5, True)))
 
         real_point = solid.origin + rvec(solid.angle, point)
         speed = derivative_vec(real_point, 1.)
@@ -150,6 +193,27 @@ class SystemManager:
         shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.speed_scale
         self.solid_data_step2[solid.rep].append(('arrow', (real_point, shape)))
 
+    def force_data(self, solid, point, force):
+        self.solid_data_step1[solid.rep].append(('lines', np.array(((0., 0.), (point[0], 0), point))))
+        self.solid_data_step2[solid.rep].append(('circle', (point, REVOLUTE_RADIUS * .5, True)))
+
+        real_point = solid.origin + rvec(solid.angle, point)
+        mag = sq_mag(force) ** .5
+        angle = np.arccos(force[0] / mag) * (2 * (force[1] > 0) - 1)
+
+        shape = np.einsum('ikn,lk->lin', rot(-angle), ARROW / self.scale0) * mag / self.speed_scale
+        self.solid_data_step2[solid.rep].append(('arrow', (real_point, shape)))
+
+    def torque_data(self, solid, torque):
+        shape = np.einsum(
+            'ikn,lk->lin',
+            rot(-solid.angle), CIRCLE_ARROW / self.scale0
+        ) * torque / self.torque_scale
+        self.solid_data_step2[solid.rep].append(('arrow', (solid.origin, shape)))
+    # endregion
+
+    # joint effort data
+    # region
     def rev_effort(self, rev, reverse):
         real_point = rev.s1.origin + rvec(rev.s1.angle, rev.p1)
         mag = sq_mag(rev.force) ** .5
@@ -180,13 +244,17 @@ class SystemManager:
         self.solid_data_step2[(pin.s2.rep, pin.s1.rep)[reverse]].append(('arrow', (real_point, shape)))
 
     effort_data_dict = {
-        1: 'rev_effort',
-        2: 'pri_effort',
-        3: 'pin_effort'
+        Joint.REVOLUTE: 'rev_effort',
+        Joint.PRISMATIC: 'pri_effort',
+        Joint.PIN_SLOT: 'pin_effort'
     }
 
     def effort_data(self, j, reverse):
-        getattr(self, self.effort_data_dict[j.id_])(j, reverse)
+        getattr(self, self.effort_data_dict.get(j.id_, 'do_nothing'))(j, reverse)
+    # endregion
+
+    # joint effort scales
+    # region
 
     def rev_scales(self, rev):
         mag = sq_mag(rev.force) ** .5
@@ -203,19 +271,35 @@ class SystemManager:
         self.force_scale = max(self.force_scale, np.nanmax(mag))
 
     effort_scales_dict = {
-        1: 'rev_scales',
-        2: 'pri_scales',
-        3: 'pin_scales'
+        Joint.REVOLUTE: 'rev_scales',
+        Joint.PRISMATIC: 'pri_scales',
+        Joint.PIN_SLOT: 'pin_scales'
     }
 
     def effort_scales(self, j):
-        getattr(self, self.effort_scales_dict[j.id_])(j)
+        getattr(self, self.effort_scales_dict.get(j.id_, 'do_nothing'))(j)
 
+    # endregion
+
+    # scale setters
+    # region
     def update_speed_scale(self, solid, point):
         real_point = solid.origin + rvec(solid.angle, point)
         speed = derivative_vec(real_point, 1.)
         mag = sq_mag(speed) ** .5
         self.speed_scale = max(self.speed_scale, np.nanmax(mag))
+
+    def update_force_scale(self, force):
+        mag = sq_mag(force) ** .5
+        self.force_scale = max(self.force_scale, np.nanmax(mag))
+
+    def update_torque_scale(self, torque):
+        mag = np.abs(torque)
+        self.torque_scale = max(self.torque_scale, np.nanmax(mag))
+    # endregion
+
+    # parts drawing
+    # region
 
     @staticmethod
     def arrow(camera, color, solid, data):
@@ -260,16 +344,19 @@ class SystemManager:
 
     @staticmethod
     def circle(camera, color, solid, circle):
-        p, rad = circle
+        p, rad, hide_bg = circle
         frame = int(camera.animation_state)
         point = camera.real_to_screen(solid.origin[:, frame] + rot(solid.angle[frame]) @ p)
-        pg.draw.circle(
-            camera.surface,
-            camera.background,
-            point,
-            rad * camera.scale * camera.zoom / camera.scale0,
-            0
-        )
+        if hide_bg:
+            pg.draw.circle(
+                camera.surface,
+                camera.background,
+                point,
+                rad * camera.scale * camera.zoom / camera.scale0,
+                0
+            )
+        else:
+            print(rad * camera.scale * camera.zoom / camera.scale0, end=',    ')
         pg.draw.circle(
             camera.surface,
             color,
@@ -277,6 +364,7 @@ class SystemManager:
             rad * camera.scale * camera.zoom / camera.scale0,
             2
         )
+
 
     @staticmethod
     def polygon(camera, color, solid, polygon):
@@ -306,8 +394,10 @@ class SystemManager:
                 ground[i + 1],
                 2
             )
+    # endregion
 
     def draw(self, camera):
+        print('\r', end='')
         cam_center, surf_center = (
             np.array(camera.camera_area.center)[:, None], np.array(camera.surface.get_rect().center)[:, None]
         )
