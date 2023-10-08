@@ -57,7 +57,7 @@ class SystemManager:
     def gears_data(self, gear):
         r1, r2 = gear.get_radii()
         d = np.nanmax(sq_mag(get_point(gear.j1, 0) - get_point(gear.j2, 0)) ** .5)
-        print(r1 * self.scale0, r2 * self.scale0)
+
         s1, p1 = (gear.j1.s1, gear.j1.s2)[not gear.common_eq[0]], (gear.j1.p1, gear.j1.p2)[not gear.common_eq[0]]
         self.solid_data_step1[s1.rep].append(('circle', (p1, r1 * d * self.scale0, False)))
         self.solid_data_step1[s1.rep].append(('lines', np.array((p1, p1 + r1 * d * unit(0)))))
@@ -355,8 +355,7 @@ class SystemManager:
                 rad * camera.scale * camera.zoom / camera.scale0,
                 0
             )
-        else:
-            print(rad * camera.scale * camera.zoom / camera.scale0, end=',    ')
+
         pg.draw.circle(
             camera.surface,
             color,
@@ -397,7 +396,6 @@ class SystemManager:
     # endregion
 
     def draw(self, camera):
-        print('\r', end='')
         cam_center, surf_center = (
             np.array(camera.camera_area.center)[:, None], np.array(camera.surface.get_rect().center)[:, None]
         )
