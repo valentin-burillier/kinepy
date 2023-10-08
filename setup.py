@@ -14,6 +14,7 @@ setup(
     author='Loïc Chevalier - Valentin Burillier',
     url='https://github.com/valentin-burillier/kinepy',
     requires=['numpy', 'matplotlib', 'pygame'],
+    install_requires=['numpy', 'matplotlib', 'pygame'],
     keywords=['robotics', 'simulation', 'dynamics', 'kinematics', 'statics', 'inverse-kinematics', 'mechanism'],
     package_data={'kinepy.gui': ['logo.ico']},
     long_description=long_desc,
