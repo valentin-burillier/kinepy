@@ -20,6 +20,12 @@
 - `dark_mode()` : Configure le mode sombre
 - `add_point(solid, point, trace=True, speed=False)` : Ajoute un point à tracer dans l'animation. L'argument `point` correspond aux coordonnées du point à afficher dans le repère de `solid`. L'argument `trace` permet d'afficher la trace du point et `speed` affiche le vecteur vitesse associer à ce point.
 
+## Naviguer dans la fenêtre
+
+- Stopper l'animation : pression sur la barre espace
+- Zoomer / Dézoomer : molette de la souris
+- Se déplacer dans l'animation : Maintenir clic gauche + déplacer la souris
+
 ## Enregistrer
 
 - `save(name)` : Enregistre l'animation sous le noms `name` au format gif
