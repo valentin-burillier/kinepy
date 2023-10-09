@@ -68,7 +68,7 @@ KinePy est installable avec pip :
 pip install kinepy
 ```
 
-*Notez que la version télécharger avec pip peut être bien antérieur au dépot le plus récent. Des fonctionnalités peuvent manquer.*
+*Notez que la version téléchargée avec pip peut être bien antérieur au dépot le plus récent. Des fonctionnalités peuvent manquer.*
 
 # Disclaimer
 
