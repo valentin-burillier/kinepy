@@ -58,7 +58,7 @@ s3 = sys.add_solid(name='Bielle')
 On néglige les frottements au niveau des liaisons mise à part celle du portail par rapport au bâti que l'on modélise comme un couple de frotement sec.
 
 ```python
-s1 = sys.add_solid(name='ventail', m=50, j=t.j_parallepiped(),  g=(f/2, 0))
+s1 = sys.add_solid(name='ventail', m=50, j=t.parallelepiped_inertia(),  g=(f/2, 0))
 s2 = sys.add_solid(name='bras')
 s3 = sys.add_solid(name='bielle')
 
@@ -85,7 +85,7 @@ sys.compile()
 Le système présente une boucle cinématique signée. De part la cohérence des résultats trouver avec ce qui est attendu, on détermine le signe.
 
 ```python
-sys.change_signs({'1 RRR':-1}}
+sys.change_signs({'1 RRR':-1}})
 
 time = 5
 input = t.direct_input(0, np.pi/2, time, 101)
