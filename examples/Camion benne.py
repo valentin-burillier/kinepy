@@ -52,8 +52,8 @@ gui.system(sys)
 gui.grid()
 gui.graduation()
 gui.animation_time(t)
-gui.add_joint_effort(r1, True)
-gui.add_joint_effort(r6, True)
+gui.display_joint_efforts(r1, True)
+gui.display_joint_efforts(r6, True)
 gui.show()
 
 #%%

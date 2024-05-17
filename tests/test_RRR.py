@@ -17,7 +17,7 @@ r3 = s.add_revolute(0, 3, (300., -70.), (250, 0.))
 
 s.pilot(r0)
 s.compile()
-s.solve_kinematics(np.linspace(0, 2 * np.math.pi, 1001))
+s.solve_kinematics(np.linspace(0, 2 * np.pi, 1001))
 
 anim = animate(((r0.point, r1.point, r2.point, r3.point, r0.point),), anim_time=2)
 plt.show()

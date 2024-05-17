@@ -170,8 +170,8 @@ def derivative(obj, t, *, phy=LENGTH):
     if phy not in DERIVATIVES:
         raise ValueError(f"This unit {phy} has no derivative ready to use")
     if len(obj.shape) == 1:
-        return np.diff(obj * SYSTEM[phy], append=np.nan) * len(obj) / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
-    return np.diff(obj * SYSTEM[phy], axis=1, append=np.nan) * obj.shape[1] / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
+        return np.diff(obj * SYSTEM[phy], append=np.nan) * (len(obj) - 1) / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
+    return np.diff(obj * SYSTEM[phy], axis=1, append=np.nan) * (obj.shape[1] - 1) / SYSTEM[TIME] / SYSTEM[DERIVATIVES[phy]] / t
 
 
 def second_derivative(obj, t, *, phy=LENGTH):
@@ -181,8 +181,8 @@ def second_derivative(obj, t, *, phy=LENGTH):
         raise ValueError(f"This unit {phy} has no second derivative ready to use")
     second = DERIVATIVES[DERIVATIVES[phy]]
     if len(obj.shape) == 1:
-        return np.diff(obj * SYSTEM[phy], append=np.nan) / SYSTEM[second] * (len(obj) / SYSTEM[TIME] / t) ** 2
-    return np.diff(obj * SYSTEM[phy], 2, axis=1, prepend=np.nan, append=np.nan) / SYSTEM[second] * (obj.shape[1] / SYSTEM[TIME] / t ** 2)
+        return np.diff(obj * SYSTEM[phy], append=np.nan) / SYSTEM[second] * ((len(obj) - 1) / SYSTEM[TIME] / t) ** 2
+    return np.diff(obj * SYSTEM[phy], 2, axis=1, prepend=np.nan, append=np.nan) / SYSTEM[second] * ((obj.shape[1]-1) / SYSTEM[TIME] / t ** 2)
 
 
 # ---------------------------------------------------- Mass ------------------------------------------------------------

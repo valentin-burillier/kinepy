@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import kinepy as k
 import kinepy.tools as t
 print(k)
-from kinepy.units import set_unit, show_units, LENGTH, METER, GOAT_HEIGHT
+from kinepy.units import set_unit, show_units, LENGTH, METER, GOAT_HEIGHT, ANGLE
 
 #%%
 
@@ -44,7 +44,7 @@ s2.add_force(F, (0, 0))
 
 #%%
   
-a = t.direct_input(0, 2*np.pi, T, n)
+a = t.direct_input(0, 2*np.pi, T, n, phy=ANGLE)
 sys.solve_dynamics(a)
 P1 = s1.get_point((R, 0))
 P2 = sys.ground.get_point((0, d))

@@ -162,14 +162,16 @@ def physics_input_function_variable(*phy_, output=units.VARIABLE_UNIT):
         defaults = function.__defaults__ if function.__defaults__ is not None else ()
         shift = cnt - len(defaults)
 
-        def g(*args, phy=units.ANGLE, **kwargs):
+        def g(*args, phy=None, **kwargs):
+            if phy is None:
+                raise ValueError("Please specify the \"phy\" keyword argument with a unit")
             dic = make_dict(phy)
             inputs = tuple(dic.get(x, x) for x in phy_)
             if output is None:
                 return function(*make_new_args(args, kwargs, inputs, f_args, shift, defaults, cnt))
             return function(*make_new_args(args, kwargs, inputs, f_args, shift, defaults, cnt)) / units.SYSTEM[dic.get(output, output)]
 
-        g.__doc__ = function.__doc__
+        g.__doc__ = "You must use 'phy' key word argument to describe your unit\n" + (function.__doc__ or "")
         return g
     return decor
 

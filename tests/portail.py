@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import kinepy as k
 import kinepy.tools as t
+import kinepy.units as units
 print(k)
 
 #%%
@@ -40,7 +41,7 @@ sys.compile()
 
 #%%
 
-a = t.direct_input(0, np.pi/2, T, n)
+a = t.direct_input(0, np.pi/2, T, n, phy=units.ANGLE)
 sys.solve_kinematics(a)
 
 #%%
@@ -51,19 +52,19 @@ sys.pilot(r3)
 sys.compile()
 sys.change_signs(-1)
 
-b_ = t.sinusoidal_input(b_min, b_max, T, n, v_max=0.5)
+b_ = t.sinusoidal_input(b_min, b_max, T, n, v_max=0.5, phy=units.ANGLE)
 sys.solve_kinematics(b_)
 #r1.set_torque(10)
 sys.solve_dynamics(b_, T)
 H = s1.get_point((d, 0))
 P = s1.get_point((f, 0))
 
-VP = t.get_speed(P, T)
+VP = t.derivative(P, T, phy=units.ANGLE)
 
 #%%
 
 time = np.linspace(0, T, n)
-v = t.get_speed(b_, T)
+v = t.derivative(b_, T, phy=units.ANGLE)
 plt.plot(time, -r3.torque)
 plt.plot(time, v)
 plt.plot(time, v * -r3.torque)

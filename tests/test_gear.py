@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import kinepy as k
 import kinepy.tools as t
+import kinepy.units as units
 print(k)
 
 #%%
@@ -37,7 +38,7 @@ s1.add_force(F, (R1, 0))
 
 #%%
   
-a = t.direct_input(0, 2*np.pi, T, n)*R1
+a = t.direct_input(0, 2*np.pi, T, n, phy=units.DIMENSIONLESS)*R1
 sys.solve_dynamics(a)
 P1 = s1.get_point((R1, 0))
 P2 = s2.get_point((-R2, 0))

@@ -49,7 +49,7 @@ time = np.linspace(0, t, n)
 
 r = 350
 x0, y0 = 600, -500
-angle = to.sinusoidal_input(0, 2*np.pi, t, n, v_max=1.9)
+angle = to.sinusoidal_input(0, 2*np.pi, t, n, v_max=1.9, phy=ANGLE)
 
 x, y = x0 - r*np.cos(angle), y0 + r*np.sin(angle)
 
