@@ -30,9 +30,9 @@ def __deriv(ordre, p):
     return p
 
 
-def __creation_tab(ordre, suite, t):
+def __creation_tab(ordre, a, const, suite, t):
     tab = np.zeros((len(suite), ordre + 1))
-    tab[suite==ordre-1, ordre] = const[ordre - 1]/np.math.factorial(ordre)*__sgn(ordre)
+    tab[suite==ordre-1, ordre] = const[-1]/np.math.factorial(ordre)*__sgn(ordre)
     tab[0, 0] = a
     for i in range(len(suite) - 1):
         dt = t[suite[i]]
@@ -78,7 +78,7 @@ def polynomial_input(a, b, const, n=101, iteration=100):
         t.append(t_i if t_i > 10e-15 else 0)
     
     suite = __suite_t(ordre, t)
-    tab = __creation_tab(ordre, suite, t)
+    tab = __creation_tab(ordre, a, const, suite, t)
     X = np.linspace(0, np.sum(t*2**np.arange(0, ordre)), n)
     Y = []
     i = 0
