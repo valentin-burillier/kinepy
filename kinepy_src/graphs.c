@@ -220,90 +220,51 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 
     uint32_t user_graph_mark = GRAPH_MARK(solid_count);
 
-    for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_COUNT; ++isostatic_graph_index) {
-        printf("Testing Graph %d\n", isostatic_graph_index);
+    for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_COUNT && solid_count >= ISOSTATIC_GRAPHS[isostatic_graph_index].vertex_count; ++isostatic_graph_index) {
         size_t isomorphism_stage = 0;
         IsostaticGraphInfo const * const target_graph = ISOSTATIC_GRAPHS + isostatic_graph_index;
 
-        printf("Initial state\n");
-        for (int index = 0; index < solid_count; ++index) {
-            printf("%d ", vertex_shuffle[index]);
-        }
-        printf("\n");
-        for (int index = 0; index < solid_count; ++index) {
-            printf("%d ", exploration_stack[index]);
-        }
-        printf("\n");
-
-        while (isomorphism_stage < target_graph->vertex_count && exploration_stack[0] < solid_count) {
-
-            /**
-             * Shuffle index >= isomorphism_stage
-             * Current partial isomorphism is vertex_shuffle[:isomorphism_stage] (upper bound is excluded)
-             */
-            uint32_t shuffle_index;
-            for (shuffle_index = exploration_stack[isomorphism_stage]; shuffle_index < solid_count; shuffle_index++) {
-                uint32_t vertex_index = vertex_shuffle[shuffle_index];
+        while (isomorphism_stage < target_graph->vertex_count && (isomorphism_stage != 0 || exploration_stack[0] < solid_count)) {
+            if (exploration_stack[isomorphism_stage] < solid_count) {
+                uint32_t const shuffle_index = exploration_stack[isomorphism_stage];
+                uint32_t const vertex_index = vertex_shuffle[shuffle_index];
+                ++exploration_stack[isomorphism_stage];
 
                 // vertex is not eligible
                 if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, user_graph_mark, target_graph)) {
                     continue;
                 }
-
-                // push vertex to the stack
-                printf("Pushing stage: %zu; %d\n", isomorphism_stage, vertex_index);
-                for (int index = 0; index < solid_count; ++index) {
-                    printf("%d ", vertex_shuffle[index]);
+                // push vertex
+                if (shuffle_index != isomorphism_stage) {
+                    vertex_shuffle[shuffle_index] = vertex_shuffle[isomorphism_stage];
+                    vertex_shuffle[isomorphism_stage] = vertex_index;
                 }
-                printf("\n");
-                for (int index = 0; index < solid_count; ++index) {
-                    printf("%d ", exploration_stack[index]);
-                }
-                printf("\n");exploration_stack[isomorphism_stage] = shuffle_index;
-
-                vertex_shuffle[shuffle_index] = vertex_shuffle[isomorphism_stage];
-                vertex_shuffle[isomorphism_stage] = vertex_index;
-
                 ++isomorphism_stage;
-                break;
-            }
-            exploration_stack[isomorphism_stage] = shuffle_index;
-            // no vertex is eligible
-            if (shuffle_index == solid_count && isomorphism_stage) {
+            } else {
                 // pop the stack
                 exploration_stack[isomorphism_stage] = isomorphism_stage;
                 --isomorphism_stage;
-                shuffle_index = exploration_stack[isomorphism_stage];
-                printf("Popping stage: %zu; %d\n", isomorphism_stage, vertex_shuffle[shuffle_index]);
-                for (int index = 0; index < solid_count; ++index) {
-                    printf("%d ", vertex_shuffle[index]);
-                }
-                printf("\n");
-                for (int index = 0; index < solid_count; ++index) {
-                    printf("%d ", exploration_stack[index]);
-                }
-                printf("\n");
-                // TODO: Edge case isomorphism_stage == 0; Assumption: no problem
-                vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[shuffle_index];
-                vertex_shuffle[shuffle_index] ^= vertex_shuffle[isomorphism_stage];
-                vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[shuffle_index];
 
-                ++exploration_stack[isomorphism_stage];
+                uint32_t exchange_index = exploration_stack[isomorphism_stage] - 1;
+                if (exploration_stack[isomorphism_stage] - 1 != isomorphism_stage) {
+                    vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
+                    vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[exchange_index];
+                    vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
+                }
+
             }
         }
-        // valid isomorphism
+        exploration_stack[0] = 0;
         if (isomorphism_stage == target_graph->vertex_count) {
             *result = malloc(target_graph->vertex_count * sizeof(uint32_t));
             if (*result) {
                 memcpy(*result, vertex_shuffle, target_graph->vertex_count * sizeof(uint32_t));
             }
-
-            free(vertex_shuffle);
             free(exploration_stack);
+            free(vertex_shuffle);
 
             return isostatic_graph_index;
         }
-        exploration_stack[0] = 0;
     }
     // no valid isomorphism is found
     free(vertex_shuffle);

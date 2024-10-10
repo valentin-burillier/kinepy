@@ -37,9 +37,9 @@ typedef union JointDegree {
 
 #define adjacency_size(SOLID_COUNT) SOLID_COUNT * (SOLID_COUNT - 1) / 2
 // prerequisite: X < Y
-#define certain_order_graph_index(X, Y, ARRAY_SIZE) (ARRAY_SIZE - (X - 3) * X / 2 + Y - 1)
+#define certain_order_graph_index(X, Y, MARK) (X * (MARK - X - 3) / 2 + Y - 1)
 #define graph_index(X, Y, ARRAY_SIZE) X < Y ? certain_order_graph_index(X, Y, ARRAY_SIZE) : certain_order_graph_index(Y, X, ARRAY_SIZE)
-#define GRAPH_MARK(SOLID_COUNT) adjacency_size(SOLID_COUNT)
+#define GRAPH_MARK(SOLID_COUNT) (2 * SOLID_COUNT)
 
 #endif
 typedef char Edge[2];
