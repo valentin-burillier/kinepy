@@ -53,7 +53,7 @@ JointType const GRAPH_PPR_ADJACENCY[] = {
      1 - R - 2
 */
 
-JointType const GRAPH_RRR[] = {
+JointType const GRAPH_RRR_ADJACENCY[] = {
     JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE
 };
 
@@ -64,7 +64,7 @@ JointType const GRAPH_RRR[] = {
       /     \
      1 - P - 2
 */
-JointType const GRAPH_RRP[] = {
+JointType const GRAPH_RRP_ADJACENCY[] = {
     JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_PRISMATIC
 };
 
@@ -76,7 +76,7 @@ JointType const GRAPH_RRP[] = {
       /     \
      1 - R - 2
 */
-JointType const GRAPH_PPR[] = {
+JointType const GRAPH_PPR_ADJACENCY[] = {
     JOINT_TYPE_PRISMATIC, JOINT_TYPE_PRISMATIC, JOINT_TYPE_REVOLUTE
 };
 
@@ -108,18 +108,21 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
     {
         .vertex_count = 3,
         .adjacency = GRAPH_RRR_ADJACENCY,
+        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_RRR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
     }, {
         .vertex_count = 3,
         .adjacency = GRAPH_RRP_ADJACENCY,
+        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_RRP_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
     },{
         .vertex_count = 3,
         .adjacency = GRAPH_PPR_ADJACENCY,
+        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_PPR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
@@ -127,12 +130,8 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
 };
 
 void make_graph(JointDescriptionArrayView const * const joint_array, size_t const solid_count, GraphNode * const graph) {
-#ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
-    size_t const mark = NODE_COUNT(solid_count);
-#endif
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-    size_t const mark = solid_count;
-#endif
+    size_t const mark = GRAPH_MARK(solid_count);
+
     for (int index = 0; index < joint_array->count; index++) {
         JointType type = get_joint_description_type(joint_array, index);
         uint32_t solid1 = get_joint_description_solid1(joint_array, index);
@@ -142,12 +141,10 @@ void make_graph(JointDescriptionArrayView const * const joint_array, size_t cons
             .type = type,
             .joint_index = index
         };
-#ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
-        graph[solid2 > solid1 ? GRAPH_INDEX(solid1, solid2, mark) : GRAPH_INDEX(solid2, solid1, mark)] = node;
-#endif
+
+        graph[graph_index(solid1, solid2, mark)] = node;
 #ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-        graph[GRAPH_INDEX(solid1, solid2, mark)] = node;
-        graph[GRAPH_INDEX(solid2, solid1, mark)] = node;
+        graph[graph_index(solid2, solid1, mark)] = node;
 #endif
     }
 }
@@ -192,6 +189,17 @@ inline int compare_degrees(JointDegree const d1, JointDegree const d2) {
     return (d1.prismatic <= d2.prismatic) && (d1.revolute <= d2.revolute);
 }
 
+int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_stage, uint32_t const new_vertex, GraphNode const * const user_graph, uint32_t const user_graph_mark, IsostaticGraphInfo const * const isostatic_graph) {
+    uint32_t isostatic_vertex_index = isomorphism_stage;
+    while (isostatic_vertex_index) {
+        --isostatic_vertex_index;
+        if (isostatic_graph->adjacency[certain_order_graph_index(isostatic_vertex_index, isomorphism_stage, isostatic_graph->mark)] != user_graph[graph_index(new_vertex, vertex_shuffle[isostatic_vertex_index], user_graph_mark)].type) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void find_isomorphism(GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count) {
     uint32_t * const vertex_shuffle = malloc(solid_count * sizeof(uint32_t));
     uint32_t * const exploration_stack = malloc(solid_count * sizeof(uint32_t));
@@ -207,6 +215,7 @@ void find_isomorphism(GraphNode const * const graph, JointDegree const * const d
         exploration_stack[i] = i;
     }
 
+    uint32_t user_graph_mark = GRAPH_MARK(solid_count);
 
     for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_NUMBER; ++isostatic_graph_index) {
         size_t isomorphism_stage = 0;
@@ -221,9 +230,9 @@ void find_isomorphism(GraphNode const * const graph, JointDegree const * const d
             uint32_t shuffle_index;
             for (shuffle_index = exploration_stack[isomorphism_stage]; shuffle_index < solid_count; shuffle_index++) {
                 uint32_t vertex_index = vertex_shuffle[shuffle_index];
-                // TODO: check vertex eligibility
+
                 // vertex is not eligible
-                if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index])) {
+                if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, user_graph_mark, target_graph)) {
                     continue;
                 }
 
