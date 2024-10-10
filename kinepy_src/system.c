@@ -1,7 +1,6 @@
 #include "system.h"
 #include <stdlib.h>
 
-/* end of includes */
 
 INTERFACE(JOINT_RESULT, JointResult, joint_result, RESULT)
 INTERFACE(SOLID_RESULT, SolidResult, solid_result, RESULT)

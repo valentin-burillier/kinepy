@@ -14,7 +14,6 @@ add_library(
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 
-
 include(FetchContent)
 enable_testing()
 #
@@ -35,3 +34,5 @@ add_executable(unit_tests
 target_link_libraries(unit_tests GTest::gtest_main C_Kinepy)
 set_target_properties(unit_tests PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(unit_tests PUBLIC kinepy_src)
+
+set_target_properties(unit_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/unit_tests")
