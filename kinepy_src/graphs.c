@@ -1,5 +1,5 @@
 #include "graphs.h"
-
+#include "string.h"
 
 #ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
 /*
@@ -200,15 +200,17 @@ int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_
     return 1;
 }
 
-void find_isomorphism(GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count) {
+uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count, uint32_t ** const result) {
     uint32_t * const vertex_shuffle = malloc(solid_count * sizeof(uint32_t));
     uint32_t * const exploration_stack = malloc(solid_count * sizeof(uint32_t));
+    *result = 0;
+
     if (!vertex_shuffle) {
-        return;
+        return -1;
     }
     if (!exploration_stack) {
         free(vertex_shuffle);
-        return;
+        return -1;
     }
     for (uint32_t i = 0; i < solid_count; ++i) {
         vertex_shuffle[i] = i;
@@ -261,12 +263,21 @@ void find_isomorphism(GraphNode const * const graph, JointDegree const * const d
         }
         // valid isomorphism
         if (isomorphism_stage == target_graph->vertex_count) {
-            return;
+            *result = malloc(target_graph->vertex_count * sizeof(uint32_t));
+            if (*result) {
+                memcpy(*result, vertex_shuffle, target_graph->vertex_count * sizeof(uint32_t));
+            }
+
+            free(vertex_shuffle);
+            free(exploration_stack);
+
+            return isostatic_graph_index;
         }
     }
     // no valid isomorphism is found
     free(vertex_shuffle);
     free(exploration_stack);
+    return -1;
 }
 
 
