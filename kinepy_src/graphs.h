@@ -17,13 +17,13 @@ typedef union JointDegree {
 } JointDegree;
 
 
-#define UPPER_TRIANGULAR_ADJACENCY_TYPE
-//#define SYMMETRIC_MATRIX_ADJACENCY_TYPE
+//#define UPPER_TRIANGULAR_ADJACENCY_TYPE
+#define SYMMETRIC_MATRIX_ADJACENCY_TYPE
 
 #ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
 #undef UPPER_TRIANGULAR_ADJACENCY_TYPE
 
-#define NODE_COUNT(SOLID_COUNT) SOLID_COUNT * SOLID_COUNT
+#define adjacency_size(SOLID_COUNT) SOLID_COUNT * SOLID_COUNT
 #define certain_order_graph_index(X, Y, NODES) ((X) + (Y) * (NODES))
 #define graph_index certain_order_graph_index
 #define GRAPH_MARK(SOLID_COUNT) (SOLID_COUNT)
@@ -35,11 +35,11 @@ typedef union JointDegree {
 
 #ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
 
-#define NODE_COUNT(SOLID_COUNT) SOLID_COUNT * (SOLID_COUNT - 1) / 2
+#define adjacency_size(SOLID_COUNT) SOLID_COUNT * (SOLID_COUNT - 1) / 2
 // prerequisite: X < Y
 #define certain_order_graph_index(X, Y, ARRAY_SIZE) (ARRAY_SIZE - (X - 3) * X / 2 + Y - 1)
 #define graph_index(X, Y, ARRAY_SIZE) X < Y ? certain_order_graph_index(X, Y, ARRAY_SIZE) : certain_order_graph_index(Y, X, ARRAY_SIZE)
-#define GRAPH_MARK(SOLID_COUNT) NODE_COUNT(SOLID_COUNT)
+#define GRAPH_MARK(SOLID_COUNT) adjacency_size(SOLID_COUNT)
 
 #endif
 typedef char Edge[2];
@@ -53,23 +53,20 @@ typedef struct IsostaticGraphInfo {
     Edge const * const edges;
 } IsostaticGraphInfo;
 
-extern JointType const GRAPH_RRR_ADJACENCY[NODE_COUNT(3)];
-extern JointType const GRAPH_RRP_ADJACENCY[NODE_COUNT(3)];
-extern JointType const GRAPH_PPR_ADJACENCY[NODE_COUNT(3)];
 
-extern Edge const DYAD_EDGES[3];
+typedef enum IsostaticGraph {
+    GRAPH_RRR,
+    GRAPH_RRP,
+    GRAPH_PPR,
+    ISOSTATIC_GRAPH_COUNT
+} IsostaticGraph;
 
-extern JointDegree const GRAPH_RRR_DEGREES[3];
-extern JointDegree const GRAPH_RRP_DEGREES[3];
-extern JointDegree const GRAPH_PPR_DEGREES[3];
+extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_COUNT];
 
-#define ISOSTATIC_GRAPH_NUMBER 3
-extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_NUMBER];
-
-
+inline int compare_degrees(JointDegree d1, JointDegree d2);
 void make_graph(JointDescriptionArrayView const * joint_array, size_t solid_count, GraphNode * graph);
 void determine_computation_order(System const * system);
 void compute_joint_degrees(GraphNode const * graph, uint32_t solid_count, JointDegree * result);
-uint32_t void find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result);
+uint32_t find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result);
 
 #endif //GRAPHS_H

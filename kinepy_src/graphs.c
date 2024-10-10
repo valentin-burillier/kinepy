@@ -1,5 +1,6 @@
-#include "graphs.h"
 #include "string.h"
+#include "stdio.h"
+#include "graphs.h"
 
 #ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
 /*
@@ -185,7 +186,7 @@ void compute_joint_degrees(GraphNode const * const graph, uint32_t const solid_c
  * @param d2 bigger graph vertex JointDegree
  * @return d1 <= d2
  */
-inline int compare_degrees(JointDegree const d1, JointDegree const d2) {
+int compare_degrees(JointDegree const d1, JointDegree const d2) {
     return (d1.prismatic <= d2.prismatic) && (d1.revolute <= d2.revolute);
 }
 
@@ -219,9 +220,20 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 
     uint32_t user_graph_mark = GRAPH_MARK(solid_count);
 
-    for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_NUMBER; ++isostatic_graph_index) {
+    for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_COUNT; ++isostatic_graph_index) {
+        printf("Testing Graph %d\n", isostatic_graph_index);
         size_t isomorphism_stage = 0;
         IsostaticGraphInfo const * const target_graph = ISOSTATIC_GRAPHS + isostatic_graph_index;
+
+        printf("Initial state\n");
+        for (int index = 0; index < solid_count; ++index) {
+            printf("%d ", vertex_shuffle[index]);
+        }
+        printf("\n");
+        for (int index = 0; index < solid_count; ++index) {
+            printf("%d ", exploration_stack[index]);
+        }
+        printf("\n");
 
         while (isomorphism_stage < target_graph->vertex_count && exploration_stack[0] < solid_count) {
 
@@ -239,7 +251,15 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
                 }
 
                 // push vertex to the stack
-                exploration_stack[isomorphism_stage] = shuffle_index;
+                printf("Pushing stage: %zu; %d\n", isomorphism_stage, vertex_index);
+                for (int index = 0; index < solid_count; ++index) {
+                    printf("%d ", vertex_shuffle[index]);
+                }
+                printf("\n");
+                for (int index = 0; index < solid_count; ++index) {
+                    printf("%d ", exploration_stack[index]);
+                }
+                printf("\n");exploration_stack[isomorphism_stage] = shuffle_index;
 
                 vertex_shuffle[shuffle_index] = vertex_shuffle[isomorphism_stage];
                 vertex_shuffle[isomorphism_stage] = vertex_index;
@@ -247,12 +267,22 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
                 ++isomorphism_stage;
                 break;
             }
+            exploration_stack[isomorphism_stage] = shuffle_index;
             // no vertex is eligible
-            if (shuffle_index == solid_count) {
+            if (shuffle_index == solid_count && isomorphism_stage) {
                 // pop the stack
+                exploration_stack[isomorphism_stage] = isomorphism_stage;
                 --isomorphism_stage;
                 shuffle_index = exploration_stack[isomorphism_stage];
-
+                printf("Popping stage: %zu; %d\n", isomorphism_stage, vertex_shuffle[shuffle_index]);
+                for (int index = 0; index < solid_count; ++index) {
+                    printf("%d ", vertex_shuffle[index]);
+                }
+                printf("\n");
+                for (int index = 0; index < solid_count; ++index) {
+                    printf("%d ", exploration_stack[index]);
+                }
+                printf("\n");
                 // TODO: Edge case isomorphism_stage == 0; Assumption: no problem
                 vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[shuffle_index];
                 vertex_shuffle[shuffle_index] ^= vertex_shuffle[isomorphism_stage];
@@ -273,6 +303,7 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 
             return isostatic_graph_index;
         }
+        exploration_stack[0] = 0;
     }
     // no valid isomorphism is found
     free(vertex_shuffle);
@@ -283,7 +314,7 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 
 void determine_computation_order(System const * const system) {
     uint32_t const solid_count = system->solids.count;
-    GraphNode * const solid_graph = malloc(sizeof(GraphNode) * NODE_COUNT(solid_count));
+    GraphNode * const solid_graph = malloc(sizeof(GraphNode) * adjacency_size(solid_count));
     if (!solid_graph) {
         return;
     }
