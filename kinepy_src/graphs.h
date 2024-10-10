@@ -70,5 +70,6 @@ extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_NUMBER];
 void make_graph(JointDescriptionArrayView const * joint_array, size_t solid_count, GraphNode * graph);
 void determine_computation_order(System const * system);
 void compute_joint_degrees(GraphNode const * graph, uint32_t solid_count, JointDegree * result);
+void find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count);
 
 #endif //GRAPHS_H
