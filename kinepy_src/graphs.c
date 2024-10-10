@@ -251,7 +251,6 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
                     vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[exchange_index];
                     vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
                 }
-
             }
         }
         exploration_stack[0] = 0;
@@ -262,7 +261,6 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
             }
             free(exploration_stack);
             free(vertex_shuffle);
-
             return isostatic_graph_index;
         }
     }
