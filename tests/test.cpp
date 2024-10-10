@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 #include <vector>
+#include <cstdlib>
+
 extern "C" {
     #include "graphs.h"
 }

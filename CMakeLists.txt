@@ -11,8 +11,16 @@ add_library(
         kinepy_src/system.c
         kinepy_src/graphs.h
         kinepy_src/graphs.c
+        kinepy_src/structure_layouts/solid_description.h
+        kinepy_src/structure_layouts/solid_result.h
+        kinepy_src/structure_layouts/joint_description.h
+        kinepy_src/structure_layouts/joint_result.h
+        kinepy_src/structure_layouts/base_layouts.h
+        kinepy_src/pure_macro_madness/interface.h
+        kinepy_src/pure_macro_madness/interface.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
+target_include_directories(C_Kinepy PUBLIC kinepy_src)
 
 include(FetchContent)
 enable_testing()
