@@ -1,7 +1,7 @@
 #ifndef GRAPHS_H
 #define GRAPHS_H
 
-#include "system.h"
+#include "layouts.h"
 
 typedef struct GraphNode {
     JointType type;
@@ -64,8 +64,8 @@ typedef enum IsostaticGraph {
 extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_COUNT];
 
 inline int compare_degrees(JointDegree d1, JointDegree d2);
-void make_graph(JointDescriptionArrayView const * joint_array, size_t solid_count, GraphNode * graph);
-void determine_computation_order(System const * system);
+void make_graph(system_internal const * system, size_t solid_count, GraphNode * graph);
+void determine_computation_order(system_internal const * system);
 void compute_joint_degrees(GraphNode const * graph, uint32_t solid_count, JointDegree * result);
 uint32_t find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result);
 

@@ -1,6 +1,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "graphs.h"
+#include "stdlib.h"
 
 #ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
 /*
@@ -130,13 +131,13 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
     }
 };
 
-void make_graph(JointDescriptionArrayView const * const joint_array, size_t const solid_count, GraphNode * const graph) {
+void make_graph(system_internal const * const system, size_t const solid_count, GraphNode * const graph) {
     size_t const mark = GRAPH_MARK(solid_count);
 
-    for (int index = 0; index < joint_array->count; index++) {
-        JointType type = get_joint_description_type(joint_array, index);
-        uint32_t solid1 = get_joint_description_solid1(joint_array, index);
-        uint32_t solid2 = get_joint_description_solid2(joint_array, index);
+    for (int index = 0; index < system->joint_description_array.obj_count; index++) {
+        JointType type = system->joint_description_array.type_ptr[index];
+        uint32_t solid1 = system->joint_description_array.solid1_ptr[index];
+        uint32_t solid2 = system->joint_description_array.solid2_ptr[index];
 
         GraphNode const node = {
             .type = type,
@@ -271,13 +272,13 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 }
 
 
-void determine_computation_order(System const * const system) {
-    uint32_t const solid_count = system->solids.count;
+void determine_computation_order(system_internal const * const system) {
+    uint32_t const solid_count = system->solid_description_array.obj_count;
     GraphNode * const solid_graph = malloc(sizeof(GraphNode) * adjacency_size(solid_count));
     if (!solid_graph) {
         return;
     }
-    make_graph(&system->joints, solid_count, solid_graph);
+    make_graph(system, solid_count, solid_graph);
 
     JointDegree * degrees = malloc(sizeof(JointDegree) * solid_count);
     if (!degrees) {

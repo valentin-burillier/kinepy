@@ -7,17 +7,10 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(
         C_Kinepy
         STATIC
-        kinepy_src/system.h
-        kinepy_src/system.c
         kinepy_src/graphs.h
         kinepy_src/graphs.c
-        kinepy_src/structure_layouts/solid_description.h
-        kinepy_src/structure_layouts/solid_result.h
-        kinepy_src/structure_layouts/joint_description.h
-        kinepy_src/structure_layouts/joint_result.h
-        kinepy_src/structure_layouts/base_layouts.h
-        kinepy_src/pure_macro_madness/interface.h
-        kinepy_src/pure_macro_madness/interface.c
+        kinepy_src/layouts.h
+        kinepy_src/layouts.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)
@@ -44,3 +37,17 @@ set_target_properties(unit_tests PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(unit_tests PUBLIC kinepy_src)
 
 set_target_properties(unit_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/unit_tests")
+
+
+add_executable(test_unique
+    kinepy_src/test.c
+)
+target_compile_options(
+        C_Kinepy PUBLIC
+        -mavx2
+)
+
+target_compile_options(
+        test_unique PUBLIC
+        -mavx2
+)
