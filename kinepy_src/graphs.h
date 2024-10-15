@@ -16,25 +16,7 @@ typedef union JointDegree {
     char arr[2];
 } JointDegree;
 
-
-//#define UPPER_TRIANGULAR_ADJACENCY_TYPE
-#define SYMMETRIC_MATRIX_ADJACENCY_TYPE
-
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-#undef UPPER_TRIANGULAR_ADJACENCY_TYPE
-
-#define adjacency_size(SOLID_COUNT) SOLID_COUNT * SOLID_COUNT
-#define certain_order_graph_index(X, Y, NODES) ((X) + (Y) * (NODES))
-#define graph_index certain_order_graph_index
-#define GRAPH_MARK(SOLID_COUNT) (SOLID_COUNT)
-#else
-    #ifndef TRIANGULAR_GRAPH_TYPE
-        #define TRIANGULAR_GRAPH_TYPE
-    #endif
-#endif
-
-#ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
-
+//#define SYMMETRIC_MATRIX_ADJACENCY_TYPE
 #define adjacency_size(SOLID_COUNT) SOLID_COUNT * (SOLID_COUNT - 1) / 2
 // prerequisite: X < Y
 #define certain_order_graph_index(X, Y, MARK) (X * (MARK - X - 3) / 2 + Y - 1)

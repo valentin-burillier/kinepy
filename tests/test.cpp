@@ -19,9 +19,6 @@ void isostatic_isomorphism(IsostaticGraphInfo const * const src, std::vector<uin
         for (int y = x+1; y < src->vertex_count; ++y) {
             uint32_t new_y = isomorphism[y];
             result_graph[certain_order_graph_index(new_x, new_y, src->mark)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(x, y, src->mark)], .joint_index=0};
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-            result_graph[certain_order_graph_index(new_y, new_x, src->mark)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(y, x, src->mark)], .joint_index=0};
-#endif
         }
     }
 }
@@ -51,7 +48,7 @@ TEST(FindIsomorphism, Identity) {
 TEST(FindIsomorphism, Shuffled) {
     std::vector<GraphNode> user_graph(adjacency_size(3));
     std::vector<JointDegree> user_degree(3);
-    for (auto const &isomorphism: std::vector<std::vector<uint32_t>>{{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}}) {
+    for (auto const &isomorphism: std::vector<std::vector<uint32_t>>{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}}) {
         for (int g = 0; g < ISOSTATIC_GRAPH_COUNT && ISOSTATIC_GRAPHS[g].vertex_count == 3; ++g) {
             IsostaticGraphInfo const &target = ISOSTATIC_GRAPHS[g];
             isostatic_isomorphism(&target, isomorphism, user_graph, user_degree);

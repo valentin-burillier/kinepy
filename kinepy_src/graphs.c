@@ -3,50 +3,7 @@
 #include "graphs.h"
 #include "stdlib.h"
 
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-/*
-         0
-        / \
-       R   R
-      /     \
-     1 - R - 2
-*/
-JointType const GRAPH_RRR_ADJACENCY[] = {
-    JOINT_TYPE_EMPTY, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE,
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_EMPTY, JOINT_TYPE_REVOLUTE,
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_EMPTY
-};
 
-/*
-         0
-        / \
-       R   R
-      /     \
-     1 - P - 2
-*/
-JointType const GRAPH_RRP_ADJACENCY[] = {
-    JOINT_TYPE_EMPTY, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE,
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_EMPTY, JOINT_TYPE_PRISMATIC,
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_PRISMATIC, JOINT_TYPE_EMPTY
-};
-
-
-/*
-         0
-        / \
-       P   P
-      /     \
-     1 - R - 2
-*/
-JointType const GRAPH_PPR_ADJACENCY[] = {
-    JOINT_TYPE_EMPTY, JOINT_TYPE_PRISMATIC, JOINT_TYPE_PRISMATIC,
-    JOINT_TYPE_PRISMATIC, JOINT_TYPE_EMPTY, JOINT_TYPE_REVOLUTE,
-    JOINT_TYPE_PRISMATIC, JOINT_TYPE_REVOLUTE, JOINT_TYPE_EMPTY
-};
-
-#endif
-
-#ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
 /*
          0
         / \
@@ -81,8 +38,6 @@ JointType const GRAPH_RRP_ADJACENCY[] = {
 JointType const GRAPH_PPR_ADJACENCY[] = {
     JOINT_TYPE_PRISMATIC, JOINT_TYPE_PRISMATIC, JOINT_TYPE_REVOLUTE
 };
-
-#endif
 
 Edge const DYAD_EDGES[] = {
     {0, 1},
@@ -145,14 +100,10 @@ void make_graph(system_internal const * const system, size_t const solid_count, 
         };
 
         graph[graph_index(solid1, solid2, mark)] = node;
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-        graph[graph_index(solid2, solid1, mark)] = node;
-#endif
     }
 }
 
 void compute_joint_degrees(GraphNode const * const graph, uint32_t const solid_count, JointDegree * const result) {
-#ifdef UPPER_TRIANGULAR_ADJACENCY_TYPE
     uint32_t index = 0;
     for (int x = 0; x < solid_count; ++x) {
         for (int y = x+1; y < solid_count; ++y) {
@@ -163,20 +114,6 @@ void compute_joint_degrees(GraphNode const * const graph, uint32_t const solid_c
             ++index;
         }
     }
-#endif
-#ifdef SYMMETRIC_MATRIX_ADJACENCY_TYPE
-    uint32_t index;
-    for (int x = 0; x < solid_count; ++x) {
-        index = x * solid_count + x + 1;
-        for (int y = x+1; y < solid_count; ++y) {
-            if (graph[index].type) {
-                ++result[x].arr[graph[index].type - 1];
-                ++result[y].arr[graph[index].type - 1];
-            }
-            ++index;
-        }
-    }
-#endif
 }
 
 /**
