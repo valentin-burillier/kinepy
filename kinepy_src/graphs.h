@@ -23,7 +23,6 @@ typedef union JointDegree {
 #define graph_index(X, Y, ARRAY_SIZE) X < Y ? certain_order_graph_index(X, Y, ARRAY_SIZE) : certain_order_graph_index(Y, X, ARRAY_SIZE)
 #define GRAPH_MARK(SOLID_COUNT) (2 * SOLID_COUNT)
 
-#endif
 typedef char Edge[2];
 
 typedef struct IsostaticGraphInfo {

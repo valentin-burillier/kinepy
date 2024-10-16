@@ -58,11 +58,16 @@ MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, double, _d)
 #define RES_ARRAY_ATTR size_t obj_count; size_t frame_count;
 #define DESC_ARRAY_ATTR size_t obj_count;
 
+#define RES_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
+#define DESC_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)  \
+uint8_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX const * input);
+
+
 #define DECLARE_INTERFACE(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX) \
 uint8_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system, TYPE##_ALLOC_PARAM);                           \
 void KINEPY_free_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system);                                                   \
-void KINEPY_get_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX const * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX * output);    \
-uint8_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX const * input);
+void KINEPY_get_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX const * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX * output);       \
+TYPE##_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
 
 #define DECLARE_INTERFACE_ALL_PRECISIONS(LAYOUT, BASE_NAME, ATTR_NAME, TYPE)    \
 DECLARE_INTERFACE(LAYOUT, BASE_NAME, ATTR_NAME, TYPE, float, _s)                \
@@ -90,7 +95,7 @@ typedef struct {                     \
 typedef struct {                     \
     /* Don't put any attribute that varies in size with floating point precision above SYSTEM_LAYOUT(...) */                                 \
     SYSTEM_LAYOUT(SYSTEM_ATTR, F_SUFFIX) \
-    UnitSystem##F_SUFFIX unit_system;                                    \
+    UnitSystem##F_SUFFIX * unit_system;                                    \
 } System##F_SUFFIX;
 
 SYSTEM_LAYOUT(GENERATE_STRUCTS)
