@@ -18,7 +18,7 @@ void isostatic_isomorphism(IsostaticGraphInfo const * const src, std::vector<uin
         result_degree[new_x] = src->degrees[x];
         for (int y = x+1; y < src->vertex_count; ++y) {
             uint32_t new_y = isomorphism[y];
-            result_graph[graph_index(new_x, new_y, src->mark)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(x, y, src->mark)], .joint_index=0};
+            result_graph[graph_index(new_x, new_y, src->vertex_count)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(x, y, src->vertex_count)], .joint_index=0};
         }
     }
 }
@@ -45,6 +45,7 @@ TEST(FindIsomorphism, Identity) {
     }
 }
 
+
 TEST(FindIsomorphism, Shuffled) {
     for (int g = 0; g < ISOSTATIC_GRAPH_COUNT && ISOSTATIC_GRAPHS[g].vertex_count == 3; ++g) {
         IsostaticGraphInfo const &target = ISOSTATIC_GRAPHS[g];
@@ -61,5 +62,65 @@ TEST(FindIsomorphism, Shuffled) {
             EXPECT_EQ(result_graph, g);
             free(result_isomorphism);
         }
+    }
+}
+
+TEST(MergeGraph, simple) {
+    /*
+            0
+           / \
+          R0  R1
+         /     \
+        1       2
+        |\      |
+        | R3    |
+        |  \    |
+        R2  5   R4
+        |  /    |
+        | R5    |
+        |/      |
+        3       4
+         \     /
+          R6  R7
+           \ /
+            6
+     */
+    GraphNode const base_graph[] = {
+        /* 0 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=0}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 3 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=5}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=7},
+        /* 4 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=6},
+        /* 5 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}
+    };
+    /*
+            0
+           / \
+          R   R
+         /     \
+        1       2
+        |       |
+        |       R
+        |       |
+        R       3
+         \     /
+          \   R
+           \ /
+            4
+     */
+    GraphNode const target_graph[] = {
+        /* 0 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=0}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=7},
+        /* 2 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 3 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=6}
+    };
+
+    std::vector<uint32_t> merge_group{{5, 1, 3}};
+
+    GraphNode const * new_graph = merge_graph(base_graph, 7, merge_group.data(), 3);
+
+    for (int index = 0; index < adjacency_size(5); index++) {
+        EXPECT_EQ(target_graph[index].joint_index, new_graph[index].joint_index);
+        EXPECT_EQ(target_graph[index].type, new_graph[index].type);
     }
 }

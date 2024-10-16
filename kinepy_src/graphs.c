@@ -1,7 +1,7 @@
 #include "string.h"
-#include "stdio.h"
 #include "graphs.h"
 #include "stdlib.h"
+#include "stdio.h"
 
 
 /*
@@ -65,21 +65,18 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
     {
         .vertex_count = 3,
         .adjacency = GRAPH_RRR_ADJACENCY,
-        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_RRR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
     }, {
         .vertex_count = 3,
         .adjacency = GRAPH_RRP_ADJACENCY,
-        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_RRP_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
     },{
         .vertex_count = 3,
         .adjacency = GRAPH_PPR_ADJACENCY,
-        .mark = GRAPH_MARK(3),
         .degrees = GRAPH_PPR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
         .edges = DYAD_EDGES
@@ -87,8 +84,6 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
 };
 
 void make_graph(system_internal const * const system, size_t const solid_count, GraphNode * const graph) {
-    size_t const mark = GRAPH_MARK(solid_count);
-
     for (int index = 0; index < system->joint_description_array.obj_count; index++) {
         JointType type = system->joint_description_array.type_ptr[index];
         uint32_t solid1 = system->joint_description_array.solid1_ptr[index];
@@ -99,7 +94,7 @@ void make_graph(system_internal const * const system, size_t const solid_count, 
             .joint_index = index
         };
 
-        graph[graph_index(solid1, solid2, mark)] = node;
+        graph[graph_index(solid1, solid2, solid_count)] = node;
     }
 }
 
@@ -128,21 +123,80 @@ int compare_degrees(JointDegree const d1, JointDegree const d2) {
     return (d1.prismatic <= d2.prismatic) && (d1.revolute <= d2.revolute);
 }
 
-int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_stage, uint32_t const new_vertex, GraphNode const * const user_graph, uint32_t const user_graph_mark, IsostaticGraphInfo const * const isostatic_graph) {
+/**
+ * Graph isomorphism vertex eligibility, check if new_vertex has the same adjacency in the current sub-graph than its counter-part in the isostatic_graph
+ * precondition: previous vertices are eligible
+ * @param vertex_shuffle
+ * @param isomorphism_stage
+ * @param new_vertex
+ * @param user_graph
+ * @param solid_count
+ * @param isostatic_graph
+ * @return
+ */
+int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_stage, uint32_t const new_vertex, GraphNode const * const user_graph, uint32_t const solid_count, IsostaticGraphInfo const * const isostatic_graph) {
     uint32_t isostatic_vertex_index = isomorphism_stage;
     while (isostatic_vertex_index) {
         --isostatic_vertex_index;
-        if (isostatic_graph->adjacency[certain_order_graph_index(isostatic_vertex_index, isomorphism_stage, isostatic_graph->mark)] != user_graph[graph_index(new_vertex, vertex_shuffle[isostatic_vertex_index], user_graph_mark)].type) {
+        if (isostatic_graph->adjacency[certain_order_graph_index(isostatic_vertex_index, isomorphism_stage, isostatic_graph->vertex_count)] != user_graph[graph_index(new_vertex, vertex_shuffle[isostatic_vertex_index], solid_count)].type) {
             return 0;
         }
     }
     return 1;
 }
 
+GraphNode * merge_graph(GraphNode const * const graph, uint32_t const solid_count, uint32_t const * const group_to_merge, uint32_t const group_size) {
+    uint8_t * const merge_state = malloc(solid_count * sizeof(uint8_t));
+    if (!merge_state) {
+        return 0;
+    }
+    uint32_t group_min = *group_to_merge;
+    for (int index = 0; index < solid_count; ++index) {
+        merge_state[index] = 0;
+    }
+
+    for (int index = 0; index < group_size; ++index) {
+        merge_state[group_to_merge[index]] = 1;
+        if (group_to_merge[index] < group_min) {
+            group_min = group_to_merge[index];
+        }
+    }
+    uint32_t const new_graph_size = solid_count - group_size + 1;
+    GraphNode * const new_graph = malloc(adjacency_size(new_graph_size));
+    if (!new_graph) {
+        free(merge_state);
+        return 0;
+    }
+    for (int index = 0; index < adjacency_size(new_graph_size); index++) {
+        new_graph[index].type = JOINT_TYPE_EMPTY;
+        new_graph[index].joint_index = -1;
+    }
+
+    uint32_t merge_members = 0;
+    for (int x = 0; x < solid_count; ++x) {
+        merge_members += merge_state[x] - (x == group_min);
+        uint32_t const old_merge_members = merge_members;
+        uint32_t const new_x = merge_state[x] ? group_min : x - merge_members;
+
+        for (int y = x+1; y < solid_count; ++y) {
+            merge_members += merge_state[y]  - (y == group_min);
+            uint32_t const new_y = merge_state[y] ? group_min : y - merge_members;
+            if (new_x == new_y || graph[certain_order_graph_index(x, y, solid_count)].type == JOINT_TYPE_EMPTY) {
+                continue;
+            }
+            new_graph[graph_index(new_x, new_y, new_graph_size)] = graph[certain_order_graph_index(x, y, solid_count)];
+        }
+
+        merge_members = old_merge_members;
+    }
+
+    free(merge_state);
+    return new_graph;
+}
+
 uint8_t find_isomorphism_test_graph(int const isostatic_graph_index, uint32_t * const exploration_stack, uint32_t * const vertex_shuffle, GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count) {
     size_t isomorphism_stage = 0;
     IsostaticGraphInfo const * const target_graph = ISOSTATIC_GRAPHS + isostatic_graph_index;
-    uint32_t user_graph_mark = GRAPH_MARK(solid_count);
 
     while (isomorphism_stage < target_graph->vertex_count && (isomorphism_stage != 0 || exploration_stack[0] < solid_count)) {
         if (exploration_stack[isomorphism_stage] < solid_count) {
@@ -151,7 +205,7 @@ uint8_t find_isomorphism_test_graph(int const isostatic_graph_index, uint32_t * 
             ++exploration_stack[isomorphism_stage];
 
             // vertex is not eligible
-            if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, user_graph_mark, target_graph)) {
+            if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, solid_count, target_graph)) {
                 continue;
             }
             // push vertex
@@ -203,14 +257,16 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
         *result_isomorphism = malloc(target_graph->vertex_count * sizeof(uint32_t));
         if (*result_isomorphism) {
             memcpy(*result_isomorphism, vertex_shuffle, target_graph->vertex_count * sizeof(uint32_t));
+            result_graph_index = isostatic_graph_index;
         }
-        result_graph_index = isostatic_graph_index;
         break;
     }
     free(vertex_shuffle);
     free(exploration_stack);
     return result_graph_index;
 }
+
+
 
 
 void determine_computation_order(system_internal const * const system) {
@@ -231,4 +287,3 @@ void determine_computation_order(system_internal const * const system) {
     free(degrees);
     free(solid_graph);
 }
-
