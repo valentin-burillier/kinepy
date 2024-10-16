@@ -18,7 +18,7 @@ void isostatic_isomorphism(IsostaticGraphInfo const * const src, std::vector<uin
         result_degree[new_x] = src->degrees[x];
         for (int y = x+1; y < src->vertex_count; ++y) {
             uint32_t new_y = isomorphism[y];
-            result_graph[certain_order_graph_index(new_x, new_y, src->mark)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(x, y, src->mark)], .joint_index=0};
+            result_graph[graph_index(new_x, new_y, src->mark)] = (GraphNode){.type=src->adjacency[certain_order_graph_index(x, y, src->mark)], .joint_index=0};
         }
     }
 }
