@@ -58,7 +58,6 @@ TEST(FindIsomorphism, Shuffled) {
             uint32_t result_graph;
             uint32_t *result_isomorphism;
             result_graph = find_isomorphism(user_graph.data(), user_degree.data(), target.vertex_count, &result_isomorphism);
-            std::vector<uint32_t> ri;
 
             EXPECT_EQ(result_graph, g);
             free(result_isomorphism);
@@ -87,11 +86,11 @@ TEST(MergeGraph, simple) {
             6
      */
     GraphNode const base_graph[] = {
-        /* 0 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=0}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 3 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=5}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=7},
-        /* 4 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=6},
+        /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 3 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=5}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
+        /* 4 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=6},
         /* 5 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}
     };
     /*
@@ -110,10 +109,10 @@ TEST(MergeGraph, simple) {
             4
      */
     GraphNode const target_graph[] = {
-        /* 0 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=0}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_PRISMATIC, .joint_index=7},
-        /* 2 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 3 */ {.type=JOINT_TYPE_PRISMATIC, .joint_index=6}
+        /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
+        /* 2 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
+        /* 3 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=6}
     };
 
     std::vector<uint32_t> merge_group{{5, 1, 3}};
