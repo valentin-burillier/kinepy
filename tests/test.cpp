@@ -76,9 +76,9 @@ TEST(MergeGraph, simple) {
         | R3    |
         |  \    |
         R2  5   R4
-        |  /    |
-        | R5    |
-        |/      |
+        |  / \  |
+        | R5  R8|
+        |/     \|
         3       4
          \     /
           R6  R7
@@ -90,7 +90,7 @@ TEST(MergeGraph, simple) {
         /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 3 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=5}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
-        /* 4 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=6},
+        /* 4 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=8}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=6},
         /* 5 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}
     };
     /*
@@ -99,9 +99,9 @@ TEST(MergeGraph, simple) {
           R0  R1
          /     \
         1       2
-        |       |
-        |       R4
-        |       |
+        |  \    |
+        |   R8  R4
+        |    \  |
         R6      3
          \     /
           \   R7
@@ -110,7 +110,7 @@ TEST(MergeGraph, simple) {
      */
     GraphNode const target_graph[] = {
         /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=8}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
         /* 2 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 3 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=6}
     };
