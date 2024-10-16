@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 
 extern "C" {
     #include "graphs.h"
@@ -96,15 +97,15 @@ TEST(MergeGraph, simple) {
     /*
             0
            / \
-          R   R
+          R0  R1
          /     \
         1       2
         |       |
-        |       R
+        |       R4
         |       |
-        R       3
+        R6      3
          \     /
-          \   R
+          \   R7
            \ /
             4
      */
