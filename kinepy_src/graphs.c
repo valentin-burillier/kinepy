@@ -139,73 +139,77 @@ int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_
     return 1;
 }
 
-uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count, uint32_t ** const result) {
+uint8_t find_isomorphism_test_graph(int const isostatic_graph_index, uint32_t * const exploration_stack, uint32_t * const vertex_shuffle, GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count) {
+    size_t isomorphism_stage = 0;
+    IsostaticGraphInfo const * const target_graph = ISOSTATIC_GRAPHS + isostatic_graph_index;
+    uint32_t user_graph_mark = GRAPH_MARK(solid_count);
+
+    while (isomorphism_stage < target_graph->vertex_count && (isomorphism_stage != 0 || exploration_stack[0] < solid_count)) {
+        if (exploration_stack[isomorphism_stage] < solid_count) {
+            uint32_t const shuffle_index = exploration_stack[isomorphism_stage];
+            uint32_t const vertex_index = vertex_shuffle[shuffle_index];
+            ++exploration_stack[isomorphism_stage];
+
+            // vertex is not eligible
+            if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, user_graph_mark, target_graph)) {
+                continue;
+            }
+            // push vertex
+            if (shuffle_index != isomorphism_stage) {
+                vertex_shuffle[shuffle_index] = vertex_shuffle[isomorphism_stage];
+                vertex_shuffle[isomorphism_stage] = vertex_index;
+            }
+            ++isomorphism_stage;
+        } else {
+            // pop the stack
+            exploration_stack[isomorphism_stage] = isomorphism_stage;
+            --isomorphism_stage;
+
+            uint32_t exchange_index = exploration_stack[isomorphism_stage] - 1;
+            if (exploration_stack[isomorphism_stage] - 1 != isomorphism_stage) {
+                vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
+                vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[exchange_index];
+                vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
+            }
+        }
+    }
+    exploration_stack[0] = 0;
+    return isomorphism_stage == target_graph->vertex_count;
+}
+
+uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count, uint32_t ** const result_isomorphism) {
     uint32_t * const vertex_shuffle = malloc(solid_count * sizeof(uint32_t));
     uint32_t * const exploration_stack = malloc(solid_count * sizeof(uint32_t));
-    *result = 0;
+    uint32_t result_graph_index = -1;
+    *result_isomorphism = 0;
 
     if (!vertex_shuffle) {
-        return -1;
+        return result_graph_index;
     }
     if (!exploration_stack) {
         free(vertex_shuffle);
-        return -1;
+        return result_graph_index;
     }
     for (uint32_t i = 0; i < solid_count; ++i) {
         vertex_shuffle[i] = i;
         exploration_stack[i] = i;
     }
 
-    uint32_t user_graph_mark = GRAPH_MARK(solid_count);
-
     for (int isostatic_graph_index = 0; isostatic_graph_index < ISOSTATIC_GRAPH_COUNT && solid_count >= ISOSTATIC_GRAPHS[isostatic_graph_index].vertex_count; ++isostatic_graph_index) {
-        size_t isomorphism_stage = 0;
         IsostaticGraphInfo const * const target_graph = ISOSTATIC_GRAPHS + isostatic_graph_index;
-
-        while (isomorphism_stage < target_graph->vertex_count && (isomorphism_stage != 0 || exploration_stack[0] < solid_count)) {
-            if (exploration_stack[isomorphism_stage] < solid_count) {
-                uint32_t const shuffle_index = exploration_stack[isomorphism_stage];
-                uint32_t const vertex_index = vertex_shuffle[shuffle_index];
-                ++exploration_stack[isomorphism_stage];
-
-                // vertex is not eligible
-                if (!compare_degrees(target_graph->degrees[isomorphism_stage], degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, user_graph_mark, target_graph)) {
-                    continue;
-                }
-                // push vertex
-                if (shuffle_index != isomorphism_stage) {
-                    vertex_shuffle[shuffle_index] = vertex_shuffle[isomorphism_stage];
-                    vertex_shuffle[isomorphism_stage] = vertex_index;
-                }
-                ++isomorphism_stage;
-            } else {
-                // pop the stack
-                exploration_stack[isomorphism_stage] = isomorphism_stage;
-                --isomorphism_stage;
-
-                uint32_t exchange_index = exploration_stack[isomorphism_stage] - 1;
-                if (exploration_stack[isomorphism_stage] - 1 != isomorphism_stage) {
-                    vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
-                    vertex_shuffle[isomorphism_stage] ^= vertex_shuffle[exchange_index];
-                    vertex_shuffle[exchange_index] ^= vertex_shuffle[isomorphism_stage];
-                }
-            }
+        if (!find_isomorphism_test_graph(isostatic_graph_index, exploration_stack, vertex_shuffle, graph, degrees, solid_count)) {
+            continue;
         }
-        exploration_stack[0] = 0;
-        if (isomorphism_stage == target_graph->vertex_count) {
-            *result = malloc(target_graph->vertex_count * sizeof(uint32_t));
-            if (*result) {
-                memcpy(*result, vertex_shuffle, target_graph->vertex_count * sizeof(uint32_t));
-            }
-            free(exploration_stack);
-            free(vertex_shuffle);
-            return isostatic_graph_index;
+        *result_isomorphism = malloc(target_graph->vertex_count * sizeof(uint32_t));
+        if (*result_isomorphism) {
+            memcpy(*result_isomorphism, vertex_shuffle, target_graph->vertex_count * sizeof(uint32_t));
         }
+        result_graph_index = isostatic_graph_index;
+        break;
     }
-    // no valid isomorphism is found
     free(vertex_shuffle);
     free(exploration_stack);
-    return -1;
+    return result_graph_index;
 }
 
 

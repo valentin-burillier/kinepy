@@ -48,6 +48,8 @@ inline int compare_degrees(JointDegree d1, JointDegree d2);
 void make_graph(system_internal const * system, size_t solid_count, GraphNode * graph);
 void determine_computation_order(system_internal const * system);
 void compute_joint_degrees(GraphNode const * graph, uint32_t solid_count, JointDegree * result);
-uint32_t find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result);
+
+uint8_t find_isomorphism_test_graph(int isostatic_graph_index, uint32_t * exploration_stack, uint32_t * vertex_shuffle, GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count);
+uint32_t find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result_isomorphism);
 
 #endif //GRAPHS_H
