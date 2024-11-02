@@ -4,85 +4,6 @@
 #include "stdio.h"
 
 
-/*
-         0
-        / \
-       R   R
-      /     \
-     1 - R - 2
-*/
-
-JointType const GRAPH_RRR_ADJACENCY[] = {
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE
-};
-
-/*
-         0
-        / \
-       R   R
-      /     \
-     1 - P - 2
-*/
-JointType const GRAPH_RRP_ADJACENCY[] = {
-    JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_PRISMATIC
-};
-
-
-/*
-         0
-        / \
-       P   P
-      /     \
-     1 - R - 2
-*/
-JointType const GRAPH_PPR_ADJACENCY[] = {
-    JOINT_TYPE_PRISMATIC, JOINT_TYPE_PRISMATIC, JOINT_TYPE_REVOLUTE
-};
-
-Edge const DYAD_EDGES[] = {
-    {0, 1},
-    {0, 2},
-    {1, 2}
-};
-
-JointDegree const GRAPH_RRR_DEGREES[] = {
-    {.revolute=2, .prismatic=0},
-    {.revolute=2, .prismatic=0},
-    {.revolute=2, .prismatic=0}
-};
-JointDegree const GRAPH_RRP_DEGREES[] = {
-    {.revolute=2, .prismatic=0},
-    {.revolute=1, .prismatic=1},
-    {.revolute=1, .prismatic=1}
-};
-JointDegree const GRAPH_PPR_DEGREES[] = {
-    {.revolute=0, .prismatic=2},
-    {.revolute=1, .prismatic=1},
-    {.revolute=1, .prismatic=1}
-};
-
-IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
-    {
-        .vertex_count = 3,
-        .adjacency = GRAPH_RRR_ADJACENCY,
-        .degrees = GRAPH_RRR_DEGREES,
-        .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
-    }, {
-        .vertex_count = 3,
-        .adjacency = GRAPH_RRP_ADJACENCY,
-        .degrees = GRAPH_RRP_DEGREES,
-        .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
-    },{
-        .vertex_count = 3,
-        .adjacency = GRAPH_PPR_ADJACENCY,
-        .degrees = GRAPH_PPR_DEGREES,
-        .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
-    }
-};
-
 void make_graph(system_internal const * const system, size_t const solid_count, GraphNode * const graph) {
     for (int index = 0; index < system->joint_description_array.obj_count; index++) {
         JointType type = system->joint_description_array.type_ptr[index];
@@ -145,13 +66,67 @@ int can_match(uint32_t const * const vertex_shuffle, uint32_t const isomorphism_
     return 1;
 }
 
-GraphNode * merge_graph(GraphNode const * const graph, uint32_t const solid_count, uint32_t const * const group_to_merge, uint32_t const group_size) {
-    uint8_t * const merge_state = malloc(solid_count * sizeof(uint8_t));
+
+
+void merge_eqs(uint32_t * const eqs, uint32_t * const eq_indices, uint32_t const eq_count, uint32_t const * const group_to_merge, uint32_t const group_size) {
+    uint32_t const solid_count = eq_indices[eq_count];
+    uint8_t * const merge_state = malloc(eq_count * sizeof(uint8_t));
     if (!merge_state) {
-        return 0;
+        return;
+    }
+    for (int index = 0; index < eq_count; ++index) {
+        merge_state[index] = 0;
+    }
+
+    uint32_t not_merged_displacement = 0;
+    for (int index = 0; index < group_size; ++index) {
+        merge_state[group_to_merge[index]] = 1;
+        not_merged_displacement += eq_indices[group_to_merge[index]+1] - eq_indices[group_to_merge[index]];
+    }
+    uint32_t const new_eq_count = eq_count - group_size + 1;
+    uint32_t * const new_eqs = malloc(eq_indices[eq_count] * sizeof(uint32_t));
+    if (!new_eqs) {
+        free(merge_state);
+        return;
+    }
+
+    uint32_t merged_displacement = 0;
+    uint32_t solid_index = 0;
+    uint8_t merged_count = 0;
+    for (int eq_index = 0; eq_index < eq_count; ++eq_index) {
+        uint32_t displacement = 0;
+        merged_count += merge_state[eq_index];
+        if (merge_state[eq_index]) {
+            not_merged_displacement -= eq_indices[eq_index+1] - eq_indices[eq_index];
+            displacement = -merged_displacement;
+        } else {
+            if (merged_count) {
+                merged_displacement += eq_indices[eq_index + 1] - eq_indices[eq_index];
+                displacement = not_merged_displacement;
+            }
+        }
+
+        for (; solid_index < eq_indices[eq_index] + 1; ++solid_index) {
+            new_eqs[solid_index + displacement] = eqs[solid_index];
+        }
+        if (merged_count && !merge_state[eq_index]) {
+            eq_indices[eq_index - merged_count + 1] = eq_indices[eq_index] + displacement;
+        }
+    }
+    eq_indices[new_eq_count] = solid_count;
+
+    memcpy(eqs, new_eqs, solid_count * sizeof(uint32_t));
+    free(new_eqs);
+    free(merge_state);
+}
+
+void merge_graph(GraphNode * const graph, uint32_t const eq_count, uint32_t const * const group_to_merge, uint32_t const group_size) {
+    uint8_t * const merge_state = malloc(eq_count * sizeof(uint8_t));
+    if (!merge_state) {
+        return;
     }
     uint32_t group_min = *group_to_merge;
-    for (int index = 0; index < solid_count; ++index) {
+    for (int index = 0; index < eq_count; ++index) {
         merge_state[index] = 0;
     }
 
@@ -161,11 +136,11 @@ GraphNode * merge_graph(GraphNode const * const graph, uint32_t const solid_coun
             group_min = group_to_merge[index];
         }
     }
-    uint32_t const new_graph_size = solid_count - group_size + 1;
+    uint32_t const new_graph_size = eq_count - group_size + 1;
     GraphNode * const new_graph = malloc(adjacency_size(new_graph_size));
     if (!new_graph) {
         free(merge_state);
-        return 0;
+        return;
     }
     for (int index = 0; index < adjacency_size(new_graph_size); index++) {
         new_graph[index].type = JOINT_TYPE_EMPTY;
@@ -173,25 +148,25 @@ GraphNode * merge_graph(GraphNode const * const graph, uint32_t const solid_coun
     }
 
     uint32_t merge_members = 0;
-    for (int x = 0; x < solid_count; ++x) {
+    for (int x = 0; x < eq_count; ++x) {
         merge_members += merge_state[x] - (x == group_min);
         uint32_t const old_merge_members = merge_members;
         uint32_t const new_x = merge_state[x] ? group_min : x - merge_members;
 
-        for (int y = x+1; y < solid_count; ++y) {
+        for (int y = x+1; y < eq_count; ++y) {
             merge_members += merge_state[y]  - (y == group_min);
             uint32_t const new_y = merge_state[y] ? group_min : y - merge_members;
-            if (new_x == new_y || graph[certain_order_graph_index(x, y, solid_count)].type == JOINT_TYPE_EMPTY) {
+            if (new_x == new_y || graph[certain_order_graph_index(x, y, eq_count)].type == JOINT_TYPE_EMPTY) {
                 continue;
             }
-            new_graph[graph_index(new_x, new_y, new_graph_size)] = graph[certain_order_graph_index(x, y, solid_count)];
+            new_graph[graph_index(new_x, new_y, new_graph_size)] = graph[certain_order_graph_index(x, y, eq_count)];
         }
 
         merge_members = old_merge_members;
     }
-
+    memcpy(graph, new_graph, adjacency_size(new_graph_size) * sizeof(GraphNode));
     free(merge_state);
-    return new_graph;
+    free(new_graph);
 }
 
 uint8_t find_isomorphism_test_graph(int const isostatic_graph_index, uint32_t * const exploration_stack, uint32_t * const vertex_shuffle, GraphNode const * const graph, JointDegree const * const degrees, uint32_t const solid_count) {
@@ -267,23 +242,60 @@ uint32_t find_isomorphism(GraphNode const * const graph, JointDegree const * con
 }
 
 
-
-
 void determine_computation_order(system_internal const * const system) {
     uint32_t const solid_count = system->solid_description_array.obj_count;
-    GraphNode * const solid_graph = malloc(sizeof(GraphNode) * adjacency_size(solid_count));
-    if (!solid_graph) {
+    GraphNode * current_graph = malloc(sizeof(GraphNode) * adjacency_size(solid_count));
+    if (!current_graph) {
         return;
     }
-    make_graph(system, solid_count, solid_graph);
+    make_graph(system, solid_count, current_graph);
 
     JointDegree * degrees = malloc(sizeof(JointDegree) * solid_count);
     if (!degrees) {
-        free(solid_graph);
+        free(current_graph);
         return;
     }
-    compute_joint_degrees(solid_graph, solid_count, degrees);
+    compute_joint_degrees(current_graph, solid_count, degrees);
+
+    uint32_t * eqs = malloc(solid_count * sizeof(uint32_t));
+    if (!eqs) {
+        free(current_graph);
+        free(degrees);
+        return;
+    }
+    uint32_t * eq_indices = malloc((solid_count+1) * sizeof(uint32_t));
+    if (!eq_indices) {
+        free(current_graph);
+        free(degrees);
+        free(eqs);
+        return;
+    }
+
+    /**
+     * At the beginning, every solid is its own equivalence class
+     */
+    for (int index = 0; index < solid_count; ++index) {
+        eqs[index] = index;
+        eq_indices[index] = index;
+    }
+    eq_indices[solid_count] = solid_count;
+
+    uint32_t eq_count = solid_count;
+    while (solid_count > 1) {
+        uint32_t * isomorphism;
+        uint32_t isostatic_graph = find_isomorphism(current_graph, degrees, eq_count, &isomorphism);
+        if (isostatic_graph == -1) {
+            break;
+        }
+        merge_graph(current_graph, eq_count, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count);
+        free(isomorphism);
+
+        eq_count = eq_count - ISOSTATIC_GRAPHS[isostatic_graph].vertex_count + 1;
+        compute_joint_degrees(current_graph, eq_count, degrees);
+    }
 
     free(degrees);
-    free(solid_graph);
+    free(current_graph);
+    free(eqs);
+    free(eq_indices);
 }

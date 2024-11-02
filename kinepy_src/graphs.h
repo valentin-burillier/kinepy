@@ -3,6 +3,7 @@
 
 #include "layouts.h"
 
+
 typedef struct GraphNode {
     JointType type;
     uint32_t joint_index;
@@ -22,7 +23,7 @@ typedef union JointDegree {
 #define certain_order_graph_index(X, Y, ARRAY_SIZE) (X * (2 * ARRAY_SIZE - X - 3) / 2 + Y - 1)
 #define graph_index(X, Y, ARRAY_SIZE) X < Y ? certain_order_graph_index(X, Y, ARRAY_SIZE) : certain_order_graph_index(Y, X, ARRAY_SIZE)
 
-typedef char Edge[2];
+typedef uint8_t Edge[2];
 
 typedef struct IsostaticGraphInfo {
     size_t const vertex_count;
@@ -46,8 +47,16 @@ inline int compare_degrees(JointDegree d1, JointDegree d2);
 void make_graph(system_internal const * system, size_t solid_count, GraphNode * graph);
 void determine_computation_order(system_internal const * system);
 void compute_joint_degrees(GraphNode const * graph, uint32_t solid_count, JointDegree * result);
-GraphNode * merge_graph(GraphNode const * graph, uint32_t solid_count, uint32_t const * group_to_merge, uint32_t group_size);
+void merge_graph(GraphNode * graph, uint32_t eq_count, uint32_t const * group_to_merge, uint32_t group_size);
 uint8_t find_isomorphism_test_graph(int isostatic_graph_index, uint32_t * exploration_stack, uint32_t * vertex_shuffle, GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count);
 uint32_t find_isomorphism(GraphNode const * graph, JointDegree const * degrees, uint32_t solid_count, uint32_t ** result_isomorphism);
+void merge_eqs(uint32_t * eqs, uint32_t * eq_indices, uint32_t eq_count, uint32_t const * group_to_merge, uint32_t group_size);
+
+typedef struct ResolutionStep {
+    IsostaticGraph isostatic_graph;
+    uint32_t * eq_indices; // |eq_indices| = isostatic_graph->vertex_count+1
+    uint32_t * eqs; // |eqs| = eq_indices[isostatic_graph->vertex_count]
+} ResolutionStep;
+
 
 #endif //GRAPHS_H

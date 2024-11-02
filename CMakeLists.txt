@@ -11,6 +11,7 @@ add_library(
         kinepy_src/graphs.c
         kinepy_src/layouts.h
         kinepy_src/layouts.c
+        kinepy_src/graph_data.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)

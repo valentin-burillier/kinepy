@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <string>
 
 extern "C" {
     #include "graphs.h"
@@ -85,7 +86,7 @@ TEST(MergeGraph, simple) {
            \ /
             6
      */
-    GraphNode const base_graph[] = {
+    GraphNode graph[] = {
         /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
@@ -110,17 +111,34 @@ TEST(MergeGraph, simple) {
      */
     GraphNode const target_graph[] = {
         /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
-        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=8}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
+        /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=8},  {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
         /* 2 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 3 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=6}
     };
+    std::vector<uint32_t> target_eq_indices{{0, 1, 4, 5, 6, 7}};
+    std::vector<uint32_t> target_eqs{{0, 1, 3, 5, 2, 4, 6}};
 
     std::vector<uint32_t> merge_group{{5, 1, 3}};
 
-    GraphNode const * new_graph = merge_graph(base_graph, 7, merge_group.data(), 3);
+    std::vector<uint32_t> eqs{{0, 1, 2, 3, 4, 5, 6}};
+    std::vector<uint32_t> eq_indices{{0, 1, 2, 3, 4, 5, 6, 7}};
 
-    for (int index = 0; index < adjacency_size(5); index++) {
-        EXPECT_EQ(target_graph[index].joint_index, new_graph[index].joint_index);
-        EXPECT_EQ(target_graph[index].type, new_graph[index].type);
+    merge_graph(graph, 7, merge_group.data(), merge_group.size());
+    merge_eqs(eqs.data(), eq_indices.data(), eqs.size(), merge_group.data(), merge_group.size());
+
+    // Checking adjacency
+    for (int index = 0; index < adjacency_size(5); ++index) {
+        EXPECT_EQ(target_graph[index].joint_index, graph[index].joint_index);
+        EXPECT_EQ(target_graph[index].type, graph[index].type);
+    }
+
+    // checking eq indices
+    for (int index = 0; index < 5+1; ++index) {
+        EXPECT_EQ(target_eq_indices[index], eq_indices[index]);
+    }
+
+    // checking eqs
+    for (int index = 0; index < eqs.size(); ++index) {
+        EXPECT_EQ(target_eqs[index], eqs[index]);
     }
 }
