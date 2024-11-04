@@ -63,18 +63,21 @@ IsostaticGraphInfo const ISOSTATIC_GRAPHS[] = {
         .adjacency = GRAPH_RRR_ADJACENCY,
         .degrees = GRAPH_RRR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
+        .edges = DYAD_EDGES,
+        .solution_count = 2
     }, {
         .vertex_count = 3,
         .adjacency = GRAPH_RRP_ADJACENCY,
         .degrees = GRAPH_RRP_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
+        .edges = DYAD_EDGES,
+        .solution_count = 2
     },{
         .vertex_count = 3,
         .adjacency = GRAPH_PPR_ADJACENCY,
         .degrees = GRAPH_PPR_DEGREES,
         .edge_count = sizeof(DYAD_EDGES) / sizeof(Edge),
-        .edges = DYAD_EDGES
+        .edges = DYAD_EDGES,
+        .solution_count = 1
     }
 };

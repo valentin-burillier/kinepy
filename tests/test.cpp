@@ -2,7 +2,6 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
-#include <string>
 
 extern "C" {
     #include "graphs.h"
@@ -31,9 +30,15 @@ TEST(FindIsomorphism, Identity) {
         IsostaticGraphInfo const & target = ISOSTATIC_GRAPHS[g];
         isostatic_to_user(target.adjacency, adjacency_size(target.vertex_count), user_graph);
 
+        Graph graph = {
+            .eq_count = target.vertex_count,
+            .adjacency = user_graph.data(),
+            .joint_degrees = const_cast<JointDegree*>(target.degrees)
+        };
+
         uint32_t result_graph;
         uint32_t * result_isomorphism;
-        result_graph = find_isomorphism(user_graph.data(), target.degrees, target.vertex_count, &result_isomorphism);
+        find_isomorphism(&graph, &result_graph, &result_isomorphism);
         std::vector<uint32_t> ri;
 
         EXPECT_EQ(result_graph, g);
@@ -52,13 +57,18 @@ TEST(FindIsomorphism, Shuffled) {
     for (int g = 0; g < ISOSTATIC_GRAPH_COUNT && ISOSTATIC_GRAPHS[g].vertex_count == 3; ++g) {
         IsostaticGraphInfo const &target = ISOSTATIC_GRAPHS[g];
         for (auto const &isomorphism: std::vector<std::vector<uint32_t>>{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
-            std::vector<GraphNode> user_graph(adjacency_size(3));
-            std::vector<JointDegree> user_degree(3);
+            std::vector<GraphNode> user_graph(adjacency_size(target.vertex_count));
+            std::vector<JointDegree> user_degree(target.vertex_count);
             isostatic_isomorphism(&target, isomorphism, user_graph, user_degree);
 
+            Graph graph = {
+                .eq_count = target.vertex_count,
+                .adjacency = user_graph.data(),
+                .joint_degrees = user_degree.data()
+            };
             uint32_t result_graph;
             uint32_t *result_isomorphism;
-            result_graph = find_isomorphism(user_graph.data(), user_degree.data(), target.vertex_count, &result_isomorphism);
+            find_isomorphism(&graph, &result_graph, &result_isomorphism);
 
             EXPECT_EQ(result_graph, g);
             free(result_isomorphism);
@@ -82,11 +92,11 @@ TEST(MergeGraph, simple) {
         |/     \|
         3       4
          \     /
-          R6  R7
+          R7  R6
            \ /
             6
      */
-    GraphNode graph[] = {
+    GraphNode adjacency[] = {
         /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=2}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=3}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 2 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
@@ -94,46 +104,48 @@ TEST(MergeGraph, simple) {
         /* 4 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=8}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=6},
         /* 5 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}
     };
+    std::vector<uint32_t> eqs{{0, 1, 2, 3, 4, 5, 6}};
+    std::vector<uint32_t> eq_indices{{0, 1, 2, 3, 4, 5, 6, 7}};
+
     /*
-            0
-           / \
-          R0  R1
-         /     \
-        1       2
-        |  \    |
-        |   R8  R4
-        |    \  |
-        R6      3
-         \     /
-          \   R7
-           \ /
-            4
+                0
+               / \
+              R0  R1
+             /     \
+            1       2
+           / \     /
+          R7  R8  R4
+         /     \ /
+        4 ----- 3
+            R6
      */
-    GraphNode const target_graph[] = {
+    GraphNode const target_adjacency[] = {
         /* 0 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=0}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 1 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=8},  {.type=JOINT_TYPE_REVOLUTE, .joint_index=7},
         /* 2 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=4}, {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1},
         /* 3 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=6}
     };
+    std::vector<uint32_t> merge_group{{5, 1, 3}};
     std::vector<uint32_t> target_eq_indices{{0, 1, 4, 5, 6, 7}};
     std::vector<uint32_t> target_eqs{{0, 1, 3, 5, 2, 4, 6}};
 
-    std::vector<uint32_t> merge_group{{5, 1, 3}};
+    Graph graph = {
+        .eq_count = static_cast<uint32_t>(target_eqs.size()),
+        .adjacency = adjacency,
+        .eq_indices = eq_indices.data(),
+        .eqs = eqs.data()
+    };
 
-    std::vector<uint32_t> eqs{{0, 1, 2, 3, 4, 5, 6}};
-    std::vector<uint32_t> eq_indices{{0, 1, 2, 3, 4, 5, 6, 7}};
-
-    merge_graph(graph, 7, merge_group.data(), merge_group.size());
-    merge_eqs(eqs.data(), eq_indices.data(), eqs.size(), merge_group.data(), merge_group.size());
+    merge_graph(&graph, merge_group.data(), merge_group.size());
 
     // Checking adjacency
-    for (int index = 0; index < adjacency_size(5); ++index) {
-        EXPECT_EQ(target_graph[index].joint_index, graph[index].joint_index);
-        EXPECT_EQ(target_graph[index].type, graph[index].type);
+    for (int index = 0; index < adjacency_size(target_eq_indices.size()-1); ++index) {
+        EXPECT_EQ(target_adjacency[index].joint_index, graph.adjacency[index].joint_index);
+        EXPECT_EQ(target_adjacency[index].type, graph.adjacency[index].type);
     }
 
     // checking eq indices
-    for (int index = 0; index < 5+1; ++index) {
+    for (int index = 0; index < target_eq_indices.size(); ++index) {
         EXPECT_EQ(target_eq_indices[index], eq_indices[index]);
     }
 

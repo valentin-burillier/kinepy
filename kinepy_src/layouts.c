@@ -29,7 +29,7 @@
 #define STD_UNIT_SET(TYPE, NAME, UNAME, ...) array->NAME##_ptr[index] = system->unit_system->UNAME * input->NAME;
 #define STD_UNIT_GET(TYPE, NAME, UNAME, ...) output->NAME = array->NAME##_ptr[index] / system->unit_system->UNAME;
 
-#define NOT_A_PHYSICAL_QUANTITY_SET(TYPE, NAME, FUNCTION, ...) if (!FUNCTION((system_internal*)system, input->NAME)){return 0;} array->NAME##_ptr[index] = input->NAME;
+#define NOT_A_PHYSICAL_QUANTITY_SET(TYPE, NAME, FUNCTION, ...) if (!FUNCTION((system_internal*)system, input->NAME)){return KINEPY_INVALID_INPUT;} array->NAME##_ptr[index] = input->NAME;
 #define NOT_A_PHYSICAL_QUANTITY_GET(TYPE, NAME, FUNCTION, ...) output->NAME = array->NAME##_ptr[index];
 
 #define GET_OBJECT(TYPE, NAME, FUNC, ARG) FUNC##_GET(TYPE, NAME, ARG)
@@ -37,25 +37,25 @@
 
 #define RES_SETTER_IMPL(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
 #define DESC_SETTER_IMPL(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX) \
-uint8_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * const system, TYPE##_CONST_INTER_PARAM, NAME##F_SUFFIX const * const input){      \
-    NAME##Array##F_SUFFIX * const array = &system->ATTR_NAME##_array;       \
-    TYPE##_INTER_INDEX                                                      \
-    LAYOUT(SET_OBJECT, FLOAT)                                               \
-    return 1;                                                               \
+uint32_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * const system, TYPE##_CONST_INTER_PARAM, NAME##F_SUFFIX const * const input){      \
+    NAME##Array##F_SUFFIX * const array = &system->ATTR_NAME##_array;    \
+    TYPE##_INTER_INDEX                                                   \
+    LAYOUT(SET_OBJECT, FLOAT)                                            \
+    return KINEPY_SUCCESS;                                               \
 }
 
 
 #define IMPLEMENT_INTERFACE(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX) \
-uint8_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * const system, TYPE##_CONST_ALLOC_PARAM) { \
+uint32_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * const system, TYPE##_CONST_ALLOC_PARAM) { \
     NAME##Array##F_SUFFIX * const array = &system->ATTR_NAME##_array;       \
     TYPE##_ALLOC_ATTR                                                       \
     TYPE##_ALLOC_SIZE                                                       \
     uint8_t allocated = 0;                                                  \
     LAYOUT(ALLOC_ARRAY, FLOAT)                                              \
-    return 1;                                                               \
+    return KINEPY_SUCCESS;                                                  \
 err_alloc:                                                                  \
     LAYOUT(ALLOC_ARRAY_ERR, FLOAT)                                          \
-    return 0;                                                               \
+    return KINEPY_MALLOC_FAILED;                                            \
 }                                                                           \
                                                                             \
 void KINEPY_free_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * const system) {\

@@ -3,6 +3,14 @@
 
 #include "stdint.h"
 
+typedef enum {
+    KINEPY_SUCCESS,
+    KINEPY_GENERIC_FAILURE,
+    KINEPY_INVALID_INPUT,
+    KINEPY_NO_GRAPH_FOUND,
+    KINEPY_MALLOC_FAILED
+} KINEPY_Result;
+
 #define ATTRIBUTES(TYPE, NAME, ...) TYPE NAME;
 #define ARRAY_ATTRIBUTES(TYPE, NAME, ...) TYPE * NAME##_ptr;
 
@@ -60,11 +68,11 @@ MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, double, _d)
 
 #define RES_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
 #define DESC_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)  \
-uint8_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX const * input);
+uint32_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX const * input);
 
 
 #define DECLARE_INTERFACE(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX) \
-uint8_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system, TYPE##_ALLOC_PARAM);                           \
+uint32_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system, TYPE##_ALLOC_PARAM);                           \
 void KINEPY_free_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system);                                                   \
 void KINEPY_get_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX const * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX * output);       \
 TYPE##_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
@@ -82,6 +90,55 @@ DECLARE_INTERFACE_ALL_PRECISIONS(LAYOUT, NAME, ATTR_NAME, TYPE)
 
 #define SYSTEM_ATTR(_LAYOUT, NAME, ATTR_NAME, _TYPE, F_SUFFIX, ...) NAME##Array##F_SUFFIX ATTR_NAME##_array;
 
+typedef struct {
+    size_t count;
+    uint32_t * joints;
+} JointArray;
+
+typedef struct {
+    uint32_t joint_index;
+    uint32_t orientation;
+} GraphStepEdge;
+
+typedef struct {
+    uint32_t isostatic_graph;
+    uint32_t * eq_indices; // |eq_indices| = isostatic_graph->vertex_count+1
+    uint32_t * eqs; // |eqs| = eq_indices[isostatic_graph->vertex_count]
+    GraphStepEdge * edges; // |edges| = isostatic_graph->edge_count
+    uint8_t solution_index; // solution_index < isostatic_graph->solution_count
+} GraphStep;
+
+typedef struct {
+    uint32_t joint_index;
+    uint32_t first_eq_size;
+    uint32_t second_eq_size;
+    uint32_t * eqs;
+} JointStep;
+
+typedef enum {
+    STEP_TYPE_GRAPH,
+    STEP_TYPE_JOINT,
+    STEP_TYPE_RELATION
+} StepType;
+
+typedef struct {
+    StepType type;
+    union {
+        GraphStep graph_step;
+        JointStep joint_step;
+    };
+} ResolutionStep;
+
+typedef struct {
+    size_t count;
+    ResolutionStep * array;
+} StepArray;
+
+typedef struct {
+    JointArray piloted_or_blocked_joints;
+    StepArray steps;
+} ResolutionMode;
+
 #define MAKE_SYSTEM(FLOAT, F_SUFFIX) \
 typedef struct {                     \
     FLOAT length;                    \
@@ -93,9 +150,11 @@ typedef struct {                     \
 } UnitSystem##F_SUFFIX;              \
                                      \
 typedef struct {                     \
-    /* Don't put any attribute that varies in size with floating point precision above SYSTEM_LAYOUT(...) */                                 \
-    SYSTEM_LAYOUT(SYSTEM_ATTR, F_SUFFIX) \
-    UnitSystem##F_SUFFIX * unit_system;                                    \
+    /* Don't put any attribute that varies in size with floating point precision above SYSTEM_LAYOUT(...) */ \
+    SYSTEM_LAYOUT(SYSTEM_ATTR, F_SUFFIX)\
+    ResolutionMode kinematics;       \
+    ResolutionMode dynamics;         \
+    UnitSystem##F_SUFFIX * unit_system; \
 } System##F_SUFFIX;
 
 SYSTEM_LAYOUT(GENERATE_STRUCTS)
