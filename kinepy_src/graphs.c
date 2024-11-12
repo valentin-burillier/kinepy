@@ -32,6 +32,18 @@ void compute_joint_degrees(Graph const * const graph) {
     }
 }
 
+
+void compute_solid_to_eq(Graph const * const graph) {
+    uint32_t* current_solid = graph->eqs;
+    for (int index = 0; index < graph->eq_count; ++index) {
+        uint32_t * last = graph->eqs + graph->eq_indices[index+1];
+        while (current_solid < last) {
+            graph->solid_to_eq[*current_solid] = index;
+            ++current_solid;
+        }
+    }
+}
+
 /**
  * Graph isomorphism vertex eligibility heuristic
  * false: compared vertices cannot be isomorphic
@@ -262,7 +274,7 @@ void clear_resolution_steps(ResolutionMode * const resolution_mode) {
     resolution_mode->steps.array = NULL;
 }
 
-uint32_t register_graph_resolution_step(system_internal const * const system, ResolutionMode * const resolution_mode, GraphNode const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism, uint32_t const * const eq_indices, uint32_t const * const eqs, uint32_t const * const solid_to_eq) {
+uint32_t register_graph_resolution_step(system_internal const * const system, ResolutionMode * const resolution_mode, Graph const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism) {
     uint32_t result = KINEPY_SUCCESS;
     uint32_t allocated = 0;
     void * temp_ptr = realloc(resolution_mode->steps.array, (resolution_mode->steps.count + 1) * sizeof(ResolutionStep));
@@ -283,62 +295,93 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
             .solution_index = 0
         }
     };
-    set_alloc_array(step.graph_step.eq_indices, uint32_t, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count+1);
 
+    set_alloc_array(step.graph_step.eq_indices, uint32_t, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count+1);
     *step.graph_step.eq_indices = 0;
     for(int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].vertex_count; ++index) {
-        step.graph_step.eq_indices[index+1] = step.graph_step.eq_indices[index] + eq_indices[isomorphism[index]+1] - eq_indices[isomorphism[index]];
+        step.graph_step.eq_indices[index+1] = step.graph_step.eq_indices[index] + graph->eq_indices[isomorphism[index]+1] - graph->eq_indices[isomorphism[index]];
     }
+
 
     uint32_t const solid_count = step.graph_step.eq_indices[ISOSTATIC_GRAPHS[isostatic_graph].vertex_count];
     set_alloc_array(step.graph_step.eqs, uint32_t, solid_count);
-
     for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].vertex_count; ++index) {
-        memcpy(step.graph_step.eqs + step.graph_step.eq_indices[index], eqs + eq_indices[isomorphism[index]], step.graph_step.eq_indices[index+1] - step.graph_step.eq_indices[index]);
+        memcpy(step.graph_step.eqs + step.graph_step.eq_indices[index], graph->eqs + graph->eq_indices[isomorphism[index]], step.graph_step.eq_indices[index+1] - step.graph_step.eq_indices[index]);
     }
+
 
     set_alloc_array(step.graph_step.edges, GraphStepEdge, ISOSTATIC_GRAPHS[isostatic_graph].edge_count);
     for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].edge_count; ++index) {
+        Edge const * const edge_ptr = ISOSTATIC_GRAPHS[isostatic_graph].edges + index;
+        uint32_t eq_x = isomorphism[(*edge_ptr)[0]];
+        uint32_t eq_y = isomorphism[(*edge_ptr)[1]];
+        uint32_t joint_index = graph->adjacency[graph_index(eq_x, eq_y, graph->eq_count)].joint_index;
+
+        step.graph_step.edges[index].joint_index = joint_index;
+        step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid1_ptr[joint_index]] != eq_x;
+        // equivalent to
+        // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid2_ptr[joint_index]] != eq_y;
 
     }
 
 malloc_err:
-    switch(allocated) {
-        case 4:
+    switch(4 - allocated) {
+        case 0:
             free(step.graph_step.edges);
-        case 3:
+        case 1:
             free(step.graph_step.eqs);
         case 2:
             free(step.graph_step.eq_indices);
-        case 1:
+        case 3:
             free(resolution_mode->steps.array);
-        case 0:
+        case 4:
         default:
             break;
     }
     return result;
 }
 
+uint32_t solve_isostatic_graphs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph*  const graph) {
+    uint32_t result = KINEPY_SUCCESS;
+
+    uint32_t * isomorphism = NULL;
+    while (graph->eq_count > 1) {
+        uint32_t isostatic_graph;
+        KINEPY_check(find_isomorphism(graph, &isostatic_graph, &isomorphism)){
+            if (result == KINEPY_NO_GRAPH_FOUND) {
+                return result;
+            }
+            break;
+        }
+        KINEPY_check(register_graph_resolution_step(system, resolution_mode, graph, isostatic_graph, isomorphism)) {
+            break;
+        }
+        KINEPY_check(merge_graph(graph, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count)) {
+            break;
+        }
+        free(isomorphism);
+        isomorphism = NULL;
+
+        compute_solid_to_eq(graph);
+        compute_joint_degrees(graph);
+    }
+    free(isomorphism);
+    return result;
+}
+
 uint32_t determine_computation_order(system_internal const * const system, ResolutionMode * const resolution_mode) {
     uint32_t result = KINEPY_SUCCESS;
     uint8_t allocated = 0;
-
+#pragma region Setting up
     uint32_t const solid_count = system->solid_description_array.obj_count;
 
-    declare_alloc_array(adjacency, GraphNode, adjacency_size(solid_count), const);
-    declare_alloc_array(degrees, JointDegree, solid_count, const);
-    declare_alloc_array(eqs, uint32_t, solid_count, const);
-    declare_alloc_array(eq_indices, uint32_t, solid_count+1, const);
-    declare_alloc_array(solid_to_eq, uint32_t, solid_count,);
-
-    Graph graph = {
-        .adjacency = adjacency,
-        .eq_count = solid_count,
-        .joint_degrees = degrees,
-        .eqs = eqs,
-        .eq_indices = eq_indices,
-        .solid_to_eq = solid_to_eq
-    };
+    Graph graph = {0};
+    graph.eq_count = solid_count;
+    set_alloc_array(graph.adjacency, GraphNode, adjacency_size(solid_count));
+    set_alloc_array(graph.joint_degrees, JointDegree, solid_count);
+    set_alloc_array(graph.eqs, uint32_t, solid_count);
+    set_alloc_array(graph.eq_indices, uint32_t, solid_count+1);
+    set_alloc_array(graph.solid_to_eq, uint32_t, solid_count);
 
     make_graph_adjacency(system, &graph);
     compute_joint_degrees(&graph);
@@ -346,60 +389,47 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
     resolution_mode->steps.count = 0;
     resolution_mode->steps.array = NULL;
 
-
     // At the beginning, every solid is its own equivalence class
     for (int index = 0; index < solid_count; ++index) {
-        eqs[index] = index;
-        eq_indices[index] = index;
+        graph.eqs[index] = index;
+        graph.eq_indices[index] = index;
     }
-    eq_indices[solid_count] = solid_count;
+    graph.eq_indices[solid_count] = solid_count;
+#pragma endregion
 
-    while (solid_count > 1) {
-        uint32_t * isomorphism;
-        uint32_t isostatic_graph;
-        KINEPY_check(find_isomorphism(&graph, &isostatic_graph, &isomorphism)){
-            clear_resolution_steps(resolution_mode);
-            break;
-        }
+    // solve graphs that don't need  input values
+    result = solve_isostatic_graphs(system, resolution_mode, &graph);
 
-        KINEPY_check(merge_graph(&graph, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count)) {
-            free(isomorphism);
-            clear_resolution_steps(resolution_mode);
-            break;
-        }
-
-        free(isomorphism);
-
-
-
-        uint32_t* current_solid = eqs;
-        for (int index = 0; index < graph.eq_count; ++index) {
-            uint32_t * last = eqs + eq_indices[index+1];
-            while (current_solid < last) {
-                solid_to_eq[*current_solid] = index;
-                ++current_solid;
-            }
-        }
-
-        compute_joint_degrees(&graph);
+    // TODO: Check gears and gear_racks, they must involve exactly 3 eqs at this stage
+    // TODO: Compute piloted/blocked joints
+    
+    // main loop
+    while (graph.eq_count > 1) {
+        result = solve_isostatic_graphs(system, resolution_mode, &graph);
     }
 
 
+    if (graph.eq_count > 1 || result == KINEPY_MALLOC_FAILED) {
+        clear_resolution_steps(resolution_mode);
+    }
+
+#pragma region Cleaning up
 malloc_err:
     switch (5 - allocated) {
         case 0:
-            free(solid_to_eq);
+            free(graph.solid_to_eq);
         case 1:
-            free(eq_indices);
+            free(graph.eq_indices);
         case 2:
-            free(eqs);
+            free(graph.eqs);
         case 3:
-            free(degrees);
+            free(graph.joint_degrees);
         case 4:
-            free(adjacency);
+            free(graph.adjacency);
         case 5:
         default:
             break;
     }
+#pragma endregion
     return result;
 }

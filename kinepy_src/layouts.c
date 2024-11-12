@@ -78,4 +78,12 @@ uint8_t is_existing_joint_type(system_internal const * const __attribute__((unus
     return JOINT_TYPE_EMPTY < type && type < JOINT_TYPE_COUNT;
 }
 
+uint8_t is_existing_joint(system_internal const * const system, uint32_t const joint_index) {
+    return joint_index < system->joint_description_array.obj_count;
+}
+
+uint8_t is_existing_relation_type(system_internal const * const __attribute__((unused)) system, uint8_t const type) {
+    return RELATION_TYPE_EMPTY < type && type < RELATION_TYPE_COUNT;
+}
+
 SYSTEM_LAYOUT(IMPLEMENT_INTERFACE, float, _s)

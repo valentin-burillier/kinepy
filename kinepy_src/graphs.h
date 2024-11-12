@@ -63,6 +63,7 @@ extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_COUNT];
 
 void make_graph_adjacency(system_internal const * system, Graph * graph);
 void compute_joint_degrees(Graph const * graph);
+void compute_solid_to_eq(Graph const * graph);
 int compare_degrees(JointDegree d1, JointDegree d2);
 
 uint8_t find_isomorphism_test_graph(int isostatic_graph_index, uint32_t * exploration_stack, uint32_t * vertex_shuffle, Graph const * graph);

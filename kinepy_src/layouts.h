@@ -9,7 +9,7 @@ typedef enum {
     KINEPY_INVALID_INPUT,
     KINEPY_NO_GRAPH_FOUND,
     KINEPY_MALLOC_FAILED
-} KINEPY_Result;
+} KinepyResult;
 
 #define ATTRIBUTES(TYPE, NAME, ...) TYPE NAME;
 #define ARRAY_ATTRIBUTES(TYPE, NAME, ...) TYPE * NAME##_ptr;
@@ -37,6 +37,13 @@ typedef enum {
     CB(FLOAT, constraint1_y, STD_UNIT, length)                  \
     CB(FLOAT, constraint2_x, STD_UNIT, length)                  \
     CB(FLOAT, constraint2_y, STD_UNIT, length)
+
+#define RELATION_DESC_LAYOUT(CB, FLOAT) \
+    CB(uint32_t, joint1, NOT_A_PHYSICAL_QUANTITY, is_existing_joint)  \
+    CB(uint32_t, joint2, NOT_A_PHYSICAL_QUANTITY, is_existing_joint)  \
+    CB(uint8_t, type, NOT_A_PHYSICAL_QUANTITY, is_existing_relation_type) \
+    CB(FLOAT, ratio, RELATION_RATIO)    \
+    CB(FLOAT, v0, RELATION_V0)
 
 #define MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, FLOAT, F_SUFFIX) \
 typedef struct {                                                     \
@@ -177,5 +184,13 @@ typedef enum {
     JOINT_TYPE_COUNT
 } JointType;
 
+typedef enum {
+    RELATION_TYPE_EMPTY,
+    RELATION_TYPE_GEAR,
+    RELATION_TYPE_GEAR_RACK,
+    RELATION_TYPE_DISTANT,
+    RELATION_TYPE_EFFORTLESS,
+    RELATION_TYPE_COUNT
+} RelationType;
 
 #endif //LAYOUTS_H

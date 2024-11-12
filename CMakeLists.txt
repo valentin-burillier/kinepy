@@ -50,5 +50,5 @@ target_compile_options(
 
 target_compile_options(
         test_unique PUBLIC
-        -mavx2
+        -I${CMAKE_CURRENT_SOURCE_DIR}/kinepy_src
 )
