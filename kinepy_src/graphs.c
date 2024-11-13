@@ -24,8 +24,8 @@ void compute_joint_degrees(Graph const * const graph) {
     for (int x = 0; x < graph->eq_count; ++x) {
         for (int y = x+1; y < graph->eq_count; ++y) {
             if (graph->adjacency[index].type) {
-                ++(graph->joint_degrees[x].arr[graph->adjacency[index].type - 1]);
-                ++(graph->joint_degrees[y].arr[graph->adjacency[index].type - 1]);
+                ++(graph->degrees[x].arr[graph->adjacency[index].type - 1]);
+                ++(graph->degrees[y].arr[graph->adjacency[index].type - 1]);
             }
             ++index;
         }
@@ -90,7 +90,7 @@ uint8_t find_isomorphism_test_graph(int const isostatic_graph_index, uint32_t * 
             ++exploration_stack[isomorphism_stage];
 
             // vertex is not eligible
-            if (!compare_degrees(target_graph->degrees[isomorphism_stage], graph->joint_degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, target_graph)) {
+            if (!compare_degrees(target_graph->degrees[isomorphism_stage], graph->degrees[vertex_index]) || !can_match(vertex_shuffle, isomorphism_stage, vertex_index, graph, target_graph)) {
                 continue;
             }
             // push vertex
@@ -378,14 +378,39 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
     Graph graph = {0};
     graph.eq_count = solid_count;
     set_alloc_array(graph.adjacency, GraphNode, adjacency_size(solid_count));
-    set_alloc_array(graph.joint_degrees, JointDegree, solid_count);
+    set_alloc_array(graph.degrees, JointDegree, solid_count);
     set_alloc_array(graph.eqs, uint32_t, solid_count);
     set_alloc_array(graph.eq_indices, uint32_t, solid_count+1);
     set_alloc_array(graph.solid_to_eq, uint32_t, solid_count);
-    set_alloc_array(graph.joint_indices, uint32_t, system->joint_description_array.obj_count);
+    set_alloc_array(graph.joint_indices, uint32_t, system->joint_description_array.obj_count+1);
+    set_alloc_array(graph.joint_adjacency, uint32_t, 2 * system->relation_description_array.obj_count);
 
+    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * system->joint_description_array.obj_count+1);
+    for (int index = 0; index < system->relation_description_array.obj_count; ++index) {
+        uint32_t const joint1 = system->relation_description_array.joint1_ptr[index];
+        uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
+
+        graph.joint_indices[joint1]++;
+        graph.joint_indices[joint2]++;
+    }
     for (int index = 0; index < system->joint_description_array.obj_count; ++index) {
+        graph.joint_indices[index+1] += graph.joint_indices[index];
+    }
+    memset(graph.joint_adjacency, 0xff, sizeof(*graph.joint_adjacency) * 2 * system->relation_description_array.obj_count);
+    for (int index = 0; index < 2 * system->relation_description_array.obj_count; ++index) {
+        uint32_t const joint1 = system->relation_description_array.joint1_ptr[index];
+        uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
 
+        uint32_t * ptr = &graph.joint_adjacency[graph.joint_indices[joint1]];
+        while (*ptr != -1) {
+            ++ptr;
+        }
+        *ptr = joint2;
+        ptr = &graph.joint_adjacency[graph.joint_indices[joint2]];
+        while (*ptr != -1) {
+            ++ptr;
+        }
+        *ptr = joint1;
     }
 
     make_graph_adjacency(system, &graph);
@@ -420,20 +445,22 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
 
 #pragma region Cleaning up
 malloc_err:
-    switch (6 - allocated) {
+    switch (7 - allocated) {
         case 0:
-            free(graph.joint_indices);
+            free(graph.joint_adjacency);
         case 1:
-            free(graph.solid_to_eq);
+            free(graph.joint_indices);
         case 2:
-            free(graph.eq_indices);
+            free(graph.solid_to_eq);
         case 3:
-            free(graph.eqs);
+            free(graph.eq_indices);
         case 4:
-            free(graph.joint_degrees);
+            free(graph.eqs);
         case 5:
-            free(graph.adjacency);
+            free(graph.degrees);
         case 6:
+            free(graph.adjacency);
+        case 7:
         default:
             break;
     }

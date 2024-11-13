@@ -33,7 +33,7 @@ TEST(FindIsomorphism, Identity) {
         Graph graph = {
             .eq_count = target.vertex_count,
             .adjacency = user_graph.data(),
-            .joint_degrees = const_cast<JointDegree*>(target.degrees)
+            .degrees = const_cast<JointDegree*>(target.degrees)
         };
 
         uint32_t result_graph;
@@ -64,7 +64,7 @@ TEST(FindIsomorphism, Shuffled) {
             Graph graph = {
                 .eq_count = target.vertex_count,
                 .adjacency = user_graph.data(),
-                .joint_degrees = user_degree.data()
+                .degrees = user_degree.data()
             };
             uint32_t result_graph;
             uint32_t *result_isomorphism;

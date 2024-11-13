@@ -149,9 +149,6 @@ typedef struct {
     float origin_y;
     float orientation_x;
     float orientation_y;
-    float _dynamic_x;
-    float _dynamic_y;
-    float _dynamic_m; 
 } SolidResult_s;
 
 typedef struct {
@@ -170,9 +167,6 @@ typedef struct {
     double origin_y;
     double orientation_x;
     double orientation_y;
-    double _dynamic_x;
-    double _dynamic_y;
-    double _dynamic_m; 
 } SolidResult_d;
 
 typedef struct {
@@ -225,15 +219,16 @@ typedef struct {
 
 #pragma endregion RelationDescrption
 
-
 #pragma region System
-typedef struct { 
+typedef struct {
+    float angle;
     float length;
     float mass;
     float moment_of_inertia;
     float force;
     float torque;
-    float dimensionless; 
+    float dimensionless;
+
 } UnitSystem_s;
 
 typedef struct { 
@@ -246,13 +241,14 @@ typedef struct {
     UnitSystem_s *unit_system; 
 } System_s;
 
-typedef struct { 
+typedef struct {
+    double angle;
     double length;
     double mass;
     double moment_of_inertia;
     double force;
     double torque;
-    double dimensionless; 
+    double dimensionless;
 } UnitSystem_d;
 
 typedef struct { 
@@ -299,8 +295,11 @@ typedef struct {
         uint32_t *joint2_ptr;
         uint8_t *type_ptr;
         void *ratio_ptr;
-        void *v0_ptr; }
-        relation_description_array;
+        void *v0_ptr;
+    } relation_description_array;
+    ResolutionMode kinematics;
+    ResolutionMode dynamics;
+    void * unit_system;
 } system_internal;
 #pragma endregion System
 

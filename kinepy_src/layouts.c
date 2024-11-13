@@ -29,6 +29,52 @@ uint8_t is_valid_relation(system_internal const * const system, uint8_t type, ui
     }
 }
 
+void* get_v0_unit(system_internal const * const system, uint32_t const index, uint8_t const is_double) {
+    uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
+    uint8_t const joint2_type = system->joint_description_array.type_ptr[joint2];
+    if (joint2_type == JOINT_TYPE_PRISMATIC) {
+        return system->unit_system + offsetof(UnitSystem_s, length) * (1 + is_double);
+    } else {
+        return system->unit_system + offsetof(UnitSystem_s, angle) * (1 + is_double);
+    }
+}
+
+void get_ratio_unit(system_internal const * const system, uint32_t index, uint8_t is_double, void* output) {
+    uint32_t const joint1 = system->relation_description_array.joint1_ptr[index];
+    uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
+    uint8_t const type1 = system->joint_description_array.type_ptr[joint1];
+    uint8_t const type2 = system->joint_description_array.type_ptr[joint2];
+
+    if (type1 == type2) {
+        void * const ptr = system->unit_system + offsetof(UnitSystem_s, dimensionless) * (1 + is_double);
+        if (is_double) {
+            *(double*)output = *(double*)(ptr);
+        } else {
+            *(float*)output = *(float*)(ptr);
+        }
+        return;
+    }
+
+    void* unit1;
+    if (type1 == JOINT_TYPE_PRISMATIC) {
+        unit1 = system->unit_system + offsetof(UnitSystem_s, length) * (1 + is_double);
+    } else {
+        unit1 = system->unit_system + offsetof(UnitSystem_s, angle) * (1 + is_double);
+    }
+    void* unit2;
+    if (type2 == JOINT_TYPE_PRISMATIC) {
+        unit2 = system->unit_system + offsetof(UnitSystem_s, length) * (1 + is_double);
+    } else {
+        unit2 = system->unit_system + offsetof(UnitSystem_s, angle) * (1 + is_double);
+    }
+
+    if (is_double) {
+        *(double*)output = *(double*)unit2 / *(double*)unit1;
+    } else {
+        *(float*)output = *(float*)unit2 / *(float*)unit1;
+    }
+}
+
 uint32_t KINEPY_allocate_solid_descriptions_s(System_s *const system, uint32_t const obj_count) {
     SolidDescriptionArray_s *const array = &system->solid_description_array;
     array->obj_count = obj_count;
@@ -322,9 +368,6 @@ void KINEPY_get_solid_result_s(System_s const *const system, uint32_t const obj_
     output->origin_y = array->origin_y_ptr[index] / system->unit_system->length;
     output->orientation_x = array->orientation_x_ptr[index] / system->unit_system->dimensionless;
     output->orientation_y = array->orientation_y_ptr[index] / system->unit_system->dimensionless;
-    output->_dynamic_x = array->_dynamic_x_ptr[index] / system->unit_system->force;
-    output->_dynamic_y = array->_dynamic_y_ptr[index] / system->unit_system->force;
-    output->_dynamic_m = array->_dynamic_m_ptr[index] / system->unit_system->torque;
 }
 
 uint32_t KINEPY_allocate_relation_descriptions_s(System_s *const system, uint32_t const obj_count) {
@@ -400,9 +443,10 @@ void KINEPY_get_relation_description_s(System_s const *const system, uint32_t co
     output->joint2 = array->joint2_ptr[index];
     output->type = array->type_ptr[index];
 
-    // TODO: weird units
-    output->ratio = array->ratio_ptr[index];
-    output->v0 = array->v0_ptr[index];
+    float ratio_unit;
+    get_ratio_unit((system_internal*)system, obj_index, 0, &ratio_unit);
+    output->ratio = array->ratio_ptr[index] / ratio_unit;
+    output->v0 = array->v0_ptr[index] / *(float*) get_v0_unit((system_internal*)system, obj_index, 0);
 }
 
 uint32_t KINEPY_set_relation_description_s(System_s *const system, uint32_t const obj_index, RelationDescription_s const *const input) {
@@ -427,9 +471,10 @@ uint32_t KINEPY_set_relation_description_s(System_s *const system, uint32_t cons
     }
     array->type_ptr[index] = input->type;
 
-    // TODO: weird units
-    array->ratio_ptr[index] = input->ratio;
-    array->v0_ptr[index] = input->v0;
+    float ratio_unit;
+    get_ratio_unit((system_internal*)system, obj_index, 0, &ratio_unit);
+    array->ratio_ptr[index] = ratio_unit * input->ratio;
+    array->v0_ptr[index] = *(float*) get_v0_unit((system_internal*)system, obj_index, 0) * input->v0;
     return KINEPY_SUCCESS;
 }
 
@@ -725,9 +770,6 @@ void KINEPY_get_solid_result_d(System_d const *const system, uint32_t const obj_
     output->origin_y = array->origin_y_ptr[index] / system->unit_system->length;
     output->orientation_x = array->orientation_x_ptr[index] / system->unit_system->dimensionless;
     output->orientation_y = array->orientation_y_ptr[index] / system->unit_system->dimensionless;
-    output->_dynamic_x = array->_dynamic_x_ptr[index] / system->unit_system->force;
-    output->_dynamic_y = array->_dynamic_y_ptr[index] / system->unit_system->force;
-    output->_dynamic_m = array->_dynamic_m_ptr[index] / system->unit_system->torque;
 }
 
 uint32_t KINEPY_allocate_relation_descriptions_d(System_d *const system, uint32_t const obj_count) {
@@ -802,9 +844,11 @@ void KINEPY_get_relation_description_d(System_d const *const system, uint32_t co
     output->joint1 = array->joint1_ptr[index];
     output->joint2 = array->joint2_ptr[index];
     output->type = array->type_ptr[index];
-    // TODO: weird units
-    output->ratio = array->ratio_ptr[index];
-    output->v0 = array->v0_ptr[index];
+
+    double ratio_unit;
+    get_ratio_unit((system_internal*)system, obj_index, 1, &ratio_unit);
+    output->ratio = array->ratio_ptr[index] / ratio_unit;
+    output->v0 = array->v0_ptr[index] / *(double*) get_v0_unit((system_internal*)system, obj_index, 1);
 }
 
 uint32_t KINEPY_set_relation_description_d(System_d *const system, uint32_t const obj_index, RelationDescription_d const *const input) {
@@ -829,8 +873,9 @@ uint32_t KINEPY_set_relation_description_d(System_d *const system, uint32_t cons
     }
     array->type_ptr[index] = input->type;
 
-    // TODO: weird units
-    array->ratio_ptr[index] = input->ratio;
-    array->v0_ptr[index] = input->v0;
+    double ratio_unit;
+    get_ratio_unit((system_internal*)system, obj_index, 1, &ratio_unit);
+    array->ratio_ptr[index] = ratio_unit * input->ratio;
+    array->v0_ptr[index] = *(double*) get_v0_unit((system_internal*)system, obj_index, 1) * input->v0;
     return KINEPY_SUCCESS;
 }
