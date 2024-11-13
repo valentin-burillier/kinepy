@@ -382,6 +382,11 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
     set_alloc_array(graph.eqs, uint32_t, solid_count);
     set_alloc_array(graph.eq_indices, uint32_t, solid_count+1);
     set_alloc_array(graph.solid_to_eq, uint32_t, solid_count);
+    set_alloc_array(graph.joint_indices, uint32_t, system->joint_description_array.obj_count);
+
+    for (int index = 0; index < system->joint_description_array.obj_count; ++index) {
+
+    }
 
     make_graph_adjacency(system, &graph);
     compute_joint_degrees(&graph);
@@ -415,18 +420,20 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
 
 #pragma region Cleaning up
 malloc_err:
-    switch (5 - allocated) {
+    switch (6 - allocated) {
         case 0:
-            free(graph.solid_to_eq);
+            free(graph.joint_indices);
         case 1:
-            free(graph.eq_indices);
+            free(graph.solid_to_eq);
         case 2:
-            free(graph.eqs);
+            free(graph.eq_indices);
         case 3:
-            free(graph.joint_degrees);
+            free(graph.eqs);
         case 4:
-            free(graph.adjacency);
+            free(graph.joint_degrees);
         case 5:
+            free(graph.adjacency);
+        case 6:
         default:
             break;
     }

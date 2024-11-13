@@ -57,6 +57,9 @@ typedef struct {
     uint32_t * eq_indices;
     uint32_t * eqs;
     uint32_t * solid_to_eq;
+
+    uint32_t * joint_indices;
+    uint32_t * joint_adjacency;
 } Graph;
 
 extern IsostaticGraphInfo const ISOSTATIC_GRAPHS[ISOSTATIC_GRAPH_COUNT];

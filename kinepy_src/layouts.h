@@ -5,100 +5,20 @@
 
 typedef enum {
     KINEPY_SUCCESS,
-    KINEPY_GENERIC_FAILURE,
+    KINEPY_FAILURE,
     KINEPY_INVALID_INPUT,
+    KINEPY_INVALID_INPUT_NEGATIVE_INERTIAL_VALUE,
+    KINEPY_INVALID_INPUT_IDENTICAL_OBJECTS,
+    KINEPY_INVALID_INPUT_WRONG_OBJECT_INDEX,
+    KINEPY_INVALID_INPUT_WRONG_JOINT_TYPE,
+    KINEPY_INVALID_INPUT_WRONG_RELATION_TYPE,
+    KINEPY_INVALID_INPUT_UNMATCHED_RELATION_TYPE_AND_JOINT_TYPES,
     KINEPY_NO_GRAPH_FOUND,
     KINEPY_MALLOC_FAILED
 } KinepyResult;
 
-#define ATTRIBUTES(TYPE, NAME, ...) TYPE NAME;
-#define ARRAY_ATTRIBUTES(TYPE, NAME, ...) TYPE * NAME##_ptr;
-
-#define SOLID_DESC_LAYOUT(CB, FLOAT)                            \
-    CB(FLOAT, mass, STD_UNIT, mass)                             \
-    CB(FLOAT, moment_of_inertia, STD_UNIT, moment_of_inertia)   \
-    CB(FLOAT, gx, STD_UNIT, length)                             \
-    CB(FLOAT, gy, STD_UNIT, length)
-
-#define SOLID_RES_LAYOUT(CB, FLOAT)                     \
-    CB(FLOAT, origin_x, STD_UNIT, length)               \
-    CB(FLOAT, origin_y, STD_UNIT, length)               \
-    CB(FLOAT, orientation_x, STD_UNIT, dimensionless)   \
-    CB(FLOAT, orientation_y, STD_UNIT, dimensionless)   \
-    CB(FLOAT, _dynamic_x, STD_UNIT, force)              \
-    CB(FLOAT, _dynamic_y, STD_UNIT, force)              \
-    CB(FLOAT, _dynamic_m, STD_UNIT, torque)
-
-#define JOINT_DESC_LAYOUT(CB, FLOAT)                            \
-    CB(uint32_t, solid1, NOT_A_PHYSICAL_QUANTITY, is_existing_solid)  \
-    CB(uint32_t, solid2, NOT_A_PHYSICAL_QUANTITY, is_existing_solid)  \
-    CB(uint8_t, type, NOT_A_PHYSICAL_QUANTITY, is_existing_joint_type)\
-    CB(FLOAT, constraint1_x, STD_UNIT, length)                  \
-    CB(FLOAT, constraint1_y, STD_UNIT, length)                  \
-    CB(FLOAT, constraint2_x, STD_UNIT, length)                  \
-    CB(FLOAT, constraint2_y, STD_UNIT, length)
-
-#define RELATION_DESC_LAYOUT(CB, FLOAT) \
-    CB(uint32_t, joint1, NOT_A_PHYSICAL_QUANTITY, is_existing_joint)  \
-    CB(uint32_t, joint2, NOT_A_PHYSICAL_QUANTITY, is_existing_joint)  \
-    CB(uint8_t, type, NOT_A_PHYSICAL_QUANTITY, is_existing_relation_type) \
-    CB(FLOAT, ratio, RELATION_RATIO)    \
-    CB(FLOAT, v0, RELATION_V0)
-
-#define MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, FLOAT, F_SUFFIX) \
-typedef struct {                                                     \
-    LAYOUT(ATTRIBUTES, FLOAT)                                        \
-} BASE_NAME##F_SUFFIX;                                               \
-typedef struct {                                                     \
-    ARRAY_ATTR                                                       \
-    LAYOUT(ARRAY_ATTRIBUTES, FLOAT)                                  \
-} BASE_NAME##Array##F_SUFFIX;
-
-#define MAKE_STRUCTS_ALL_PRECISIONS(LAYOUT, BASE_NAME, ARRAY_ATTR) \
-MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, float, _s)             \
-MAKE_STRUCTS(LAYOUT, BASE_NAME, ARRAY_ATTR, double, _d)
-
-#define SYSTEM_LAYOUT(CB, ...) \
-    CB(SOLID_DESC_LAYOUT, SolidDescription, solid_description, DESC, __VA_ARGS__) \
-    CB(JOINT_DESC_LAYOUT, JointDescription, joint_description, DESC, __VA_ARGS__) \
-    CB(SOLID_RES_LAYOUT, SolidResult, solid_result, RES, __VA_ARGS__)
-
-
-#define RES_ALLOC_PARAM size_t obj_count, size_t frame_count
-#define DESC_ALLOC_PARAM size_t obj_count
-
-#define RES_INTER_PARAM size_t obj_index, size_t frame_index
-#define DESC_INTER_PARAM size_t obj_index
-
-#define RES_ARRAY_ATTR size_t obj_count; size_t frame_count;
-#define DESC_ARRAY_ATTR size_t obj_count;
-
-#define RES_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
-#define DESC_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)  \
-uint32_t KINEPY_set_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX const * input);
-
-
-#define DECLARE_INTERFACE(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX) \
-uint32_t KINEPY_allocate_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system, TYPE##_ALLOC_PARAM);                           \
-void KINEPY_free_##ATTR_NAME##s##F_SUFFIX(System##F_SUFFIX * system);                                                   \
-void KINEPY_get_##ATTR_NAME##F_SUFFIX(System##F_SUFFIX const * system, TYPE##_INTER_PARAM, NAME##F_SUFFIX * output);       \
-TYPE##_SETTER(LAYOUT, NAME, ATTR_NAME, TYPE, FLOAT, F_SUFFIX)
-
-#define DECLARE_INTERFACE_ALL_PRECISIONS(LAYOUT, BASE_NAME, ATTR_NAME, TYPE)    \
-DECLARE_INTERFACE(LAYOUT, BASE_NAME, ATTR_NAME, TYPE, float, _s)                \
-DECLARE_INTERFACE(LAYOUT, BASE_NAME, ATTR_NAME, TYPE, double, _d)
-
-#define GENERATE_STRUCTS(LAYOUT, NAME, ATTR_NAME, TYPE, ...)                 \
-MAKE_STRUCTS_ALL_PRECISIONS(LAYOUT, NAME, TYPE##_ARRAY_ATTR)
-
-#define GENERATE_INTERFACE(LAYOUT, NAME, ATTR_NAME, TYPE, ...)                 \
-DECLARE_INTERFACE_ALL_PRECISIONS(LAYOUT, NAME, ATTR_NAME, TYPE)
-
-
-#define SYSTEM_ATTR(_LAYOUT, NAME, ATTR_NAME, _TYPE, F_SUFFIX, ...) NAME##Array##F_SUFFIX ATTR_NAME##_array;
-
 typedef struct {
-    size_t count;
+    uint32_t count;
     uint32_t * joints;
 } JointArray;
 
@@ -137,7 +57,7 @@ typedef struct {
 } ResolutionStep;
 
 typedef struct {
-    size_t count;
+    uint32_t count;
     ResolutionStep * array;
 } StepArray;
 
@@ -146,36 +66,281 @@ typedef struct {
     StepArray steps;
 } ResolutionMode;
 
-#define MAKE_SYSTEM(FLOAT, F_SUFFIX) \
-typedef struct {                     \
-    FLOAT length;                    \
-    FLOAT mass;                      \
-    FLOAT moment_of_inertia;         \
-    FLOAT force;                     \
-    FLOAT torque;                    \
-    FLOAT dimensionless;             \
-} UnitSystem##F_SUFFIX;              \
-                                     \
-typedef struct {                     \
-    /* Don't put any attribute that varies in size with floating point precision above SYSTEM_LAYOUT(...) */ \
-    SYSTEM_LAYOUT(SYSTEM_ATTR, F_SUFFIX)\
-    ResolutionMode kinematics;       \
-    ResolutionMode dynamics;         \
-    UnitSystem##F_SUFFIX * unit_system; \
-} System##F_SUFFIX;
 
-SYSTEM_LAYOUT(GENERATE_STRUCTS)
+#pragma region SolidDescrition
+typedef struct { 
+    float mass;
+    float moment_of_inertia;
+    float gx;
+    float gy; 
+} SolidDescription_s;
 
-MAKE_SYSTEM(float, _s)
-MAKE_SYSTEM(double, _d)
+typedef struct { 
+    uint32_t obj_count;
+    float *mass_ptr;
+    float *moment_of_inertia_ptr;
+    float *gx_ptr;
+    float *gy_ptr;
+} SolidDescriptionArray_s;
 
-#define MAKE_INTERNAL_SYSTEM(LAYOUT, NAME, ATTR_NAME, TYPE, ... ) \
-struct {TYPE##_ARRAY_ATTR LAYOUT(ARRAY_ATTRIBUTES, void)} ATTR_NAME##_array;
+typedef struct { 
+    double mass;
+    double moment_of_inertia;
+    double gx;
+    double gy; 
+} SolidDescription_d;
+
+typedef struct { 
+    uint32_t obj_count;
+    double *mass_ptr;
+    double *moment_of_inertia_ptr;
+    double *gx_ptr;
+    double *gy_ptr; 
+} SolidDescriptionArray_d;
+#pragma endregion SolidDescrition
+
+#pragma region JointDescription
+typedef struct { 
+    uint32_t solid1;
+    uint32_t solid2;
+    uint8_t type;
+    float constraint1_x;
+    float constraint1_y;
+    float constraint2_x;
+    float constraint2_y;
+} JointDescription_s;
+
+typedef struct { 
+    uint32_t obj_count;
+    uint32_t *solid1_ptr;
+    uint32_t *solid2_ptr;
+    uint8_t *type_ptr;
+    float *constraint1_x_ptr;
+    float *constraint1_y_ptr;
+    float *constraint2_x_ptr;
+    float *constraint2_y_ptr;
+} JointDescriptionArray_s;
+
+typedef struct { 
+    uint32_t solid1;
+    uint32_t solid2;
+    uint8_t type;
+    double constraint1_x;
+    double constraint1_y;
+    double constraint2_x;
+    double constraint2_y;
+} JointDescription_d;
+
+typedef struct { 
+    uint32_t obj_count;
+    uint32_t *solid1_ptr;
+    uint32_t *solid2_ptr;
+    uint8_t *type_ptr;
+    double *constraint1_x_ptr;
+    double *constraint1_y_ptr;
+    double *constraint2_x_ptr;
+    double *constraint2_y_ptr; 
+} JointDescriptionArray_d;
+#pragma endregion JointDescription
+
+#pragma region SolidResult
+typedef struct { 
+    float origin_x;
+    float origin_y;
+    float orientation_x;
+    float orientation_y;
+    float _dynamic_x;
+    float _dynamic_y;
+    float _dynamic_m; 
+} SolidResult_s;
+
 typedef struct {
-    SYSTEM_LAYOUT(MAKE_INTERNAL_SYSTEM)
-} system_internal;
+    uint32_t frame_count;
+    float *origin_x_ptr;
+    float *origin_y_ptr;
+    float *orientation_x_ptr;
+    float *orientation_y_ptr;
+    float *_dynamic_x_ptr;
+    float *_dynamic_y_ptr;
+    float *_dynamic_m_ptr; 
+} SolidResultArray_s;
 
-SYSTEM_LAYOUT(GENERATE_INTERFACE)
+typedef struct { 
+    double origin_x;
+    double origin_y;
+    double orientation_x;
+    double orientation_y;
+    double _dynamic_x;
+    double _dynamic_y;
+    double _dynamic_m; 
+} SolidResult_d;
+
+typedef struct {
+    uint32_t frame_count;
+    double *origin_x_ptr;
+    double *origin_y_ptr;
+    double *orientation_x_ptr;
+    double *orientation_y_ptr;
+    double *_dynamic_x_ptr;
+    double *_dynamic_y_ptr;
+    double *_dynamic_m_ptr; 
+} SolidResultArray_d;
+
+#pragma endregion SolidResult
+
+#pragma region RelationDescription
+typedef struct { 
+    uint32_t joint1;
+    uint32_t joint2;
+    uint8_t type;
+    float ratio;
+    float v0; 
+} RelationDescription_s;
+
+typedef struct { 
+    uint32_t obj_count;
+    uint32_t *joint1_ptr
+    ;uint32_t *joint2_ptr;
+    uint8_t *type_ptr;
+    float *ratio_ptr;
+    float *v0_ptr; 
+} RelationDescriptionArray_s;
+
+typedef struct { 
+    uint32_t joint1;
+    uint32_t joint2;
+    uint8_t type;
+    double ratio;
+    double v0; 
+} RelationDescription_d;
+
+typedef struct { 
+    uint32_t obj_count;
+    uint32_t *joint1_ptr;
+    uint32_t *joint2_ptr;
+    uint8_t *type_ptr;
+    double *ratio_ptr;
+    double *v0_ptr; 
+} RelationDescriptionArray_d;
+
+#pragma endregion RelationDescrption
+
+
+#pragma region System
+typedef struct { 
+    float length;
+    float mass;
+    float moment_of_inertia;
+    float force;
+    float torque;
+    float dimensionless; 
+} UnitSystem_s;
+
+typedef struct { 
+    SolidDescriptionArray_s solid_description_array;
+    JointDescriptionArray_s joint_description_array;
+    SolidResultArray_s solid_result_array;
+    RelationDescriptionArray_s relation_description_array;
+    ResolutionMode kinematics;
+    ResolutionMode dynamics;
+    UnitSystem_s *unit_system; 
+} System_s;
+
+typedef struct { 
+    double length;
+    double mass;
+    double moment_of_inertia;
+    double force;
+    double torque;
+    double dimensionless; 
+} UnitSystem_d;
+
+typedef struct { 
+    SolidDescriptionArray_d solid_description_array;
+    JointDescriptionArray_d joint_description_array;
+    SolidResultArray_d solid_result_array;
+    RelationDescriptionArray_d relation_description_array;
+    ResolutionMode kinematics;
+    ResolutionMode dynamics;
+    UnitSystem_d *unit_system; 
+} System_d;
+
+typedef struct {
+    struct { 
+        uint32_t obj_count;
+        void *mass_ptr;
+        void *moment_of_inertia_ptr;
+        void *gx_ptr;
+        void *gy_ptr; 
+    } solid_description_array;
+    struct { 
+        uint32_t obj_count;
+        uint32_t *solid1_ptr;
+        uint32_t *solid2_ptr;
+        uint8_t *type_ptr;
+        void *constraint1_x_ptr;
+        void *constraint1_y_ptr;
+        void *constraint2_x_ptr;
+        void *constraint2_y_ptr; 
+    } joint_description_array;
+    struct {
+        uint32_t frame_count;
+        void *origin_x_ptr;
+        void *origin_y_ptr;
+        void *orientation_x_ptr;
+        void *orientation_y_ptr;
+        void *_dynamic_x_ptr;
+        void *_dynamic_y_ptr;
+        void *_dynamic_m_ptr; 
+    } solid_result_array;
+    struct { 
+        uint32_t obj_count;
+        uint32_t *joint1_ptr;
+        uint32_t *joint2_ptr;
+        uint8_t *type_ptr;
+        void *ratio_ptr;
+        void *v0_ptr; }
+        relation_description_array;
+} system_internal;
+#pragma endregion System
+
+uint32_t KINEPY_allocate_solid_descriptions_s(System_s *system, uint32_t obj_count);
+void KINEPY_free_solid_descriptions_s(System_s *system);
+void KINEPY_get_solid_description_s(System_s const *system, uint32_t obj_index, SolidDescription_s *output);
+uint32_t KINEPY_set_solid_description_s(System_s *system, uint32_t obj_index, SolidDescription_s const *input);
+
+uint32_t KINEPY_allocate_solid_descriptions_d(System_d *system, uint32_t obj_count);
+void KINEPY_free_solid_descriptions_d(System_d *system);
+void KINEPY_get_solid_description_d(System_d const *system, uint32_t obj_index, SolidDescription_d *output);
+uint32_t KINEPY_set_solid_description_d(System_d *system, uint32_t obj_index, SolidDescription_d const *input);
+
+uint32_t KINEPY_allocate_joint_descriptions_s(System_s *system, uint32_t obj_count);
+void KINEPY_free_joint_descriptions_s(System_s *system);
+void KINEPY_get_joint_description_s(System_s const *system, uint32_t obj_index, JointDescription_s *output);
+uint32_t KINEPY_set_joint_description_s(System_s *system, uint32_t obj_index, JointDescription_s const *input);
+
+uint32_t KINEPY_allocate_joint_descriptions_d(System_d *system, uint32_t obj_count);
+void KINEPY_free_joint_descriptions_d(System_d *system);
+void KINEPY_get_joint_description_d(System_d const *system, uint32_t obj_index, JointDescription_d *output);
+uint32_t KINEPY_set_joint_description_d(System_d *system, uint32_t obj_index, JointDescription_d const *input);
+
+uint32_t KINEPY_allocate_solid_results_s(System_s *system, uint32_t frame_count);
+void KINEPY_free_solid_results_s(System_s *system);
+void KINEPY_get_solid_result_s(System_s const *system, uint32_t obj_index, uint32_t frame_index, SolidResult_s *output);
+
+uint32_t KINEPY_allocate_solid_results_d(System_d *system, uint32_t frame_count);
+void KINEPY_free_solid_results_d(System_d *system);
+void KINEPY_get_solid_result_d(System_d const *system, uint32_t obj_index, uint32_t frame_index, SolidResult_d *output);
+
+uint32_t KINEPY_allocate_relation_descriptions_s(System_s *system, uint32_t obj_count);
+void KINEPY_free_relation_descriptions_s(System_s *system);
+void KINEPY_get_relation_description_s(System_s const *system, uint32_t obj_index, RelationDescription_s *output);
+uint32_t KINEPY_set_relation_description_s(System_s *system, uint32_t obj_index, RelationDescription_s const *input);
+
+uint32_t KINEPY_allocate_relation_descriptions_d(System_d *system, uint32_t obj_count);
+void KINEPY_free_relation_descriptions_d(System_d *system);
+void KINEPY_get_relation_description_d(System_d const *system, uint32_t obj_index, RelationDescription_d *output);
+uint32_t KINEPY_set_relation_description_d(System_d *system, uint32_t obj_index, RelationDescription_d const *input);
 
 typedef enum {
     JOINT_TYPE_EMPTY,
