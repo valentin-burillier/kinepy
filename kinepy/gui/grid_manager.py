@@ -55,7 +55,7 @@ class GridManager:
             line_x = r.left + (x * unit - camera_center[0]) * camera.scale * camera.zoom + r.w / 2
             pg.draw.line(surface, color, (line_x, r.bottom), (line_x, r.bottom + h * 0.02), 2)
 
-            text = font.render(f'{str(rounded_unit * x).rstrip("0").rstrip(".")}', True, color)
+            text = font.render(f'{str(rounded_unit * x)[:6].rstrip("0").rstrip(".")}', True, color)
             surface.blit(text, text.get_rect(midtop=(line_x, r.bottom + h * 0.02)))
 
         # vertical graduations
@@ -64,7 +64,7 @@ class GridManager:
             line_y = r.top - (y * unit - camera_center[1]) * camera.scale * camera.zoom + r.h / 2
             pg.draw.line(surface, color, (r.left, line_y), (r.left - surface.get_width() * 0.02, line_y), 2)
 
-            text = font.render(f'{str(rounded_unit * y).rstrip("0").rstrip(".")} ', True, color)
+            text = font.render(f'{str(rounded_unit * y)[:6].rstrip("0").rstrip(".")} ', True, color)
             surface.blit(text, text.get_rect(midright=(r.left - surface.get_width() * 0.02, line_y)))
 
     def change_scale(self, camera):

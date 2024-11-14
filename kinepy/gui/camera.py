@@ -25,8 +25,8 @@ class Camera:
         self.sys_mgr = SystemManager(self.system, self.scale0, points, speeds, forces, torques, joint_efforts)
 
     def set_bound_box(self, points: tuple):
-        min_ = np.amin(points, axis=(0, 2))
-        max_ = np.amax(points, axis=(0, 2))
+        min_ = np.nanmin(points, axis=(0, 2))
+        max_ = np.nanmax(points, axis=(0, 2))
         self.system_area = Rect(*min_, *(max_ - min_))
         self.system_area.scale(1.2, self.system_area.w * .5, self.system_area.h * .5)
         if self.system_area.w == 0. or self.system_area.h == 0:
