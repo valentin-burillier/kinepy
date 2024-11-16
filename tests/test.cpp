@@ -4,10 +4,10 @@
 #include <cmath>
 
 extern "C" {
-    #include "graphs.h"
+    #include "graph/test_graph.h"
 }
 
-void isostatic_to_user(JointType const * const iso_graph, uint32_t const size, std::vector<GraphNode>& result) {
+void isostatic_to_user(uint8_t const * const iso_graph, uint32_t const size, std::vector<GraphNode>& result) {
     for (int index = 0; index < size; ++index) {
         result[index].type = iso_graph[index];
         result[index].joint_index = -1;
@@ -131,9 +131,9 @@ TEST(MergeGraph, simple) {
 
     Graph graph = {
         .eq_count = static_cast<uint32_t>(target_eqs.size()),
-        .adjacency = adjacency,
         .eq_indices = eq_indices.data(),
-        .eqs = eqs.data()
+        .eqs = eqs.data(),
+        .adjacency = adjacency
     };
 
     merge_graph(&graph, merge_group.data(), merge_group.size());

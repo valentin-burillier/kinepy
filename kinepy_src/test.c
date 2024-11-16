@@ -1,8 +1,8 @@
 #include "stdio.h"
+#include "math.h"
+
 
 int main() {
-    volatile int a = 0;
-    printf("%d\n", a++ + a);
-    a = 0;
-    printf("%d\n", a + a++);
+    volatile float a = sqrtf(-1.0f);
+    printf("%f", a);
 }

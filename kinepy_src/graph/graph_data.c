@@ -1,4 +1,5 @@
-#include "graphs.h"
+#include "graph_data.h"
+#include "internal/enums.h"
 
 /*
          0
@@ -8,7 +9,7 @@
      1 - R - 2
 */
 
-JointType const GRAPH_RRR_ADJACENCY[] = {
+uint8_t const GRAPH_RRR_ADJACENCY[] = {
     JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE
 };
 
@@ -19,7 +20,7 @@ JointType const GRAPH_RRR_ADJACENCY[] = {
       /     \
      1 - P - 2
 */
-JointType const GRAPH_RRP_ADJACENCY[] = {
+uint8_t const GRAPH_RRP_ADJACENCY[] = {
     JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_PRISMATIC
 };
 
@@ -31,7 +32,7 @@ JointType const GRAPH_RRP_ADJACENCY[] = {
       /     \
      1 - R - 2
 */
-JointType const GRAPH_PPR_ADJACENCY[] = {
+uint8_t const GRAPH_PPR_ADJACENCY[] = {
     JOINT_TYPE_PRISMATIC, JOINT_TYPE_PRISMATIC, JOINT_TYPE_REVOLUTE
 };
 

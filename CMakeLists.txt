@@ -7,11 +7,12 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(
         C_Kinepy
         STATIC
-        kinepy_src/graphs.h
-        kinepy_src/graphs.c
-        kinepy_src/layouts.h
-        kinepy_src/layouts.c
-        kinepy_src/graph_data.c
+        kinepy_src/graph/graph_operations.c
+        kinepy_src/graph/graph_data.c
+        kinepy_src/interface/interface.c
+        kinepy_src/interface/interface.h
+        kinepy_src/interface/structs.h
+        kinepy_src/graph/graph_interface.h
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)

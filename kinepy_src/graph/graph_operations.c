@@ -1,14 +1,15 @@
 #include "string.h"
-#include "graphs.h"
 #include "stdlib.h"
-#include "stdio.h"
-
+#include "public_structs.h"
+#include "private_structs.h"
+#include "graph_data.h"
+#include "internal/enums.h"
 
 void make_graph_adjacency(system_internal const * const system, Graph * const graph) {
-    for (int index = 0; index < system->joint_description_array.obj_count; index++) {
-        JointType type = system->joint_description_array.type_ptr[index];
-        uint32_t solid1 = system->joint_description_array.solid1_ptr[index];
-        uint32_t solid2 = system->joint_description_array.solid2_ptr[index];
+    for (int index = 0; index < system->joints.obj_count; index++) {
+        uint8_t type = system->joints.type_ptr[index];
+        uint32_t solid1 = system->joints.solid1_ptr[index];
+        uint32_t solid2 = system->joints.solid2_ptr[index];
 
         GraphNode const node = {
             .type = type,
@@ -52,7 +53,7 @@ void compute_solid_to_eq(Graph const * const graph) {
  * @param d2 bigger graph vertex JointDegree
  * @return d1 <= d2
  */
-inline int compare_degrees(JointDegree const d1, JointDegree const d2) {
+int compare_degrees(JointDegree const d1, JointDegree const d2) {
     return (d1.prismatic <= d2.prismatic) && (d1.revolute <= d2.revolute);
 }
 
@@ -160,7 +161,6 @@ malloc_err:
     return result;
 }
 
-
 uint32_t merge_graph(Graph * const graph, uint32_t const * group_to_merge, uint32_t group_size) {
     uint32_t result = KINEPY_SUCCESS;
     uint32_t allocated = 0;
@@ -252,8 +252,7 @@ malloc_err:
 }
 
 
-
-void clear_resolution_steps(ResolutionMode * const resolution_mode) {
+void kp_clear_resolution_steps(ResolutionMode * const resolution_mode) {
     while (resolution_mode->steps.count) {
         resolution_mode->steps.count--;
         ResolutionStep * current = &resolution_mode->steps.array[resolution_mode->steps.count];
@@ -296,7 +295,7 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
         }
     };
 
-    set_alloc_array(step.graph_step.eq_indices, uint32_t, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count+1);
+    set_alloc_array(step.graph_step.eq_indices, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count+1);
     *step.graph_step.eq_indices = 0;
     for(int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].vertex_count; ++index) {
         step.graph_step.eq_indices[index+1] = step.graph_step.eq_indices[index] + graph->eq_indices[isomorphism[index]+1] - graph->eq_indices[isomorphism[index]];
@@ -304,13 +303,13 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
 
 
     uint32_t const solid_count = step.graph_step.eq_indices[ISOSTATIC_GRAPHS[isostatic_graph].vertex_count];
-    set_alloc_array(step.graph_step.eqs, uint32_t, solid_count);
+    set_alloc_array(step.graph_step.eqs, solid_count);
     for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].vertex_count; ++index) {
         memcpy(step.graph_step.eqs + step.graph_step.eq_indices[index], graph->eqs + graph->eq_indices[isomorphism[index]], step.graph_step.eq_indices[index+1] - step.graph_step.eq_indices[index]);
     }
 
 
-    set_alloc_array(step.graph_step.edges, GraphStepEdge, ISOSTATIC_GRAPHS[isostatic_graph].edge_count);
+    set_alloc_array(step.graph_step.edges, ISOSTATIC_GRAPHS[isostatic_graph].edge_count);
     for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].edge_count; ++index) {
         Edge const * const edge_ptr = ISOSTATIC_GRAPHS[isostatic_graph].edges + index;
         uint32_t eq_x = isomorphism[(*edge_ptr)[0]];
@@ -318,7 +317,7 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
         uint32_t joint_index = graph->adjacency[graph_index(eq_x, eq_y, graph->eq_count)].joint_index;
 
         step.graph_step.edges[index].joint_index = joint_index;
-        step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid1_ptr[joint_index]] != eq_x;
+        step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joints.solid1_ptr[joint_index]] != eq_x;
         // equivalent to
         // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid2_ptr[joint_index]] != eq_y;
 
@@ -347,16 +346,16 @@ uint32_t solve_isostatic_graphs(system_internal const * const system, Resolution
     uint32_t * isomorphism = NULL;
     while (graph->eq_count > 1) {
         uint32_t isostatic_graph;
-        KINEPY_check(find_isomorphism(graph, &isostatic_graph, &isomorphism)){
+        check(find_isomorphism(graph, &isostatic_graph, &isomorphism)){
             if (result == KINEPY_NO_GRAPH_FOUND) {
                 return result;
             }
             break;
         }
-        KINEPY_check(register_graph_resolution_step(system, resolution_mode, graph, isostatic_graph, isomorphism)) {
+        check(register_graph_resolution_step(system, resolution_mode, graph, isostatic_graph, isomorphism)) {
             break;
         }
-        KINEPY_check(merge_graph(graph, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count)) {
+        check(merge_graph(graph, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count)) {
             break;
         }
         free(isomorphism);
@@ -369,37 +368,43 @@ uint32_t solve_isostatic_graphs(system_internal const * const system, Resolution
     return result;
 }
 
-uint32_t determine_computation_order(system_internal const * const system, ResolutionMode * const resolution_mode) {
-    uint32_t result = KINEPY_SUCCESS;
-    uint8_t allocated = 0;
-#pragma region Setting up
-    uint32_t const solid_count = system->solid_description_array.obj_count;
 
+uint32_t internal_determine_computation_order_body(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+    return KINEPY_SUCCESS;
+}
+
+
+uint32_t internal_determine_computation_order(system_internal const * const system, ResolutionMode * const resolution_mode) {
+#pragma region Setting up
+    uint32_t result;
+    uint8_t allocated = 0;
+    uint32_t const solid_count = system->solids.obj_count;
     Graph graph = {0};
     graph.eq_count = solid_count;
-    set_alloc_array(graph.adjacency, GraphNode, adjacency_size(solid_count));
-    set_alloc_array(graph.degrees, JointDegree, solid_count);
-    set_alloc_array(graph.eqs, uint32_t, solid_count);
-    set_alloc_array(graph.eq_indices, uint32_t, solid_count+1);
-    set_alloc_array(graph.solid_to_eq, uint32_t, solid_count);
-    set_alloc_array(graph.joint_indices, uint32_t, system->joint_description_array.obj_count+1);
-    set_alloc_array(graph.joint_adjacency, uint32_t, 2 * system->relation_description_array.obj_count);
+    set_alloc_array(graph.adjacency, adjacency_size(solid_count));
+    set_alloc_array(graph.degrees, solid_count);
+    set_alloc_array(graph.eqs, solid_count);
+    set_alloc_array(graph.eq_indices, solid_count+1);
+    set_alloc_array(graph.solid_to_eq, solid_count);
+    set_alloc_array(graph.joint_state, system->joints.obj_count);
+    set_alloc_array(graph.joint_indices, system->joints.obj_count + 1);
+    set_alloc_array(graph.joint_adjacency, 2 * system->relations.obj_count);
 
-    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * system->joint_description_array.obj_count+1);
-    for (int index = 0; index < system->relation_description_array.obj_count; ++index) {
-        uint32_t const joint1 = system->relation_description_array.joint1_ptr[index];
-        uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
+    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * system->joints.obj_count + 1);
+    for (int index = 0; index < system->relations.obj_count; ++index) {
+        uint32_t const joint1 = system->relations.joint1_ptr[index];
+        uint32_t const joint2 = system->relations.joint2_ptr[index];
 
         graph.joint_indices[joint1]++;
         graph.joint_indices[joint2]++;
     }
-    for (int index = 0; index < system->joint_description_array.obj_count; ++index) {
+    for (int index = 0; index < system->joints.obj_count; ++index) {
         graph.joint_indices[index+1] += graph.joint_indices[index];
     }
-    memset(graph.joint_adjacency, 0xff, sizeof(*graph.joint_adjacency) * 2 * system->relation_description_array.obj_count);
-    for (int index = 0; index < 2 * system->relation_description_array.obj_count; ++index) {
-        uint32_t const joint1 = system->relation_description_array.joint1_ptr[index];
-        uint32_t const joint2 = system->relation_description_array.joint2_ptr[index];
+    memset(graph.joint_adjacency, 0xff, sizeof(*graph.joint_adjacency) * 2 * system->relations.obj_count);
+    for (int index = 0; index < 2 * system->relations.obj_count; ++index) {
+        uint32_t const joint1 = system->relations.joint1_ptr[index];
+        uint32_t const joint2 = system->relations.joint2_ptr[index];
 
         uint32_t * ptr = &graph.joint_adjacency[graph.joint_indices[joint1]];
         while (*ptr != -1) {
@@ -407,7 +412,7 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
         }
         *ptr = joint2;
         ptr = &graph.joint_adjacency[graph.joint_indices[joint2]];
-        while (*ptr != -1) {
+        while (*ptr != 0xffffffff) {
             ++ptr;
         }
         *ptr = joint1;
@@ -427,43 +432,53 @@ uint32_t determine_computation_order(system_internal const * const system, Resol
     graph.eq_indices[solid_count] = solid_count;
 #pragma endregion
 
-    // solve graphs that don't need  input values
-    result = solve_isostatic_graphs(system, resolution_mode, &graph);
-
-    // TODO: Check gears and gear_racks, they must involve exactly 3 eqs at this stage
-    // TODO: Compute piloted/blocked joints
-    
-    // main loop
-    while (graph.eq_count > 1) {
-        result = solve_isostatic_graphs(system, resolution_mode, &graph);
-    }
-
-
-    if (graph.eq_count > 1 || result == KINEPY_MALLOC_FAILED) {
-        clear_resolution_steps(resolution_mode);
+    result = internal_determine_computation_order_body(system, resolution_mode, &graph);
+    if (result != KINEPY_SUCCESS) {
+        kp_clear_resolution_steps(resolution_mode);
     }
 
 #pragma region Cleaning up
 malloc_err:
-    switch (7 - allocated) {
+    switch (8 - allocated) {
         case 0:
             free(graph.joint_adjacency);
         case 1:
             free(graph.joint_indices);
         case 2:
-            free(graph.solid_to_eq);
+            free(graph.joint_state);
         case 3:
-            free(graph.eq_indices);
+            free(graph.solid_to_eq);
         case 4:
-            free(graph.eqs);
+            free(graph.eq_indices);
         case 5:
-            free(graph.degrees);
+            free(graph.eqs);
         case 6:
-            free(graph.adjacency);
+            free(graph.degrees);
         case 7:
+            free(graph.adjacency);
         default:
             break;
     }
 #pragma endregion
     return result;
 }
+
+#include "internal/define_names.h"
+
+#define float_type float
+#define type_suffix _s
+#define trig(NAME) NAME ## f
+#include "templates/graph_interface_template.c"
+#undef trig
+#undef float_type
+#undef type_suffix
+
+#define float_type double
+#define type_suffix _d
+#define trig(NAME) NAME
+#include "templates/graph_interface_template.c"
+#undef trig
+#undef float_type
+#undef type_suffix
+
+#include "internal/undef_names.h"
