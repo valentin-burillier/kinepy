@@ -138,7 +138,7 @@ class System:
     @physics_input_method('', '', SPRING_CONSTANT, LENGTH, LENGTH, LENGTH)
     def add_spring(self, s1, s2, k, l0, p1=(0., 0.), p2=(0, 0.)):
         spr = Spring(s1, s2, k, l0, p1, p2)  # noqa
-        self._object.interactions.append(spr)
+        self._object.interactions.append(get_object(spr))
         return spr
 
     @joint_checker

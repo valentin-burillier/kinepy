@@ -8,16 +8,10 @@ from kinepy.interface.decorators import get_object
 class Gravity(obj.Gravity, metaclass=MetaUnit):
     read_write = ('g', ACCELERATION),
 
-    def set_ma(self, system):
-        self._object.set_ma(system)
-
 
 class Spring(obj.Spring, metaclass=MetaUnit):
     read_only = FORCE_,
     read_write = P1, P2, ('k', SPRING_CONSTANT), ('l0', LENGTH)
-
-    def set_ma(self, system):
-        self._object.set_ma(system)
 
 
 class SolidExternal:
