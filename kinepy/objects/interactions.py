@@ -16,7 +16,7 @@ class Gravity:
 class Spring:
     force = None
 
-    def __init__(self, k, l0, s1, s2, p1, p2):
+    def __init__(self, s1, s2, k, l0, p1, p2):
         self.s1, self.s2, self.p1, self.p2 = s1, s2, p1, p2
         self.l0, self.k = l0, k
 
