@@ -5,6 +5,11 @@
 #include "graph_data.h"
 #include "internal/enums.h"
 
+#define INHERITED_CONTINUITY_BIT 0x01
+#define SOLVED_JOINT_BIT 0x10
+#define NO_COMMON_EQ 255
+
+
 void make_graph_adjacency(system_internal const * const system, Graph * const graph) {
     for (int index = 0; index < system->joints.obj_count; index++) {
         uint8_t type = system->joints.type_ptr[index];
@@ -263,9 +268,18 @@ void kp_clear_resolution_steps(ResolutionMode * const resolution_mode) {
                 free(current->graph_step.edges);
                 break;
             case STEP_TYPE_JOINT:
+                break;
+            case STEP_TYPE_JOINT_REVOLUTE:
+            case STEP_TYPE_JOINT_PRISMATIC:
                 free(current->joint_step.eqs);
                 break;
             case STEP_TYPE_RELATION:
+                break;
+            case STEP_TYPE_RELATION_GEAR:
+            case STEP_TYPE_RELATION_GEAR_RACK:
+            case STEP_TYPE_RELATION_DISTANT:
+            case STEP_TYPE_RELATION_EFFORTLESS:
+                free(current->relation_step.eqs);
                 break;
         }
     }
@@ -281,8 +295,8 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
         result = KINEPY_MALLOC_FAILED;
         goto malloc_err;
     }
-    ++allocated;
     resolution_mode->steps.array = temp_ptr;
+
 
     ResolutionStep step = {
         .type = STEP_TYPE_GRAPH,
@@ -322,9 +336,10 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
         // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid2_ptr[joint_index]] != eq_y;
 
     }
-
+    resolution_mode->steps.array[resolution_mode->steps.count] = step;
+    ++resolution_mode->steps.count;
 malloc_err:
-    switch(4 - allocated) {
+    switch(3 - allocated) {
         case 0:
             free(step.graph_step.edges);
         case 1:
@@ -332,27 +347,47 @@ malloc_err:
         case 2:
             free(step.graph_step.eq_indices);
         case 3:
-            free(resolution_mode->steps.array);
-        case 4:
         default:
             break;
     }
     return result;
 }
 
-uint32_t solve_isostatic_graphs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph*  const graph) {
+void push_joint(Graph * const graph, uint32_t const joint_index, uint8_t const continuity) {
+    graph->joint_state[joint_index] |= SOLVED_JOINT_BIT | continuity;
+    graph->joint_queue[graph->joint_queue_head] = joint_index;
+    ++graph->joint_queue_head;
+}
+
+void push_gear(Graph * const graph, uint32_t const joint_index, uint32_t const relation_node_index) {
+    uint32_t * ptr = (uint32_t*)&graph->gear_queue[graph->gear_queue_head];
+    *ptr = joint_index;
+    *(ptr+1) = relation_node_index;
+    ++graph->gear_queue_head;
+}
+
+uint32_t solve_isostatic_graphs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t const certain_continuity) {
     uint32_t result = KINEPY_SUCCESS;
 
     uint32_t * isomorphism = NULL;
     while (graph->eq_count > 1) {
         uint32_t isostatic_graph;
         check(find_isomorphism(graph, &isostatic_graph, &isomorphism)){
-            if (result == KINEPY_NO_GRAPH_FOUND) {
-                return result;
-            }
-            break;
+            return result;
         }
         check(register_graph_resolution_step(system, resolution_mode, graph, isostatic_graph, isomorphism)) {
+            break;
+        }
+        ResolutionStep const * const current_step = &resolution_mode->steps.array[resolution_mode->steps.count-1];
+        for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].edge_count; ++index) {
+            uint32_t const joint_index = current_step->graph_step.edges[index].joint_index;
+            if (graph->joint_state[joint_index] & SOLVED_JOINT_BIT) {
+                result = KINEPY_FAILURE;
+                break;
+            }
+            push_joint(graph, joint_index, certain_continuity);
+        }
+        if (result != KINEPY_SUCCESS) {
             break;
         }
         check(merge_graph(graph, isomorphism, ISOSTATIC_GRAPHS[isostatic_graph].vertex_count)) {
@@ -368,9 +403,272 @@ uint32_t solve_isostatic_graphs(system_internal const * const system, Resolution
     return result;
 }
 
+uint8_t test_gear_conformity(system_internal const * const system, Graph const * const graph, uint32_t const gear_index) {
+    switch (system->relations.type_ptr[gear_index]) {
+        case RELATION_TYPE_GEAR:
+        case RELATION_TYPE_GEAR_RACK:
+            break;
+        default:
+            return 0;
+    }
+    uint32_t const joint1 = system->relations.joint1_ptr[gear_index];
+    uint32_t const joint2 = system->relations.joint2_ptr[gear_index];
+
+    uint32_t const solid11 = system->joints.solid1_ptr[joint1];
+    uint32_t const solid12 = system->joints.solid2_ptr[joint1];
+    uint32_t const solid21 = system->joints.solid1_ptr[joint2];
+    uint32_t const solid22 = system->joints.solid2_ptr[joint2];
+
+    uint32_t const eq11 = graph->solid_to_eq[solid11];
+    uint32_t const eq12 = graph->solid_to_eq[solid12];
+    uint32_t const eq21 = graph->solid_to_eq[solid21];
+    uint32_t const eq22 = graph->solid_to_eq[solid22];
+
+    if (eq21 == eq11) {
+        return 0b00;
+    } else if (eq22 == eq11) {
+        return 0b01;
+    } else if (eq21 == eq12) {
+        return 0b10;
+    } else if (eq22 == eq12) {
+        return 0b11;
+    }
+    return NO_COMMON_EQ;
+}
+
+uint32_t register_relation_node(system_internal const* const system, ResolutionMode * const resolution_mode, Graph * const graph, RelationNode * const node, uint32_t const joint_index, uint8_t common_eq_mask) {
+    uint32_t result;
+    node->solved = 1;
+    node->pair->solved = 1;
+
+    push_joint(graph, node->joint_index, INHERITED_CONTINUITY_BIT);
+
+    // register the step
+    void* tmp = realloc(resolution_mode->steps.array, sizeof(*resolution_mode->steps.array) * (resolution_mode->steps.count+1));
+    if (!tmp) {
+        return KINEPY_MALLOC_FAILED;
+    }
+    resolution_mode->steps.array = tmp;
+    ResolutionStep * const step = &resolution_mode->steps.array[resolution_mode->steps.count];
+
+    step->type = STEP_TYPE_RELATION + system->relations.type_ptr[node->relation_index];
+
+    step->relation_step.relation_index = node->relation_index;
+    step->relation_step.flags = !(graph->joint_state[joint_index] & INHERITED_CONTINUITY_BIT) | (common_eq_mask << 6) | ((joint_index == system->joints.solid1_ptr[node->relation_index]) << 5);
+
+    uint32_t const eq1 = graph->solid_to_eq[system->joints.solid1_ptr[node->joint_index]];
+    uint32_t const eq2 = graph->solid_to_eq[system->joints.solid2_ptr[node->joint_index]];
+
+    step->relation_step.first_eq_size = graph->eq_indices[eq1+1] - graph->eq_indices[eq1];
+    step->relation_step.second_eq_size = graph->eq_indices[eq2+1] - graph->eq_indices[eq2];
+    step->relation_step.eqs = malloc((step->relation_step.first_eq_size+step->relation_step.second_eq_size) * sizeof(*step->relation_step.eqs));
+    if (!step->relation_step.eqs) {
+        return KINEPY_MALLOC_FAILED;
+    }
+    ++resolution_mode->steps.count;
+
+    memcpy(step->relation_step.eqs, graph->eq_indices + eq1, step->relation_step.first_eq_size * sizeof(*step->relation_step.eqs));
+    memcpy(step->relation_step.eqs + step->relation_step.first_eq_size, graph->eq_indices + eq2, step->relation_step.second_eq_size * sizeof(*step->relation_step.eqs));
+
+    uint32_t group_to_merge[2] = {eq1, eq2};
+    result = merge_graph(graph, group_to_merge, 2);
+    return result;
+}
+
+
+uint32_t propagate_relation_resolution(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t allowed_delaying) {
+    uint32_t result = KINEPY_SUCCESS;
+    while (graph->joint_queue_tail != graph->joint_queue_head) {
+        // extract next queued joint
+        uint32_t const current_joint = graph->joint_queue[graph->joint_queue_tail];
+        ++graph->joint_queue_tail;
+
+        for (uint32_t index = graph->joint_indices[current_joint]; index < graph->joint_indices[current_joint+1]; ++index) {
+            RelationNode * const node = &graph->joint_adjacency[index];
+            if (node->solved) {
+                // ignore relation source (there is at most 1)
+                continue;
+            }
+            if (graph->joint_state[node->joint_index] & SOLVED_JOINT_BIT) {
+                return KINEPY_INVALID_CONFIGURATION_HYPERSTATIC_RELATION_SCHEME;
+            }
+
+            uint8_t const common_eq_mask = test_gear_conformity(system, graph, node->relation_index);
+            if (common_eq_mask == NO_COMMON_EQ) {
+                if (!allowed_delaying) {
+                    return KINEPY_INVALID_CONFIGURATION_GEAR_RELATION_WITH_NO_COMMON_EQ;
+                }
+                push_gear(graph, current_joint, index);
+                continue;
+            }
+            check(register_relation_node(system, resolution_mode, graph, node, current_joint, common_eq_mask)) {
+                return result;
+            }
+        }
+    }
+    return result;
+}
+
+uint32_t try_delayed_gears(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+    uint32_t result = KINEPY_SUCCESS;
+
+    uint32_t current = graph->gear_queue_tail;
+    while (current != graph->gear_queue_head) {
+        uint32_t * ptr = (uint32_t*)&graph->gear_queue[current];
+        uint32_t const current_joint = *ptr;
+        uint32_t const node_index = *(ptr+1);
+        RelationNode * const node = &graph->joint_adjacency[node_index];
+        ++current;
+
+        if (node->solved) {
+            continue;
+        }
+        uint8_t const common_eq_mask = test_gear_conformity(system, graph, node->relation_index);
+        if (common_eq_mask == NO_COMMON_EQ) {
+            continue;
+        }
+        check(register_relation_node(system, resolution_mode, graph, node, current_joint, common_eq_mask)) {
+            return result;
+        }
+        check(propagate_relation_resolution(system, resolution_mode, graph, 1)) {
+            return result;
+        }
+    }
+    // pop as many nodes as
+    while (graph->gear_queue_tail != graph->gear_queue_head) {
+        uint32_t *ptr = (uint32_t *) &graph->gear_queue[graph->gear_queue_tail];
+        uint32_t const node_index = *(ptr + 1);
+        RelationNode *const node = &graph->joint_adjacency[node_index];
+        if (node->solved) {
+            ++graph->gear_queue_tail;
+        } else {
+            break;
+        }
+    }
+    return result;
+}
+
+uint8_t test_all_gear_conformity(system_internal const * const system, Graph const * const graph) {
+    for (int index = 0; index < system->relations.obj_count; ++index) {
+        if (test_gear_conformity(system, graph, index) == NO_COMMON_EQ) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+uint32_t register_inputs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+    uint32_t result = KINEPY_SUCCESS;
+
+    void* tmp = realloc(resolution_mode->steps.array, sizeof(*resolution_mode->steps.array) * (resolution_mode->steps.count + resolution_mode->piloted_or_blocked_joints.count));
+    if (!tmp) {
+        return KINEPY_MALLOC_FAILED;
+    }
+    resolution_mode->steps.array = tmp;
+
+    for (int index = 0; index < resolution_mode->piloted_or_blocked_joints.count; ++index) {
+        uint32_t const joint_index = resolution_mode->piloted_or_blocked_joints.joints[index];
+
+        ResolutionStep * const step = &resolution_mode->steps.array[resolution_mode->steps.count];
+        step->type = STEP_TYPE_JOINT + system->joints.type_ptr[joint_index];
+
+        step->joint_step.joint_index = joint_index;
+        uint32_t const eq1 = graph->solid_to_eq[system->joints.solid1_ptr[joint_index]];
+        uint32_t const eq2 = graph->solid_to_eq[system->joints.solid2_ptr[joint_index]];
+
+        step->joint_step.first_eq_size = graph->eq_indices[eq1+1] - graph->eq_indices[eq1];
+        step->joint_step.second_eq_size = graph->eq_indices[eq2+1] - graph->eq_indices[eq2];
+        step->joint_step.eqs = malloc((step->joint_step.first_eq_size+step->joint_step.second_eq_size) * sizeof(*step->joint_step.eqs));
+
+        if (!step->joint_step.eqs) {
+            return KINEPY_MALLOC_FAILED;
+        }
+        ++resolution_mode->steps.count;
+        memcpy(step->joint_step.eqs, graph->eq_indices + eq1, step->joint_step.first_eq_size * sizeof(*step->joint_step.eqs));
+        memcpy(step->joint_step.eqs + step->joint_step.first_eq_size, graph->eq_indices + eq2, step->joint_step.second_eq_size * sizeof(*step->joint_step.eqs));
+
+        uint32_t const group_to_merge[] = {eq1, eq2};
+        check(merge_graph(graph, group_to_merge, 2)) {
+            return result;
+        }
+        push_joint(graph, joint_index, INHERITED_CONTINUITY_BIT);
+    }
+    return result;
+}
+
 
 uint32_t internal_determine_computation_order_body(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
-    return KINEPY_SUCCESS;
+    uint32_t result;
+    while (1) {
+        result = solve_isostatic_graphs(system, resolution_mode, graph, INHERITED_CONTINUITY_BIT);
+        if (result != KINEPY_NO_GRAPH_FOUND) {
+            return result;
+        }
+        if (graph->joint_queue_tail == graph->joint_queue_head) {
+            break;
+        }
+        check(try_delayed_gears(system, resolution_mode, graph)) {
+            return result;
+        }
+        check(propagate_relation_resolution(system, resolution_mode, graph, 1)) {
+            return result;
+        }
+        check(try_delayed_gears(system, resolution_mode, graph)) {
+            return result;
+        }
+    }
+
+    if (graph->gear_queue_tail != graph->gear_queue_head || test_all_gear_conformity(system, graph)) {
+        return KINEPY_INVALID_CONFIGURATION_GEAR_RELATION_WITH_NO_COMMON_EQ;
+    }
+    check(register_inputs(system, resolution_mode, graph)) {
+        return result;
+    }
+    check(propagate_relation_resolution(system, resolution_mode, graph, 0)) {
+        return result;
+    }
+
+    while (1) {
+        result = solve_isostatic_graphs(system, resolution_mode, graph, 0);
+        if (result != KINEPY_NO_GRAPH_FOUND || graph->joint_queue_tail == graph->joint_queue_head) {
+            if (graph->eq_count == 1) {
+                return KINEPY_SUCCESS;
+            }
+            return result;
+        }
+        check(propagate_relation_resolution(system, resolution_mode, graph, 0)) {
+            return result;
+        }
+    }
+}
+
+
+void make_joint_adjacency(system_internal const * const system, Graph * const graph) {
+    memset(graph->joint_adjacency, 0xff, sizeof(*graph->joint_adjacency) * 2 * system->relations.obj_count);
+    for (int index = 0; index < system->relations.obj_count; ++index) {
+        uint32_t const joint1 = system->relations.joint1_ptr[index];
+        uint32_t const joint2 = system->relations.joint2_ptr[index];
+
+        RelationNode * ptr = &graph->joint_adjacency[graph->joint_indices[joint1]];
+        while (ptr->joint_index != 0xffffffff) {
+            ++ptr;
+        }
+        ptr->joint_index = joint2;
+        ptr->relation_index = index;
+        ptr->solved = 0;
+        RelationNode * old_ptr = ptr;
+
+        ptr = &graph->joint_adjacency[graph->joint_indices[joint2]];
+        while (ptr->joint_index != 0xffffffff) {
+            ++ptr;
+        }
+        ptr->joint_index = joint1;
+        ptr->relation_index = index;
+        ptr->solved = 0;
+
+        ptr->pair = old_ptr;
+        old_ptr->pair = ptr;
+    }
 }
 
 
@@ -380,6 +678,20 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     uint8_t allocated = 0;
     uint32_t const solid_count = system->solids.obj_count;
     Graph graph = {0};
+
+    void** const graph_ptr[] = {
+        (void **) &graph.adjacency,
+        (void **) &graph.degrees,
+        (void **) &graph.eqs,
+        (void **) &graph.eq_indices,
+        (void **) &graph.solid_to_eq,
+        (void **) &graph.joint_state,
+        (void **) &graph.joint_indices,
+        (void **) &graph.joint_adjacency,
+        (void **) &graph.joint_queue,
+        (void **) &graph.gear_queue
+    };
+
     graph.eq_count = solid_count;
     set_alloc_array(graph.adjacency, adjacency_size(solid_count));
     set_alloc_array(graph.degrees, solid_count);
@@ -389,6 +701,16 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     set_alloc_array(graph.joint_state, system->joints.obj_count);
     set_alloc_array(graph.joint_indices, system->joints.obj_count + 1);
     set_alloc_array(graph.joint_adjacency, 2 * system->relations.obj_count);
+    set_alloc_array(graph.joint_queue, system->joints.obj_count);
+    set_alloc_array(graph.gear_queue, system->relations.obj_count);
+    graph.joint_queue_head = 0;
+    graph.joint_queue_tail = 0;
+    graph.gear_queue_tail = 0;
+    graph.gear_queue_tail = 0;
+
+    for (int index = 0; index < system->joints.obj_count; ++index) {
+        graph.joint_state[index] = (system->joints.type_ptr[index] == JOINT_TYPE_PRISMATIC) * INHERITED_CONTINUITY_BIT;
+    }
 
     memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * system->joints.obj_count + 1);
     for (int index = 0; index < system->relations.obj_count; ++index) {
@@ -401,23 +723,8 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     for (int index = 0; index < system->joints.obj_count; ++index) {
         graph.joint_indices[index+1] += graph.joint_indices[index];
     }
-    memset(graph.joint_adjacency, 0xff, sizeof(*graph.joint_adjacency) * 2 * system->relations.obj_count);
-    for (int index = 0; index < 2 * system->relations.obj_count; ++index) {
-        uint32_t const joint1 = system->relations.joint1_ptr[index];
-        uint32_t const joint2 = system->relations.joint2_ptr[index];
 
-        uint32_t * ptr = &graph.joint_adjacency[graph.joint_indices[joint1]];
-        while (*ptr != -1) {
-            ++ptr;
-        }
-        *ptr = joint2;
-        ptr = &graph.joint_adjacency[graph.joint_indices[joint2]];
-        while (*ptr != 0xffffffff) {
-            ++ptr;
-        }
-        *ptr = joint1;
-    }
-
+    make_joint_adjacency(system, &graph);
     make_graph_adjacency(system, &graph);
     compute_joint_degrees(&graph);
 
@@ -432,32 +739,14 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     graph.eq_indices[solid_count] = solid_count;
 #pragma endregion
 
-    result = internal_determine_computation_order_body(system, resolution_mode, &graph);
-    if (result != KINEPY_SUCCESS) {
+    check(internal_determine_computation_order_body(system, resolution_mode, &graph)) {
         kp_clear_resolution_steps(resolution_mode);
     }
 
 #pragma region Cleaning up
 malloc_err:
-    switch (8 - allocated) {
-        case 0:
-            free(graph.joint_adjacency);
-        case 1:
-            free(graph.joint_indices);
-        case 2:
-            free(graph.joint_state);
-        case 3:
-            free(graph.solid_to_eq);
-        case 4:
-            free(graph.eq_indices);
-        case 5:
-            free(graph.eqs);
-        case 6:
-            free(graph.degrees);
-        case 7:
-            free(graph.adjacency);
-        default:
-            break;
+    for (int index = 0; index < allocated; ++index) {
+        free(*graph_ptr[index]);
     }
 #pragma endregion
     return result;

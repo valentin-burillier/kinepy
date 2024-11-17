@@ -28,10 +28,25 @@ typedef struct {
     uint32_t * eqs;
 } JointStep;
 
+typedef struct {
+    uint32_t relation_index;
+    uint32_t first_eq_size;
+    uint32_t second_eq_size;
+    uint32_t * eqs;
+    uint8_t flags;
+} RelationStep;
+
 typedef enum {
     STEP_TYPE_GRAPH,
     STEP_TYPE_JOINT,
-    STEP_TYPE_RELATION
+    STEP_TYPE_JOINT_REVOLUTE,
+    STEP_TYPE_JOINT_PRISMATIC,
+    STEP_TYPE_RELATION,
+    STEP_TYPE_RELATION_GEAR,
+    STEP_TYPE_RELATION_GEAR_RACK,
+    STEP_TYPE_RELATION_DISTANT,
+    STEP_TYPE_RELATION_EFFORTLESS,
+
 } StepType;
 
 typedef struct {
@@ -39,6 +54,7 @@ typedef struct {
     union {
         GraphStep graph_step;
         JointStep joint_step;
+        RelationStep relation_step;
     };
 } ResolutionStep;
 

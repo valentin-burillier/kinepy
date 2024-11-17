@@ -111,10 +111,10 @@ uint32_t update_prismatic_constraints(System * const system, uint32_t const obj_
     distance2 *= system->unit_system->length;
 
     typeof(*system->joints.constraint_ptr) * constraints = &system->joints.constraint_ptr[obj_index];
-    constraints->x1 = trig(cos)(alpha1) * distance1;
-    constraints->y1 = trig(sin)(alpha1) * distance1;
-    constraints->x2 = trig(cos)(alpha2) * distance2;
-    constraints->y2 = trig(sin)(alpha2) * distance2;
+    constraints->x1 = -trig(sin)(alpha1) * distance1;
+    constraints->y1 = trig(cos)(alpha1) * distance1;
+    constraints->x2 = -trig(sin)(alpha2) * distance2;
+    constraints->y2 = trig(cos)(alpha2) * distance2;
     return KINEPY_SUCCESS;
 }
 

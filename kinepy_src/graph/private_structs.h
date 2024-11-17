@@ -30,6 +30,13 @@ typedef struct {
     uint32_t joint_index;
 } GraphNode;
 
+typedef struct _relation_node {
+    uint32_t relation_index;
+    uint32_t joint_index;
+    uint8_t solved;
+    struct _relation_node * pair;
+} RelationNode;
+
 typedef struct {
     uint32_t eq_count;
     uint32_t * eq_indices;
@@ -41,7 +48,15 @@ typedef struct {
 
     uint8_t * joint_state;
     uint32_t * joint_indices;
-    uint32_t * joint_adjacency;
+    RelationNode * joint_adjacency;
+    uint32_t joint_queue_head;
+    uint32_t joint_queue_tail;
+    uint32_t * joint_queue;
+
+    uint32_t gear_queue_head;
+    uint32_t gear_queue_tail;
+    uint64_t * gear_queue;
+
 } Graph;
 
 #endif //PRIVATE_STRUCTS_H
