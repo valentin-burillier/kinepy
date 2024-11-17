@@ -4,28 +4,6 @@
 #include "graph_data.h"
 
 typedef struct {
-    struct {
-        uint32_t obj_count;
-        void * solid_description_ptr;
-    } solids;
-    struct {
-        uint32_t obj_count;
-        uint32_t *solid1_ptr;
-        uint32_t *solid2_ptr;
-        uint8_t *type_ptr;
-        void * constraint_ptr;
-    } joints;
-    struct {
-        uint32_t obj_count;
-        uint32_t *joint1_ptr;
-        uint32_t *joint2_ptr;
-        uint8_t *type_ptr;
-        void * parameter_ptr;
-    } relations;
-    void * unit_system;
-} system_internal;
-
-typedef struct {
     uint8_t type;
     uint32_t joint_index;
 } GraphNode;

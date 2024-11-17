@@ -1,27 +1,25 @@
 #include "string.h"
 #include "stdlib.h"
-#include "public_structs.h"
+
+#include "graph_interface.h"
 #include "private_structs.h"
-#include "graph_data.h"
 #include "internal/enums.h"
 
 #define INHERITED_CONTINUITY_BIT 0x01
 #define SOLVED_JOINT_BIT 0x10
 #define NO_COMMON_EQ 255
+#define GEAR_SHOULD_BE_FORMED 0
+#define GEAR_MAY_NOT_BE_FORMED 1
 
 
-void make_graph_adjacency(system_internal const * const system, Graph * const graph) {
-    for (int index = 0; index < system->joints.obj_count; index++) {
-        uint8_t type = system->joints.type_ptr[index];
-        uint32_t solid1 = system->joints.solid1_ptr[index];
-        uint32_t solid2 = system->joints.solid2_ptr[index];
-
+void make_graph_adjacency(Configuration const * const config, Graph * const graph) {
+    for (int index = 0; index < config->joint_count; index++) {
+        typeof(config->joints) joint = config->joints + index;
         GraphNode const node = {
-            .type = type,
+            .type = joint->type,
             .joint_index = index
         };
-
-        graph->adjacency[graph_index(solid1, solid2, graph->eq_count)] = node;
+        graph->adjacency[graph_index(joint->solid1, joint->solid2, graph->eq_count)] = node;
     }
 }
 
@@ -287,7 +285,7 @@ void kp_clear_resolution_steps(ResolutionMode * const resolution_mode) {
     resolution_mode->steps.array = NULL;
 }
 
-uint32_t register_graph_resolution_step(system_internal const * const system, ResolutionMode * const resolution_mode, Graph const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism) {
+uint32_t register_graph_resolution_step(Configuration const * const config, ResolutionMode * const resolution_mode, Graph const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism) {
     uint32_t result = KINEPY_SUCCESS;
     uint32_t allocated = 0;
     void * temp_ptr = realloc(resolution_mode->steps.array, (resolution_mode->steps.count + 1) * sizeof(ResolutionStep));
@@ -331,10 +329,9 @@ uint32_t register_graph_resolution_step(system_internal const * const system, Re
         uint32_t joint_index = graph->adjacency[graph_index(eq_x, eq_y, graph->eq_count)].joint_index;
 
         step.graph_step.edges[index].joint_index = joint_index;
-        step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joints.solid1_ptr[joint_index]] != eq_x;
+        step.graph_step.edges[index].orientation = graph->solid_to_eq[config->joints[joint_index].solid1] != eq_x;
         // equivalent to
-        // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joint_description_array.solid2_ptr[joint_index]] != eq_y;
-
+        // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joints.config_ptr[joint_index].solid2] != eq_y;
     }
     resolution_mode->steps.array[resolution_mode->steps.count] = step;
     ++resolution_mode->steps.count;
@@ -366,7 +363,7 @@ void push_gear(Graph * const graph, uint32_t const joint_index, uint32_t const r
     ++graph->gear_queue_head;
 }
 
-uint32_t solve_isostatic_graphs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t const certain_continuity) {
+uint32_t solve_isostatic_graphs(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t const certain_continuity) {
     uint32_t result = KINEPY_SUCCESS;
 
     uint32_t * isomorphism = NULL;
@@ -375,7 +372,7 @@ uint32_t solve_isostatic_graphs(system_internal const * const system, Resolution
         check(find_isomorphism(graph, &isostatic_graph, &isomorphism)){
             return result;
         }
-        check(register_graph_resolution_step(system, resolution_mode, graph, isostatic_graph, isomorphism)) {
+        check(register_graph_resolution_step(config, resolution_mode, graph, isostatic_graph, isomorphism)) {
             break;
         }
         ResolutionStep const * const current_step = &resolution_mode->steps.array[resolution_mode->steps.count-1];
@@ -403,26 +400,22 @@ uint32_t solve_isostatic_graphs(system_internal const * const system, Resolution
     return result;
 }
 
-uint8_t test_gear_conformity(system_internal const * const system, Graph const * const graph, uint32_t const gear_index) {
-    switch (system->relations.type_ptr[gear_index]) {
+uint8_t test_gear_conformity(Configuration const * const config, Graph const * const graph, uint32_t const gear_index) {
+    typeof(config->relations) relation_config = config->relations + gear_index;
+    switch (relation_config->type) {
         case RELATION_TYPE_GEAR:
         case RELATION_TYPE_GEAR_RACK:
             break;
         default:
             return 0;
     }
-    uint32_t const joint1 = system->relations.joint1_ptr[gear_index];
-    uint32_t const joint2 = system->relations.joint2_ptr[gear_index];
+    typeof(config->joints) joint1_config = config->joints + relation_config->joint1;
+    typeof(config->joints) joint2_config = config->joints + relation_config->joint2;
 
-    uint32_t const solid11 = system->joints.solid1_ptr[joint1];
-    uint32_t const solid12 = system->joints.solid2_ptr[joint1];
-    uint32_t const solid21 = system->joints.solid1_ptr[joint2];
-    uint32_t const solid22 = system->joints.solid2_ptr[joint2];
-
-    uint32_t const eq11 = graph->solid_to_eq[solid11];
-    uint32_t const eq12 = graph->solid_to_eq[solid12];
-    uint32_t const eq21 = graph->solid_to_eq[solid21];
-    uint32_t const eq22 = graph->solid_to_eq[solid22];
+    uint32_t const eq11 = graph->solid_to_eq[joint1_config->solid1];
+    uint32_t const eq12 = graph->solid_to_eq[joint1_config->solid2];
+    uint32_t const eq21 = graph->solid_to_eq[joint2_config->solid1];
+    uint32_t const eq22 = graph->solid_to_eq[joint2_config->solid2];
 
     if (eq21 == eq11) {
         return 0b00;
@@ -436,7 +429,7 @@ uint8_t test_gear_conformity(system_internal const * const system, Graph const *
     return NO_COMMON_EQ;
 }
 
-uint32_t register_relation_node(system_internal const* const system, ResolutionMode * const resolution_mode, Graph * const graph, RelationNode * const node, uint32_t const joint_index, uint8_t common_eq_mask) {
+uint32_t register_relation_node(Configuration const* const config, ResolutionMode * const resolution_mode, Graph * const graph, RelationNode * const node, uint32_t const joint_index, uint8_t common_eq_mask) {
     uint32_t result;
     node->solved = 1;
     node->pair->solved = 1;
@@ -451,13 +444,13 @@ uint32_t register_relation_node(system_internal const* const system, ResolutionM
     resolution_mode->steps.array = tmp;
     ResolutionStep * const step = &resolution_mode->steps.array[resolution_mode->steps.count];
 
-    step->type = STEP_TYPE_RELATION + system->relations.type_ptr[node->relation_index];
+    step->type = STEP_TYPE_RELATION + config->relations[node->relation_index].type;
 
     step->relation_step.relation_index = node->relation_index;
-    step->relation_step.flags = !(graph->joint_state[joint_index] & INHERITED_CONTINUITY_BIT) | (common_eq_mask << 6) | ((joint_index == system->joints.solid1_ptr[node->relation_index]) << 5);
+    step->relation_step.flags = !(graph->joint_state[joint_index] & INHERITED_CONTINUITY_BIT) | (common_eq_mask << 6) | ((joint_index == config->relations[node->relation_index].joint1) << 5);
 
-    uint32_t const eq1 = graph->solid_to_eq[system->joints.solid1_ptr[node->joint_index]];
-    uint32_t const eq2 = graph->solid_to_eq[system->joints.solid2_ptr[node->joint_index]];
+    uint32_t const eq1 = graph->solid_to_eq[config->joints[node->joint_index].solid1];
+    uint32_t const eq2 = graph->solid_to_eq[config->joints[node->joint_index].solid2];
 
     step->relation_step.first_eq_size = graph->eq_indices[eq1+1] - graph->eq_indices[eq1];
     step->relation_step.second_eq_size = graph->eq_indices[eq2+1] - graph->eq_indices[eq2];
@@ -476,7 +469,7 @@ uint32_t register_relation_node(system_internal const* const system, ResolutionM
 }
 
 
-uint32_t propagate_relation_resolution(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t allowed_delaying) {
+uint32_t propagate_relation_resolution(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t allowed_delaying) {
     uint32_t result = KINEPY_SUCCESS;
     while (graph->joint_queue_tail != graph->joint_queue_head) {
         // extract next queued joint
@@ -493,7 +486,7 @@ uint32_t propagate_relation_resolution(system_internal const * const system, Res
                 return KINEPY_INVALID_CONFIGURATION_HYPERSTATIC_RELATION_SCHEME;
             }
 
-            uint8_t const common_eq_mask = test_gear_conformity(system, graph, node->relation_index);
+            uint8_t const common_eq_mask = test_gear_conformity(config, graph, node->relation_index);
             if (common_eq_mask == NO_COMMON_EQ) {
                 if (!allowed_delaying) {
                     return KINEPY_INVALID_CONFIGURATION_GEAR_RELATION_WITH_NO_COMMON_EQ;
@@ -501,7 +494,7 @@ uint32_t propagate_relation_resolution(system_internal const * const system, Res
                 push_gear(graph, current_joint, index);
                 continue;
             }
-            check(register_relation_node(system, resolution_mode, graph, node, current_joint, common_eq_mask)) {
+            check(register_relation_node(config, resolution_mode, graph, node, current_joint, common_eq_mask)) {
                 return result;
             }
         }
@@ -509,7 +502,7 @@ uint32_t propagate_relation_resolution(system_internal const * const system, Res
     return result;
 }
 
-uint32_t try_delayed_gears(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t try_delayed_gears(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result = KINEPY_SUCCESS;
 
     uint32_t current = graph->gear_queue_tail;
@@ -523,14 +516,14 @@ uint32_t try_delayed_gears(system_internal const * const system, ResolutionMode 
         if (node->solved) {
             continue;
         }
-        uint8_t const common_eq_mask = test_gear_conformity(system, graph, node->relation_index);
+        uint8_t const common_eq_mask = test_gear_conformity(config, graph, node->relation_index);
         if (common_eq_mask == NO_COMMON_EQ) {
             continue;
         }
-        check(register_relation_node(system, resolution_mode, graph, node, current_joint, common_eq_mask)) {
+        check(register_relation_node(config, resolution_mode, graph, node, current_joint, common_eq_mask)) {
             return result;
         }
-        check(propagate_relation_resolution(system, resolution_mode, graph, 1)) {
+        check(propagate_relation_resolution(config, resolution_mode, graph, GEAR_MAY_NOT_BE_FORMED)) {
             return result;
         }
     }
@@ -548,16 +541,16 @@ uint32_t try_delayed_gears(system_internal const * const system, ResolutionMode 
     return result;
 }
 
-uint8_t test_all_gear_conformity(system_internal const * const system, Graph const * const graph) {
-    for (int index = 0; index < system->relations.obj_count; ++index) {
-        if (test_gear_conformity(system, graph, index) == NO_COMMON_EQ) {
+uint8_t test_all_gear_conformity(Configuration const * const config, Graph const * const graph) {
+    for (int index = 0; index < config->relation_count; ++index) {
+        if (test_gear_conformity(config, graph, index) == NO_COMMON_EQ) {
             return 0;
         }
     }
     return 1;
 }
 
-uint32_t register_inputs(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t register_inputs(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result = KINEPY_SUCCESS;
 
     void* tmp = realloc(resolution_mode->steps.array, sizeof(*resolution_mode->steps.array) * (resolution_mode->steps.count + resolution_mode->piloted_or_blocked_joints.count));
@@ -570,11 +563,11 @@ uint32_t register_inputs(system_internal const * const system, ResolutionMode * 
         uint32_t const joint_index = resolution_mode->piloted_or_blocked_joints.joints[index];
 
         ResolutionStep * const step = &resolution_mode->steps.array[resolution_mode->steps.count];
-        step->type = STEP_TYPE_JOINT + system->joints.type_ptr[joint_index];
+        step->type = STEP_TYPE_JOINT + config->joints[joint_index].type;
 
         step->joint_step.joint_index = joint_index;
-        uint32_t const eq1 = graph->solid_to_eq[system->joints.solid1_ptr[joint_index]];
-        uint32_t const eq2 = graph->solid_to_eq[system->joints.solid2_ptr[joint_index]];
+        uint32_t const eq1 = graph->solid_to_eq[config->joints[joint_index].solid1];
+        uint32_t const eq2 = graph->solid_to_eq[config->joints[joint_index].solid2];
 
         step->joint_step.first_eq_size = graph->eq_indices[eq1+1] - graph->eq_indices[eq1];
         step->joint_step.second_eq_size = graph->eq_indices[eq2+1] - graph->eq_indices[eq2];
@@ -597,57 +590,58 @@ uint32_t register_inputs(system_internal const * const system, ResolutionMode * 
 }
 
 
-uint32_t internal_determine_computation_order_body(system_internal const * const system, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t internal_determine_computation_order_body(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result;
     while (1) {
-        result = solve_isostatic_graphs(system, resolution_mode, graph, INHERITED_CONTINUITY_BIT);
+        result = solve_isostatic_graphs(config, resolution_mode, graph, INHERITED_CONTINUITY_BIT);
         if (result != KINEPY_NO_GRAPH_FOUND) {
+            // result might also be SUCCESS, which means the system is completely solved
             return result;
         }
         if (graph->joint_queue_tail == graph->joint_queue_head) {
             break;
         }
-        check(try_delayed_gears(system, resolution_mode, graph)) {
+        check(try_delayed_gears(config, resolution_mode, graph)) {
             return result;
         }
-        check(propagate_relation_resolution(system, resolution_mode, graph, 1)) {
+        check(propagate_relation_resolution(config, resolution_mode, graph, GEAR_MAY_NOT_BE_FORMED)) {
             return result;
         }
-        check(try_delayed_gears(system, resolution_mode, graph)) {
+        check(try_delayed_gears(config, resolution_mode, graph)) {
             return result;
         }
     }
 
-    if (graph->gear_queue_tail != graph->gear_queue_head || test_all_gear_conformity(system, graph)) {
+    if (graph->gear_queue_tail != graph->gear_queue_head || test_all_gear_conformity(config, graph)) {
         return KINEPY_INVALID_CONFIGURATION_GEAR_RELATION_WITH_NO_COMMON_EQ;
     }
-    check(register_inputs(system, resolution_mode, graph)) {
+    check(register_inputs(config, resolution_mode, graph)) {
         return result;
     }
-    check(propagate_relation_resolution(system, resolution_mode, graph, 0)) {
+    check(propagate_relation_resolution(config, resolution_mode, graph, GEAR_SHOULD_BE_FORMED)) {
         return result;
     }
 
     while (1) {
-        result = solve_isostatic_graphs(system, resolution_mode, graph, 0);
+        result = solve_isostatic_graphs(config, resolution_mode, graph, 0);
         if (result != KINEPY_NO_GRAPH_FOUND || graph->joint_queue_tail == graph->joint_queue_head) {
             if (graph->eq_count == 1) {
                 return KINEPY_SUCCESS;
             }
             return result;
         }
-        check(propagate_relation_resolution(system, resolution_mode, graph, 0)) {
+        check(propagate_relation_resolution(config, resolution_mode, graph, GEAR_SHOULD_BE_FORMED)) {
             return result;
         }
     }
 }
 
 
-void make_joint_adjacency(system_internal const * const system, Graph * const graph) {
-    memset(graph->joint_adjacency, 0xff, sizeof(*graph->joint_adjacency) * 2 * system->relations.obj_count);
-    for (int index = 0; index < system->relations.obj_count; ++index) {
-        uint32_t const joint1 = system->relations.joint1_ptr[index];
-        uint32_t const joint2 = system->relations.joint2_ptr[index];
+void make_joint_adjacency(Configuration const * const config, Graph * const graph) {
+    memset(graph->joint_adjacency, 0xff, sizeof(*graph->joint_adjacency) * 2 * config->relation_count);
+    for (int index = 0; index < config->relation_count; ++index) {
+        uint32_t const joint1 = config->relations[index].joint1;
+        uint32_t const joint2 = config->relations[index].joint2;
 
         RelationNode * ptr = &graph->joint_adjacency[graph->joint_indices[joint1]];
         while (ptr->joint_index != 0xffffffff) {
@@ -672,8 +666,8 @@ void make_joint_adjacency(system_internal const * const system, Graph * const gr
 }
 
 
-uint32_t hyper_statism(system_internal const * const system, ResolutionMode const * const resolution_mode) {
-    int32_t const value = 2 * system->joints.obj_count - 3 * (system->solids.obj_count - 1) + resolution_mode->piloted_or_blocked_joints.count + system->relations.obj_count;
+uint32_t hyper_statism(Configuration const * const config, ResolutionMode const * const resolution_mode) {
+    int32_t const value = 2 * config->joint_count - 3 * (config->solid_count - 1) + resolution_mode->piloted_or_blocked_joints.count + config->relation_count;
     if (value < 0) {
         return KINEPY_INVALID_CONFIGURATION_HYPOSTATIC_SYSTEM;
     }
@@ -683,15 +677,15 @@ uint32_t hyper_statism(system_internal const * const system, ResolutionMode cons
     return KINEPY_SUCCESS;
 }
 
-uint32_t internal_determine_computation_order(system_internal const * const system, ResolutionMode * const resolution_mode) {
+uint32_t kp_determine_computation_order(Configuration const * const config, ResolutionMode * const resolution_mode) {
     uint32_t result;
-    check(hyper_statism(system, resolution_mode)) {
+    check(hyper_statism(config, resolution_mode)) {
         return result;
     }
 
 #pragma region Setting up
     uint8_t allocated = 0;
-    uint32_t const solid_count = system->solids.obj_count;
+    uint32_t const solid_count = config->solid_count;
     Graph graph = {0};
 
     void** const graph_ptr[] = {
@@ -713,34 +707,34 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     set_alloc_array(graph.eqs, solid_count);
     set_alloc_array(graph.eq_indices, solid_count+1);
     set_alloc_array(graph.solid_to_eq, solid_count);
-    set_alloc_array(graph.joint_state, system->joints.obj_count);
-    set_alloc_array(graph.joint_indices, system->joints.obj_count + 1);
-    set_alloc_array(graph.joint_adjacency, 2 * system->relations.obj_count);
-    set_alloc_array(graph.joint_queue, system->joints.obj_count);
-    set_alloc_array(graph.gear_queue, system->relations.obj_count);
+    set_alloc_array(graph.joint_state, config->joint_count);
+    set_alloc_array(graph.joint_indices, config->joint_count + 1);
+    set_alloc_array(graph.joint_adjacency, 2 * config->relation_count);
+    set_alloc_array(graph.joint_queue, config->joint_count);
+    set_alloc_array(graph.gear_queue, config->relation_count);
     graph.joint_queue_head = 0;
     graph.joint_queue_tail = 0;
     graph.gear_queue_tail = 0;
     graph.gear_queue_tail = 0;
 
-    for (int index = 0; index < system->joints.obj_count; ++index) {
-        graph.joint_state[index] = (system->joints.type_ptr[index] == JOINT_TYPE_PRISMATIC) * INHERITED_CONTINUITY_BIT;
+    for (int index = 0; index < config->joint_count; ++index) {
+        graph.joint_state[index] = (config->joints[index].type == JOINT_TYPE_PRISMATIC) * INHERITED_CONTINUITY_BIT;
     }
 
-    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * system->joints.obj_count + 1);
-    for (int index = 0; index < system->relations.obj_count; ++index) {
-        uint32_t const joint1 = system->relations.joint1_ptr[index];
-        uint32_t const joint2 = system->relations.joint2_ptr[index];
+    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * config->joint_count + 1);
+    for (int index = 0; index < config->relation_count; ++index) {
+        uint32_t const joint1 = config->relations[index].joint1;
+        uint32_t const joint2 = config->relations[index].joint2;
 
         graph.joint_indices[joint1]++;
         graph.joint_indices[joint2]++;
     }
-    for (int index = 0; index < system->joints.obj_count; ++index) {
+    for (int index = 0; index < config->joint_count; ++index) {
         graph.joint_indices[index+1] += graph.joint_indices[index];
     }
 
-    make_joint_adjacency(system, &graph);
-    make_graph_adjacency(system, &graph);
+    make_joint_adjacency(config, &graph);
+    make_graph_adjacency(config, &graph);
     compute_joint_degrees(&graph);
 
     resolution_mode->steps.count = 0;
@@ -754,7 +748,7 @@ uint32_t internal_determine_computation_order(system_internal const * const syst
     graph.eq_indices[solid_count] = solid_count;
 #pragma endregion
 
-    check(internal_determine_computation_order_body(system, resolution_mode, &graph)) {
+    check(internal_determine_computation_order_body(config, resolution_mode, &graph)) {
         kp_clear_resolution_steps(resolution_mode);
     }
 
@@ -767,23 +761,3 @@ malloc_err:
 
     return result;
 }
-
-#include "internal/define_names.h"
-
-#define float_type float
-#define type_suffix _s
-#define trig(NAME) NAME ## f
-#include "templates/graph_interface_template.c"
-#undef trig
-#undef float_type
-#undef type_suffix
-
-#define float_type double
-#define type_suffix _d
-#define trig(NAME) NAME
-#include "templates/graph_interface_template.c"
-#undef trig
-#undef float_type
-#undef type_suffix
-
-#include "internal/undef_names.h"

@@ -4,6 +4,7 @@
 #include <cmath>
 
 extern "C" {
+    #include "interface/interface.h"
     #include "graph/test_graph.h"
 }
 
@@ -153,4 +154,41 @@ TEST(MergeGraph, simple) {
     for (int index = 0; index < eqs.size(); ++index) {
         EXPECT_EQ(target_eqs[index], eqs[index]);
     }
+}
+
+
+TEST(ComputationOrder, NoInputs) {
+    /*
+        0
+       / \
+      R0  R1
+     /     \
+    1       2
+    |\      |
+    | R3    |
+    |  \    |
+    R2  5   R4
+    |  / \  |
+    | R5  R8|
+    |/     \|
+    3       4
+     \     /
+      R7  R6
+       \ /
+        6
+ */
+    KpSystem_s system;
+    kp_allocate_system_s(&system, 7, 9, 0);
+
+    EXPECT_EQ(kp_configure_joint(&system.config, 0, JOINT_TYPE_REVOLUTE, 0, 1), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 1, JOINT_TYPE_REVOLUTE, 0, 2), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 2, JOINT_TYPE_REVOLUTE, 1, 3), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 3, JOINT_TYPE_REVOLUTE, 1, 5), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 4, JOINT_TYPE_REVOLUTE, 2, 4), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 5, JOINT_TYPE_REVOLUTE, 3, 5), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 6, JOINT_TYPE_REVOLUTE, 4, 6), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 7, JOINT_TYPE_REVOLUTE, 3, 6), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 8, JOINT_TYPE_REVOLUTE, 4, 5), KINEPY_SUCCESS);
+
+    kp_free_system_s(&system);
 }

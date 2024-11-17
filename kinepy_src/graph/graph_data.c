@@ -1,5 +1,6 @@
 #include "graph_data.h"
 #include "internal/enums.h"
+#include "interface/configuration.h"
 
 /*
          0

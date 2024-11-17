@@ -11,8 +11,11 @@ add_library(
         kinepy_src/graph/graph_data.c
         kinepy_src/interface/interface.c
         kinepy_src/interface/interface.h
-        kinepy_src/interface/structs.h
         kinepy_src/graph/graph_interface.h
+        kinepy_src/interface/configuration.h
+        kinepy_src/interface/helper_functions.h
+        kinepy_src/interface/configuration.c
+        kinepy_src/interface/helper_functions.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)

@@ -1,4 +1,5 @@
 #include "interface.h"
+#include "helper_functions.h"
 
 #include "internal/define_names.h"
 
