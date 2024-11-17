@@ -534,7 +534,7 @@ uint32_t try_delayed_gears(system_internal const * const system, ResolutionMode 
             return result;
         }
     }
-    // pop as many nodes as
+    // pop as many nodes as possible
     while (graph->gear_queue_tail != graph->gear_queue_head) {
         uint32_t *ptr = (uint32_t *) &graph->gear_queue[graph->gear_queue_tail];
         uint32_t const node_index = *(ptr + 1);
@@ -656,7 +656,7 @@ void make_joint_adjacency(system_internal const * const system, Graph * const gr
         ptr->joint_index = joint2;
         ptr->relation_index = index;
         ptr->solved = 0;
-        RelationNode * old_ptr = ptr;
+        RelationNode * const old_ptr = ptr;
 
         ptr = &graph->joint_adjacency[graph->joint_indices[joint2]];
         while (ptr->joint_index != 0xffffffff) {
@@ -672,9 +672,24 @@ void make_joint_adjacency(system_internal const * const system, Graph * const gr
 }
 
 
+uint32_t hyper_statism(system_internal const * const system, ResolutionMode const * const resolution_mode) {
+    int32_t const value = 2 * system->joints.obj_count - 3 * (system->solids.obj_count - 1) + resolution_mode->piloted_or_blocked_joints.count + system->relations.obj_count;
+    if (value < 0) {
+        return KINEPY_INVALID_CONFIGURATION_HYPOSTATIC_SYSTEM;
+    }
+    if (value > 0) {
+        return KINEPY_INVALID_CONFIGURATION_HYPERSTATIC_SYSTEM;
+    }
+    return KINEPY_SUCCESS;
+}
+
 uint32_t internal_determine_computation_order(system_internal const * const system, ResolutionMode * const resolution_mode) {
-#pragma region Setting up
     uint32_t result;
+    check(hyper_statism(system, resolution_mode)) {
+        return result;
+    }
+
+#pragma region Setting up
     uint8_t allocated = 0;
     uint32_t const solid_count = system->solids.obj_count;
     Graph graph = {0};
@@ -749,6 +764,7 @@ malloc_err:
         free(*graph_ptr[index]);
     }
 #pragma endregion
+
     return result;
 }
 
