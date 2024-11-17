@@ -21,7 +21,7 @@ typedef struct {
 
 
 typedef struct {
-    Configuration config;
+    KpConfiguration config;
     UnitSystem * unit_system;
     struct {
         float_type mass;

@@ -12,7 +12,7 @@
 #define GEAR_MAY_NOT_BE_FORMED 1
 
 
-void make_graph_adjacency(Configuration const * const config, Graph * const graph) {
+void make_graph_adjacency(KpConfiguration const * const config, Graph * const graph) {
     for (int index = 0; index < config->joint_count; index++) {
         typeof(config->joints) joint = config->joints + index;
         GraphNode const node = {
@@ -285,7 +285,7 @@ void kp_clear_resolution_steps(ResolutionMode * const resolution_mode) {
     resolution_mode->steps.array = NULL;
 }
 
-uint32_t register_graph_resolution_step(Configuration const * const config, ResolutionMode * const resolution_mode, Graph const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism) {
+uint32_t register_graph_resolution_step(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph const * const graph, uint32_t const isostatic_graph, uint32_t const * const isomorphism) {
     uint32_t result = KINEPY_SUCCESS;
     uint32_t allocated = 0;
     void * temp_ptr = realloc(resolution_mode->steps.array, (resolution_mode->steps.count + 1) * sizeof(ResolutionStep));
@@ -363,7 +363,7 @@ void push_gear(Graph * const graph, uint32_t const joint_index, uint32_t const r
     ++graph->gear_queue_head;
 }
 
-uint32_t solve_isostatic_graphs(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t const certain_continuity) {
+uint32_t solve_isostatic_graphs(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t const certain_continuity) {
     uint32_t result = KINEPY_SUCCESS;
 
     uint32_t * isomorphism = NULL;
@@ -400,7 +400,7 @@ uint32_t solve_isostatic_graphs(Configuration const * const config, ResolutionMo
     return result;
 }
 
-uint8_t test_gear_conformity(Configuration const * const config, Graph const * const graph, uint32_t const gear_index) {
+uint8_t test_gear_conformity(KpConfiguration const * const config, Graph const * const graph, uint32_t const gear_index) {
     typeof(config->relations) relation_config = config->relations + gear_index;
     switch (relation_config->type) {
         case RELATION_TYPE_GEAR:
@@ -429,7 +429,7 @@ uint8_t test_gear_conformity(Configuration const * const config, Graph const * c
     return NO_COMMON_EQ;
 }
 
-uint32_t register_relation_node(Configuration const* const config, ResolutionMode * const resolution_mode, Graph * const graph, RelationNode * const node, uint32_t const joint_index, uint8_t common_eq_mask) {
+uint32_t register_relation_node(KpConfiguration const* const config, ResolutionMode * const resolution_mode, Graph * const graph, RelationNode * const node, uint32_t const joint_index, uint8_t common_eq_mask) {
     uint32_t result;
     node->solved = 1;
     node->pair->solved = 1;
@@ -469,7 +469,7 @@ uint32_t register_relation_node(Configuration const* const config, ResolutionMod
 }
 
 
-uint32_t propagate_relation_resolution(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t allowed_delaying) {
+uint32_t propagate_relation_resolution(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph * const graph, uint8_t allowed_delaying) {
     uint32_t result = KINEPY_SUCCESS;
     while (graph->joint_queue_tail != graph->joint_queue_head) {
         // extract next queued joint
@@ -502,7 +502,7 @@ uint32_t propagate_relation_resolution(Configuration const * const config, Resol
     return result;
 }
 
-uint32_t try_delayed_gears(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t try_delayed_gears(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result = KINEPY_SUCCESS;
 
     uint32_t current = graph->gear_queue_tail;
@@ -541,7 +541,7 @@ uint32_t try_delayed_gears(Configuration const * const config, ResolutionMode * 
     return result;
 }
 
-uint8_t test_all_gear_conformity(Configuration const * const config, Graph const * const graph) {
+uint8_t test_all_gear_conformity(KpConfiguration const * const config, Graph const * const graph) {
     for (int index = 0; index < config->relation_count; ++index) {
         if (test_gear_conformity(config, graph, index) == NO_COMMON_EQ) {
             return 0;
@@ -550,7 +550,7 @@ uint8_t test_all_gear_conformity(Configuration const * const config, Graph const
     return 1;
 }
 
-uint32_t register_inputs(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t register_inputs(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result = KINEPY_SUCCESS;
 
     void* tmp = realloc(resolution_mode->steps.array, sizeof(*resolution_mode->steps.array) * (resolution_mode->steps.count + resolution_mode->piloted_or_blocked_joints.count));
@@ -590,7 +590,7 @@ uint32_t register_inputs(Configuration const * const config, ResolutionMode * co
 }
 
 
-uint32_t internal_determine_computation_order_body(Configuration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
+uint32_t internal_determine_computation_order_body(KpConfiguration const * const config, ResolutionMode * const resolution_mode, Graph * const graph) {
     uint32_t result;
     while (1) {
         result = solve_isostatic_graphs(config, resolution_mode, graph, INHERITED_CONTINUITY_BIT);
@@ -637,7 +637,7 @@ uint32_t internal_determine_computation_order_body(Configuration const * const c
 }
 
 
-void make_joint_adjacency(Configuration const * const config, Graph * const graph) {
+void make_joint_adjacency(KpConfiguration const * const config, Graph * const graph) {
     memset(graph->joint_adjacency, 0xff, sizeof(*graph->joint_adjacency) * 2 * config->relation_count);
     for (int index = 0; index < config->relation_count; ++index) {
         uint32_t const joint1 = config->relations[index].joint1;
@@ -666,7 +666,7 @@ void make_joint_adjacency(Configuration const * const config, Graph * const grap
 }
 
 
-uint32_t hyper_statism(Configuration const * const config, ResolutionMode const * const resolution_mode) {
+uint32_t hyper_statism(KpConfiguration const * const config, ResolutionMode const * const resolution_mode) {
     int32_t const value = 2 * config->joint_count - 3 * (config->solid_count - 1) + resolution_mode->piloted_or_blocked_joints.count + config->relation_count;
     if (value < 0) {
         return KINEPY_INVALID_CONFIGURATION_HYPOSTATIC_SYSTEM;
@@ -677,7 +677,7 @@ uint32_t hyper_statism(Configuration const * const config, ResolutionMode const 
     return KINEPY_SUCCESS;
 }
 
-uint32_t kp_determine_computation_order(Configuration const * const config, ResolutionMode * const resolution_mode) {
+uint32_t kp_determine_computation_order(KpConfiguration const * const config, ResolutionMode * const resolution_mode) {
     uint32_t result;
     check(hyper_statism(config, resolution_mode)) {
         return result;

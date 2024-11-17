@@ -8,11 +8,11 @@ typedef struct {
     uint32_t joint_index;
 } GraphNode;
 
-typedef struct _relation_node {
+typedef struct internal_relation_node {
     uint32_t relation_index;
     uint32_t joint_index;
     uint8_t solved;
-    struct _relation_node * pair;
+    struct internal_relation_node * pair;
 } RelationNode;
 
 typedef struct {

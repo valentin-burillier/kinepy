@@ -10,10 +10,6 @@ add_library(
         kinepy_src/graph/graph_operations.c
         kinepy_src/graph/graph_data.c
         kinepy_src/interface/interface.c
-        kinepy_src/interface/interface.h
-        kinepy_src/graph/graph_interface.h
-        kinepy_src/interface/configuration.h
-        kinepy_src/interface/helper_functions.h
         kinepy_src/interface/configuration.c
         kinepy_src/interface/helper_functions.c
 )

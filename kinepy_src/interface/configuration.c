@@ -2,7 +2,7 @@
 #include "helper_functions.h"
 #include "internal/enums.h"
 
-uint32_t kp_configure_joint(Configuration * const config, uint32_t const joint_index, uint8_t const type, uint32_t const solid1, uint32_t const solid2) {
+uint32_t kp_configure_joint(KpConfiguration * const config, uint32_t const joint_index, uint8_t const type, uint32_t const solid1, uint32_t const solid2) {
     if (!is_existing_joint(config, joint_index) || !is_existing_solid(config, solid1) || !is_existing_solid(config, solid2)) {
         return KINEPY_INVALID_INPUT_WRONG_OBJECT_INDEX;
     }
@@ -20,7 +20,7 @@ uint32_t kp_configure_joint(Configuration * const config, uint32_t const joint_i
     return KINEPY_SUCCESS;
 }
 
-uint32_t kp_configure_relation(Configuration * const config, uint32_t relation_index, uint8_t const type, uint32_t const joint1, uint32_t const joint2) {
+uint32_t kp_configure_relation(KpConfiguration * const config, uint32_t relation_index, uint8_t const type, uint32_t const joint1, uint32_t const joint2) {
     if (joint1 == joint2) {
         return KINEPY_INVALID_INPUT_IDENTICAL_OBJECTS;
     }

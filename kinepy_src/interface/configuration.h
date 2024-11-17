@@ -33,9 +33,9 @@ typedef struct {
         uint32_t joint1;
         uint32_t joint2;
     } * relations;
-} Configuration;
+} KpConfiguration;
 
-uint32_t kp_configure_joint(Configuration * config, uint32_t joint_index, uint8_t type, uint32_t solid1, uint32_t solid2);
-uint32_t kp_configure_relation(Configuration * config, uint32_t relation_index, uint8_t type, uint32_t joint1, uint32_t joint2);
+uint32_t kp_configure_joint(KpConfiguration * config, uint32_t joint_index, uint8_t type, uint32_t solid1, uint32_t solid2);
+uint32_t kp_configure_relation(KpConfiguration * config, uint32_t relation_index, uint8_t type, uint32_t joint1, uint32_t joint2);
 
 #endif //CONFIGURATION_H
