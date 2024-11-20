@@ -14,10 +14,10 @@
 
 typedef union {
     struct {
-        char revolute;
-        char prismatic;
+        uint8_t revolute;
+        uint8_t prismatic;
     };
-    char arr[2];
+    uint8_t arr[2];
 } JointDegree;
 
 typedef uint8_t Edge[2];

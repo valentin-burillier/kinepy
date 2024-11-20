@@ -13,23 +13,30 @@
 
 
 void make_graph_adjacency(KpConfiguration const * const config, Graph * const graph) {
-    for (int index = 0; index < config->joint_count; index++) {
+    for (uint32_t index = 0; index < adjacency_size(graph->eq_count); ++index) {
+        graph->adjacency[index].type = JOINT_TYPE_EMPTY;
+        graph->adjacency[index].joint_index = -1;
+    }
+    for (uint32_t index = 0; index < config->joint_count; ++index) {
         typeof(config->joints) joint = config->joints + index;
-        GraphNode const node = {
-            .type = joint->type,
-            .joint_index = index
-        };
-        graph->adjacency[graph_index(joint->solid1, joint->solid2, graph->eq_count)] = node;
+        uint32_t const node_index = graph_index(joint->solid1, joint->solid2, graph->eq_count);
+
+        (graph->adjacency + node_index)->type = joint->type;
+        (graph->adjacency + node_index)->joint_index = index;
     }
 }
 
 void compute_joint_degrees(Graph const * const graph) {
     uint32_t index = 0;
+    for (int eq_index = 0; eq_index < graph->eq_count; ++eq_index) {
+        graph->degrees[eq_index] = (JointDegree){.revolute=0, .prismatic=0};
+    }
     for (int x = 0; x < graph->eq_count; ++x) {
         for (int y = x+1; y < graph->eq_count; ++y) {
             if (graph->adjacency[index].type) {
-                ++(graph->degrees[x].arr[graph->adjacency[index].type - 1]);
-                ++(graph->degrees[y].arr[graph->adjacency[index].type - 1]);
+                uint8_t const type = graph->adjacency[index].type - 1;
+                ++(graph->degrees[x].arr[type]);
+                ++(graph->degrees[y].arr[type]);
             }
             ++index;
         }
@@ -188,6 +195,8 @@ uint32_t merge_graph(Graph * const graph, uint32_t const * group_to_merge, uint3
             group_min = group_to_merge[index];
         }
     }
+    not_merged_displacement -= graph->eq_indices[group_min+1] - graph->eq_indices[group_min];
+
     uint32_t const new_eq_count = graph->eq_count - group_size + 1;
     declare_alloc_array(new_adjacency, GraphNode, adjacency_size(new_eq_count), const);
 
@@ -200,6 +209,7 @@ uint32_t merge_graph(Graph * const graph, uint32_t const * group_to_merge, uint3
 
     uint32_t merge_members = 0;
     uint32_t solid_index = 0;
+
     for (int x = 0; x < graph->eq_count; ++x) {
         merge_members += merge_state[x] - (x == group_min);
         uint32_t const old_merge_members = merge_members;
@@ -218,15 +228,17 @@ uint32_t merge_graph(Graph * const graph, uint32_t const * group_to_merge, uint3
 #pragma endregion
 
 #pragma region Eqs part
-        uint32_t displacement = 0;
-        if (merge_state[x]) {
+        uint32_t displacement;
+        if (x <= group_min) {
+            displacement = 0;
+        } else if (merge_state[x]) {
             not_merged_displacement -= graph->eq_indices[x+1] - graph->eq_indices[x];
             displacement = -merged_displacement;
-        } else if (group_min < x) {
+        } else {
             merged_displacement += graph->eq_indices[x+1] - graph->eq_indices[x];
             displacement = not_merged_displacement;
         }
-        for (; solid_index < graph->eq_indices[x] + 1; ++solid_index) {
+        for (; solid_index < graph->eq_indices[x+1]; ++solid_index) {
             new_eqs[solid_index + displacement] = graph->eqs[solid_index];
         }
         if (group_min < x && !merge_state[x]) {
@@ -239,6 +251,8 @@ uint32_t merge_graph(Graph * const graph, uint32_t const * group_to_merge, uint3
     memcpy(graph->eqs, new_eqs, solid_count * sizeof(uint32_t));
     graph->eq_count = new_eq_count;
 
+    compute_solid_to_eq(graph);
+    compute_joint_degrees(graph);
 malloc_err:
     switch (3 - allocated) {
         case 0:
@@ -335,6 +349,8 @@ uint32_t register_graph_resolution_step(KpConfiguration const * const config, Re
     }
     resolution_mode->steps.array[resolution_mode->steps.count] = step;
     ++resolution_mode->steps.count;
+
+    return result;
 malloc_err:
     switch(3 - allocated) {
         case 0:
@@ -392,9 +408,6 @@ uint32_t solve_isostatic_graphs(KpConfiguration const * const config, Resolution
         }
         free(isomorphism);
         isomorphism = NULL;
-
-        compute_solid_to_eq(graph);
-        compute_joint_degrees(graph);
     }
     free(isomorphism);
     return result;
@@ -612,7 +625,7 @@ uint32_t internal_determine_computation_order_body(KpConfiguration const * const
         }
     }
 
-    if (graph->gear_queue_tail != graph->gear_queue_head || test_all_gear_conformity(config, graph)) {
+    if (graph->gear_queue_tail != graph->gear_queue_head || !test_all_gear_conformity(config, graph)) {
         return KINEPY_INVALID_CONFIGURATION_GEAR_RELATION_WITH_NO_COMMON_EQ;
     }
     check(register_inputs(config, resolution_mode, graph)) {
@@ -717,11 +730,13 @@ uint32_t kp_determine_computation_order(KpConfiguration const * const config, Re
     graph.gear_queue_tail = 0;
     graph.gear_queue_tail = 0;
 
+    memset(graph.degrees, 0x00, sizeof(*graph.degrees) * solid_count);
+
     for (int index = 0; index < config->joint_count; ++index) {
         graph.joint_state[index] = (config->joints[index].type == JOINT_TYPE_PRISMATIC) * INHERITED_CONTINUITY_BIT;
     }
 
-    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * config->joint_count + 1);
+    memset(graph.joint_indices, 0, sizeof(*graph.joint_indices) * (config->joint_count + 1));
     for (int index = 0; index < config->relation_count; ++index) {
         uint32_t const joint1 = config->relations[index].joint1;
         uint32_t const joint2 = config->relations[index].joint2;
@@ -733,8 +748,8 @@ uint32_t kp_determine_computation_order(KpConfiguration const * const config, Re
         graph.joint_indices[index+1] += graph.joint_indices[index];
     }
 
-    make_joint_adjacency(config, &graph);
     make_graph_adjacency(config, &graph);
+    make_joint_adjacency(config, &graph);
     compute_joint_degrees(&graph);
 
     resolution_mode->steps.count = 0;
@@ -744,6 +759,7 @@ uint32_t kp_determine_computation_order(KpConfiguration const * const config, Re
     for (int index = 0; index < solid_count; ++index) {
         graph.eqs[index] = index;
         graph.eq_indices[index] = index;
+        graph.solid_to_eq[index] = index;
     }
     graph.eq_indices[solid_count] = solid_count;
 #pragma endregion
@@ -755,7 +771,7 @@ uint32_t kp_determine_computation_order(KpConfiguration const * const config, Re
 #pragma region Cleaning up
 malloc_err:
     for (int index = 0; index < allocated; ++index) {
-        free(*graph_ptr[index]);
+        free(*(graph_ptr[index]));
     }
 #pragma endregion
 

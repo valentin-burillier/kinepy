@@ -105,6 +105,7 @@ TEST(MergeGraph, simple) {
         /* 4 */ {.type=JOINT_TYPE_REVOLUTE, .joint_index=8}, {.type=JOINT_TYPE_REVOLUTE, .joint_index=6},
         /* 5 */ {.type=JOINT_TYPE_EMPTY, .joint_index=(uint32_t)-1}
     };
+    std::vector<uint32_t> solid_to_eq{{0, 1, 2, 3, 4, 5, 6}};
     std::vector<uint32_t> eqs{{0, 1, 2, 3, 4, 5, 6}};
     std::vector<uint32_t> eq_indices{{0, 1, 2, 3, 4, 5, 6, 7}};
 
@@ -130,11 +131,24 @@ TEST(MergeGraph, simple) {
     std::vector<uint32_t> target_eq_indices{{0, 1, 4, 5, 6, 7}};
     std::vector<uint32_t> target_eqs{{0, 1, 3, 5, 2, 4, 6}};
 
+    std::vector<JointDegree> degrees = {{
+        {2, 0},
+        {3, 0},
+        {2, 0},
+        {3, 0},
+        {3, 0},
+        {3, 0},
+        {2, 0}
+    }};
+
+
     Graph graph = {
         .eq_count = static_cast<uint32_t>(target_eqs.size()),
         .eq_indices = eq_indices.data(),
         .eqs = eqs.data(),
-        .adjacency = adjacency
+        .solid_to_eq = solid_to_eq.data(),
+        .adjacency = adjacency,
+        .degrees = degrees.data()
     };
 
     merge_graph(&graph, merge_group.data(), merge_group.size());
@@ -190,5 +204,76 @@ TEST(ComputationOrder, NoInputs) {
     EXPECT_EQ(kp_configure_joint(&system.config, 7, JOINT_TYPE_REVOLUTE, 3, 6), KINEPY_SUCCESS);
     EXPECT_EQ(kp_configure_joint(&system.config, 8, JOINT_TYPE_REVOLUTE, 4, 5), KINEPY_SUCCESS);
 
+    ResolutionMode kinematics = {
+        .piloted_or_blocked_joints = {
+            .count = 0,
+            .joints = nullptr
+        },
+        .steps = {
+            .count = 0,
+            .array = nullptr
+        }
+    };
+
+    kp_determine_computation_order(&system.config, &kinematics);
+
+    EXPECT_EQ(kinematics.steps.count, 3);
+    for (int index = 0; index < 3; ++index) {
+        ResolutionStep * step = kinematics.steps.array + index;
+        EXPECT_EQ(step->type, STEP_TYPE_GRAPH);
+        EXPECT_EQ(step->graph_step.isostatic_graph, GRAPH_RRR);
+    }
+
+
+    kp_clear_resolution_steps(&kinematics);
+    kp_free_system_s(&system);
+}
+
+
+TEST(ComputationOrder, FiveBars) {
+    KpSystem_s system;
+    kp_allocate_system_s(&system, 5, 5, 0);
+
+    EXPECT_EQ(kp_configure_joint(&system.config, 0, JOINT_TYPE_REVOLUTE, 0, 1), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 1, JOINT_TYPE_REVOLUTE, 1, 2), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 2, JOINT_TYPE_REVOLUTE, 2, 3), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 3, JOINT_TYPE_REVOLUTE, 3, 4), KINEPY_SUCCESS);
+    EXPECT_EQ(kp_configure_joint(&system.config, 4, JOINT_TYPE_REVOLUTE, 0, 4), KINEPY_SUCCESS);
+
+    std::vector<uint32_t> piloted{{0, 4}};
+
+    ResolutionMode kinematics = {
+        .piloted_or_blocked_joints = {
+            .count = (uint32_t)piloted.size(),
+            .joints = piloted.data()
+        },
+        .steps = {
+            .count = 0,
+            .array = nullptr
+        }
+    };
+
+    EXPECT_EQ(kp_determine_computation_order(&system.config, &kinematics), KINEPY_SUCCESS);
+
+    EXPECT_EQ(kinematics.steps.count, 3);
+
+    ResolutionStep * step = kinematics.steps.array;
+    EXPECT_EQ(step->type, STEP_TYPE_JOINT_REVOLUTE);
+    EXPECT_EQ(step->joint_step.joint_index, 0);
+    EXPECT_EQ(step->joint_step.first_eq_size, 1);
+    EXPECT_EQ(step->joint_step.second_eq_size, 1);
+
+    ++step;
+    EXPECT_EQ(step->type, STEP_TYPE_JOINT_REVOLUTE);
+    EXPECT_EQ(step->joint_step.joint_index, 4);
+    EXPECT_EQ(step->joint_step.first_eq_size, 2);
+    EXPECT_EQ(step->joint_step.second_eq_size, 1);
+
+    ++step;
+    EXPECT_EQ(step->type, STEP_TYPE_GRAPH);
+    EXPECT_EQ(step->graph_step.isostatic_graph, GRAPH_RRR);
+
+
+    kp_clear_resolution_steps(&kinematics);
     kp_free_system_s(&system);
 }
