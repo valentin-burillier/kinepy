@@ -43,10 +43,10 @@ set_target_properties(unit_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BI
 
 
 add_executable(test_unique
-    kinepy_src/test.c
+        kinepy_src/test.c
 )
 target_compile_options(
-        C_Kinepy PUBLIC
+        C_Kinepy PUBLICge m
         -mavx2
         -mfma
 )
