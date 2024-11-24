@@ -46,7 +46,7 @@ add_executable(test_unique
         kinepy_src/test.c
 )
 target_compile_options(
-        C_Kinepy PUBLICge m
+        C_Kinepy PUBLIC
         -mavx2
         -mfma
 )
