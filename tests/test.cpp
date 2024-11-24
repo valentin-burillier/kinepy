@@ -234,6 +234,7 @@ TEST(ComputationOrder, FiveBars) {
     KpSystem_s system;
     kp_allocate_system_s(&system, 5, 5, 0);
 
+
     EXPECT_EQ(kp_configure_joint(&system.config, 0, JOINT_TYPE_REVOLUTE, 0, 1), KINEPY_SUCCESS);
     EXPECT_EQ(kp_configure_joint(&system.config, 1, JOINT_TYPE_REVOLUTE, 1, 2), KINEPY_SUCCESS);
     EXPECT_EQ(kp_configure_joint(&system.config, 2, JOINT_TYPE_REVOLUTE, 2, 3), KINEPY_SUCCESS);

@@ -1,4 +1,5 @@
 #ifndef INTERFACE_INTERFACE_H
+#include "structs_template.h"
 #include "stdint.h"
 
 
@@ -48,5 +49,8 @@ uint32_t update_prismatic_constraints(System * system, uint32_t joint_index, flo
  */
 void update_relation_parameters(System * system, uint32_t relation_index, float_type ratio, float_type v0);
 
+
+uint32_t allocate_result(KpConfiguration const * config, uint32_t frame_count, Result * result);
+void free_result(Result * result);
 
 #endif

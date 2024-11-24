@@ -7,6 +7,15 @@
 #ifndef allocate_array
 #define allocate_array(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME)
 #define allocate_array_jump(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME) {goto malloc_err;} ++allocated
+#ifdef USE_AVX
+#include "immintrin.h"
+#define allocate_result_array_jump(NAME, count) NAME = _mm_malloc((count) * sizeof(*(NAME)), 0x20); if (!NAME) {goto malloc_err;} ++allocated
+#define free_result_array _mm_free
+#else
+#define allocate_result_array_jump allocate_array_jump
+#define free_result_array free
+#endif
+#define allocate_array_jump(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME) {goto malloc_err;} ++allocated
 #endif
 
 uint32_t allocate_system(System * const system, uint32_t const solid_count, uint32_t const joint_count, uint32_t const relation_count) {
@@ -130,4 +139,63 @@ void update_relation_parameters(System * const system, uint32_t const obj_index,
     constraints->v0 = v0 * get_v0_unit(system, obj_index);
 }
 
+
+uint32_t allocate_result(KpConfiguration const * config, uint32_t frame_count, Result * result) {
+    uint32_t allocated = 0;
+
+    float_type ** arrays[] = {
+        result->_temp_arrays + 0,
+        result->_temp_arrays + 1,
+        result->_temp_arrays + 2,
+        result->_temp_arrays + 3,
+        &result->solid_orientation_x,
+        &result->solid_orientation_y,
+        &result->solid_x,
+        &result->solid_y,
+        &result->_solid_force_x,
+        &result->_solid_force_y,
+        &result->_solid_torque,
+        &result->joint_value
+    };
+    allocate_result_array_jump(result->_temp_arrays[0], config->solid_count);
+    allocate_result_array_jump(result->_temp_arrays[1], config->solid_count);
+    allocate_result_array_jump(result->_temp_arrays[2], config->solid_count);
+    allocate_result_array_jump(result->_temp_arrays[3], config->solid_count);
+
+    allocate_result_array_jump(result->solid_orientation_x, frame_count * config->solid_count);
+    allocate_result_array_jump(result->solid_orientation_y, frame_count * config->solid_count);
+    allocate_result_array_jump(result->solid_x, frame_count * config->solid_count);
+    allocate_result_array_jump(result->solid_y, frame_count * config->solid_count);
+
+    allocate_result_array_jump(result->_solid_force_x, frame_count * config->solid_count);
+    allocate_result_array_jump(result->_solid_force_y, frame_count * config->solid_count);
+    allocate_result_array_jump(result->_solid_torque, frame_count * config->solid_count);
+
+    allocate_result_array_jump(result->joint_value, frame_count * config->joint_count);
+
+    return KINEPY_SUCCESS;
+malloc_err:
+    for (int index = 0; index < allocated; ++index) {
+        free_result_array(*arrays[index]);
+    }
+    return KINEPY_MALLOC_FAILED;
+}
+
+void free_result(Result * result) {
+    free_result_array(result->_temp_arrays[0]);
+    free_result_array(result->_temp_arrays[1]);
+    free_result_array(result->_temp_arrays[2]);
+    free_result_array(result->_temp_arrays[3]);
+
+    free_result_array(result->solid_orientation_x);
+    free_result_array(result->solid_orientation_y);
+    free_result_array(result->solid_x);
+    free_result_array(result->solid_y);
+
+    free_result_array(result->_solid_force_x);
+    free_result_array(result->_solid_force_y);
+    free_result_array(result->_solid_torque);
+
+    free_result_array(result->joint_value);
+}
 

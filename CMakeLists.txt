@@ -12,6 +12,8 @@ add_library(
         kinepy_src/interface/interface.c
         kinepy_src/interface/configuration.c
         kinepy_src/interface/helper_functions.c
+        kinepy_src/kinematics/kinematics.h
+        kinepy_src/kinematics/kinematics.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)
@@ -46,6 +48,7 @@ add_executable(test_unique
 target_compile_options(
         C_Kinepy PUBLIC
         -mavx2
+        -mfma
 )
 
 target_compile_options(

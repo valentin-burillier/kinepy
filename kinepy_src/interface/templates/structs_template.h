@@ -41,4 +41,23 @@ typedef struct {
     } * relation_parameters_ptr;
 } System;
 
+
+typedef struct {
+    uint32_t frame_count;
+
+    float_type * _temp_arrays[4];
+
+    float_type * solid_orientation_x;
+    float_type * solid_orientation_y;
+    float_type * solid_x;
+    float_type * solid_y;
+
+    float_type * _solid_force_x;
+    float_type * _solid_force_y;
+    float_type * _solid_torque;
+
+    float_type * joint_value;
+
+} Result;
+
 #endif
