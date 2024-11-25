@@ -12,7 +12,7 @@ uint32_t kp_configure_joint(KpConfiguration * const config, uint32_t const joint
     if (!is_existing_joint_type(type)) {
         return KINEPY_INVALID_INPUT_WRONG_JOINT_TYPE;
     }
-    typeof(config->joints) joint = config->joints + joint_index;
+    __typeof__(config->joints) joint = config->joints + joint_index;
     joint->solid1 = solid1;
     joint->solid2 = solid2;
     joint->type = type;
@@ -34,7 +34,7 @@ uint32_t kp_configure_relation(KpConfiguration * const config, uint32_t relation
         return KINEPY_INVALID_INPUT_UNMATCHED_RELATION_TYPE_AND_JOINT_TYPES;
     }
 
-    typeof(config->relations) relation = config->relations + relation_index;
+    __typeof__(config->relations) relation = config->relations + relation_index;
     relation->joint1 = joint1;
     relation->joint2 = joint2;
     relation->type = type;

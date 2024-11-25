@@ -2,20 +2,14 @@
 
 #include "configuration.h"
 
-#include "internal/define_names.h"
+#include "templates/interface_names.h"
 
-#define float_type float
-#define type_suffix _s
+#include "internal/float_names.h"
 #include "templates/structs_template.h"
-#undef float_type
-#undef type_suffix
+#include "internal/undef_names.h"
 
-#define float_type double
-#define type_suffix _d
+#include "internal/double_names.h"
 #include "templates/structs_template.h"
-#undef float_type
-#undef type_suffix
-
 #include "internal/undef_names.h"
 
 #define INTERFACE_STRUCTS_H
@@ -24,21 +18,16 @@
 #ifndef INTERFACE_INTERFACE_H
 
 
-#include "internal/define_names.h"
-
-#define float_type float
-#define type_suffix _s
+#include "internal/float_names.h"
 #include "templates/interface_template.h"
-#undef float_type
-#undef type_suffix
-
-#define float_type double
-#define type_suffix _d
-#include "templates/interface_template.h"
-#undef float_type
-#undef type_suffix
-
 #include "internal/undef_names.h"
+
+#include "internal/double_names.h"
+#include "templates/interface_template.h"
+#include "internal/undef_names.h"
+
+#include "templates/undef_interface_names.h"
+
 
 #define INTERFACE_INTERFACE_H
 #endif //INTERFACE_INTERFACE_H

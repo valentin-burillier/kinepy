@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(C_ified_kinepy C CXX)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 20)
 
 add_library(
@@ -12,11 +12,13 @@ add_library(
         kinepy_src/interface/interface.c
         kinepy_src/interface/configuration.c
         kinepy_src/interface/helper_functions.c
-        kinepy_src/kinematics/kinematics.h
         kinepy_src/kinematics/kinematics.c
 )
 set_target_properties(C_Kinepy PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(C_Kinepy PUBLIC kinepy_src)
+target_compile_options(C_Kinepy PUBLIC
+#        -DUSE_AVX
+)
 
 include(FetchContent)
 enable_testing()
@@ -47,9 +49,13 @@ add_executable(test_unique
 )
 target_compile_options(
         C_Kinepy PUBLIC
-        -mavx2
-        -mfma
+#        -mavx2
+#        -mfma
 )
+target_link_libraries(test_unique
+        C_Kinepy
+)
+
 
 target_compile_options(
         test_unique PUBLIC

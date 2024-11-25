@@ -18,7 +18,7 @@ void make_graph_adjacency(KpConfiguration const * const config, Graph * const gr
         graph->adjacency[index].joint_index = -1;
     }
     for (uint32_t index = 0; index < config->joint_count; ++index) {
-        typeof(config->joints) joint = config->joints + index;
+        __typeof__(config->joints) joint = config->joints + index;
         uint32_t const node_index = graph_index(joint->solid1, joint->solid2, graph->eq_count);
 
         (graph->adjacency + node_index)->type = joint->type;
@@ -331,7 +331,7 @@ uint32_t register_graph_resolution_step(KpConfiguration const * const config, Re
     uint32_t const solid_count = step.graph_step.eq_indices[ISOSTATIC_GRAPHS[isostatic_graph].vertex_count];
     set_alloc_array(step.graph_step.eqs, solid_count);
     for (int index = 0; index < ISOSTATIC_GRAPHS[isostatic_graph].vertex_count; ++index) {
-        memcpy(step.graph_step.eqs + step.graph_step.eq_indices[index], graph->eqs + graph->eq_indices[isomorphism[index]], step.graph_step.eq_indices[index+1] - step.graph_step.eq_indices[index]);
+        memcpy(step.graph_step.eqs + step.graph_step.eq_indices[index], graph->eqs + graph->eq_indices[isomorphism[index]], sizeof(uint32_t) * (step.graph_step.eq_indices[index+1] - step.graph_step.eq_indices[index]));
     }
 
 
@@ -343,9 +343,9 @@ uint32_t register_graph_resolution_step(KpConfiguration const * const config, Re
         uint32_t joint_index = graph->adjacency[graph_index(eq_x, eq_y, graph->eq_count)].joint_index;
 
         step.graph_step.edges[index].joint_index = joint_index;
-        step.graph_step.edges[index].orientation = graph->solid_to_eq[config->joints[joint_index].solid1] != eq_x;
+        step.graph_step.edges[index].orientation = graph->solid_to_eq[config->joints[joint_index].solid1] == eq_x;
         // equivalent to
-        // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joints.config_ptr[joint_index].solid2] != eq_y;
+        // step.graph_step.edges[index].orientation = graph->solid_to_eq[system->joints.config_ptr[joint_index].solid2] == eq_y;
     }
     resolution_mode->steps.array[resolution_mode->steps.count] = step;
     ++resolution_mode->steps.count;
@@ -414,7 +414,7 @@ uint32_t solve_isostatic_graphs(KpConfiguration const * const config, Resolution
 }
 
 uint8_t test_gear_conformity(KpConfiguration const * const config, Graph const * const graph, uint32_t const gear_index) {
-    typeof(config->relations) relation_config = config->relations + gear_index;
+    __typeof__(config->relations) relation_config = config->relations + gear_index;
     switch (relation_config->type) {
         case RELATION_TYPE_GEAR:
         case RELATION_TYPE_GEAR_RACK:
@@ -422,8 +422,8 @@ uint8_t test_gear_conformity(KpConfiguration const * const config, Graph const *
         default:
             return 0;
     }
-    typeof(config->joints) joint1_config = config->joints + relation_config->joint1;
-    typeof(config->joints) joint2_config = config->joints + relation_config->joint2;
+    __typeof__(config->joints) joint1_config = config->joints + relation_config->joint1;
+    __typeof__(config->joints) joint2_config = config->joints + relation_config->joint2;
 
     uint32_t const eq11 = graph->solid_to_eq[joint1_config->solid1];
     uint32_t const eq12 = graph->solid_to_eq[joint1_config->solid2];
@@ -680,8 +680,8 @@ void make_joint_adjacency(KpConfiguration const * const config, Graph * const gr
 
 
 uint32_t hyper_statism(KpConfiguration const * const config, ResolutionMode const * const resolution_mode) {
-    int32_t const value = 2 * config->joint_count - 3 * (config->solid_count - 1) + resolution_mode->piloted_or_blocked_joints.count + config->relation_count;
-    if (value < 0) {
+    uint32_t const value = 2 * config->joint_count - 3 * (config->solid_count - 1) + resolution_mode->piloted_or_blocked_joints.count + config->relation_count;
+    if (value >= 1 << 31) {
         return KINEPY_INVALID_CONFIGURATION_HYPOSTATIC_SYSTEM;
     }
     if (value > 0) {

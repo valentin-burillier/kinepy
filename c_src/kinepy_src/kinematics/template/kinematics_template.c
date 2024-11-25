@@ -1,20 +1,20 @@
 #include "kinematics_template.h"
+#include "immintrin.h"
 #include "math.h"
 
+#ifdef USE_AVX
+void complex_product_avx(avx_type const ax, avx_type const ay, avx_type const bx, avx_type const by, avx_type * const out_x, avx_type * const out_y) {
+   *out_x = avx(mul_p)(ax, bx);
+   *out_x = avx(fnmadd_p)(ay, by, *out_x);
 
-inline void complex_product_avx(avx_type const ax, avx_type const ay, avx_type const bx, avx_type const by, avx_type * const out_x, avx_type * const out_y) {
-    *out_x = avx(mul_p)(ax, bx);
-    *out_x = avx(fnmadd_p)(ay, by, *out_x);
-
-    *out_y = avx(mul_p)(ay, bx);
-    *out_y = avx(fmadd_p)(ax, by, *out_y);
+   *out_y = avx(mul_p)(ay, bx);
+   *out_y = avx(fmadd_p)(ax, by, *out_y);
 }
-
 
 /**
  * A * B_conjugate * inv_mag; inv_mag = 1 / |A * B|
  */
-inline void dot_det_avx(avx_type const ax, avx_type const ay, avx_type const bx, avx_type const by, avx_type const inv_mag, avx_type * const out_x, avx_type * const out_y) {
+void dot_det_avx(avx_type const ax, avx_type const ay, avx_type const bx, avx_type const by, avx_type const inv_mag, avx_type * const out_x, avx_type * const out_y) {
     *out_x = avx(mul_p)(ax, bx);
     *out_x = avx(fmadd_p)(ay, by, *out_x);
     *out_x = avx(mul_p)(*out_x, inv_mag);
@@ -37,6 +37,44 @@ void compute_solid_point_avx(Result const * const result, uint32_t const frame_i
     *out_y = avx(fmadd_p)(solid_orientation_y, avx(broadcast_s)(&point->px), *out_y);
 }
 
+void compute_solid_point_diff_avx(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, avx_type * const out_x, avx_type * const out_y) {
+    avx_type p_x0;
+    avx_type p_y0;
+    compute_solid_point_avx(result, frame_index, point0, &p_x0, &p_y0);
+    avx_type p_x1;
+    avx_type p_y1;
+    compute_solid_point_avx(result, frame_index, point1, &p_x1, &p_y1);
+    *out_x = avx(sub_p)(p_x0, p_x1);
+    *out_y = avx(sub_p)(p_y0, p_y1);
+}
+
+#endif
+
+void set_value(float_type * const ptr, uint32_t const start_index, uint32_t const end_index, float_type const value) {
+    uint32_t frame_index = start_index;
+#ifdef USE_AVX
+    while (frame_index + avx_count <= end_index) {
+        avx(store_p)(ptr + frame_index, avx(broadcast_s)(&value));
+        frame_index += avx_count;
+    }
+#endif
+    while (frame_index < end_index) {
+        *(ptr + frame_index) = value;
+        ++frame_index;
+    }
+}
+
+void reset_results(KpConfiguration const * const configuration, Result * const result, uint32_t const start_index, uint32_t const end_index) {
+    for (uint32_t solid_index = 0; solid_index < configuration->solid_count; ++solid_index) {
+        uint32_t offset = solid_index * result->frame_count;
+        set_value(result->solid_orientation_x, start_index + offset, end_index + offset, 1.0);
+        set_value(result->solid_orientation_y, start_index + offset, end_index + offset, 0.0);
+
+        set_value(result->solid_x, start_index + offset, end_index + offset, 0.0);
+        set_value(result->solid_y, start_index + offset, end_index + offset, 0.0);
+    }
+}
+
 void compute_solid_point(Result const * const result, uint32_t const frame_index, PointDescription const * const point, float_type * const out_x, float_type * const out_y) {
     float_type const solid_orientation_x = *(result->solid_orientation_x + frame_index + point->solid_index * result->frame_count);
     float_type const solid_orientation_y = *(result->solid_orientation_y + frame_index + point->solid_index * result->frame_count);
@@ -50,17 +88,6 @@ void compute_solid_point(Result const * const result, uint32_t const frame_index
     *out_y += solid_orientation_y * point->px;
 }
 
-
-void compute_solid_point_diff_avx(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, avx_type * const out_x, avx_type * const out_y) {
-    avx_type p_x0;
-    avx_type p_y0;
-    compute_solid_point_avx(result, frame_index, point0, &p_x0, &p_y0);
-    avx_type p_x1;
-    avx_type p_y1;
-    compute_solid_point_avx(result, frame_index, point1, &p_x1, &p_y1);
-    *out_x = avx(sub_p)(p_x0, p_x1);
-    *out_y = avx(sub_p)(p_y0, p_y1);
-}
 
 void compute_solid_point_diff(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, float_type * const out_x, float_type * const out_y) {
     float_type p_x0;
@@ -80,7 +107,6 @@ void load_point(Result const * const result, uint32_t const start_index, uint32_
 #ifdef USE_AVX
     while (frame_index + avx_count <= end_index) {
         avx_type x; avx_type y;
-
         compute_solid_point_avx(result, frame_index, point, &x, &y);
         avx(store_p)(dest_x + frame_index, x);
         avx(store_p)(dest_y + frame_index, y);
@@ -220,17 +246,17 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
 
     GraphStep const * const graph_step = &step->graph_step;
 
-    typeof(graph_step->edges) const r0 = graph_step->edges + 0;
-    typeof(graph_step->edges) const r1 = graph_step->edges + 1;
-    typeof(graph_step->edges) const r2 = graph_step->edges + 2;
+    __typeof__(graph_step->edges) const r0 = graph_step->edges + 0;
+    __typeof__(graph_step->edges) const r1 = graph_step->edges + 1;
+    __typeof__(graph_step->edges) const r2 = graph_step->edges + 2;
 
-    typeof(system->config.joints) solid_ptr_s[] = {
-        (typeof(system->config.joints)) &system->config.joints->solid1,
-        (typeof(system->config.joints)) &system->config.joints->solid2,
+    __typeof__(system->config.joints) solid_ptr_s[] = {
+        (__typeof__(system->config.joints)) &system->config.joints->solid1,
+        (__typeof__(system->config.joints)) &system->config.joints->solid2,
     };
-    typeof(system->joint_parameters_ptr) param_ptr_s[] = {
-        (typeof(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x1,
-        (typeof(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x2
+    __typeof__(system->joint_parameters_ptr) param_ptr_s[] = {
+        (__typeof__(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x1,
+        (__typeof__(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x2
     };
 
     /* p{eq}{joint} on graph */
@@ -272,7 +298,9 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
 
 
     load_point(result, start_index, end_index, &p10, result->_temp_arrays[0], result->_temp_arrays[1]);
-    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
+    uint32_t tmp0 = graph_step->eq_indices[2] - graph_step->eq_indices[1];
+    uint32_t * tmp1 = graph_step->eqs + graph_step->eq_indices[1];
+    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], tmp0, tmp1);
 
     load_point(result, start_index, end_index, &p21, result->_temp_arrays[0], result->_temp_arrays[1]);
     move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
@@ -283,8 +311,9 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
         -1.
     };
     float_type const sign = signs[graph_step->solution_index];
-#ifdef USE_AVX
+
     uint32_t frame_index = start_index;
+#ifdef USE_AVX
     while (frame_index + avx_count <= end_index) {
         avx_type vec0_x; avx_type vec0_y;
         compute_solid_point_diff_avx(result, frame_index, &p01, &p00, &vec0_x, &vec0_y);
@@ -343,9 +372,9 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
         compute_solid_point(result, frame_index, &p22, &vec2_x, &vec2_y);
         float_type sq_vec2 = vec2_x * vec2_x + vec2_y * vec2_y;
 
-        float_type const inv_01 = 1.0 / trig(sqrt)(sq_vec0 * sq_vec1);
+        float_type const inv_01 = 1.0 / math(sqrt)(sq_vec0 * sq_vec1);
         float_type const cos_angle = 0.5 * (sq_vec0 + sq_vec1 - sq_vec2) * inv_01;
-        float_type const sin_angle = trig(sqrt)(1. - cos_angle * cos_angle);
+        float_type const sin_angle = sign * math(sqrt)(1. - cos_angle * cos_angle);
 
         float_type const align_x = (vec1_x * vec0_x + vec1_y * vec0_y) * inv_01;
         float_type const align_y = (vec1_y * vec0_x - vec1_x * vec0_y) * inv_01;

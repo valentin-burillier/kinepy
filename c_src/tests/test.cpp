@@ -5,7 +5,7 @@
 
 extern "C" {
     #include "interface/interface.h"
-    #include "graph/test_graph.h"
+    #include "test_graph.h"
 }
 
 void isostatic_to_user(uint8_t const * const iso_graph, uint32_t const size, std::vector<GraphNode>& result) {
@@ -191,8 +191,8 @@ TEST(ComputationOrder, NoInputs) {
        \ /
         6
  */
-    KpSystem_s system;
-    kp_allocate_system_s(&system, 7, 9, 0);
+    KpSystem_f32 system;
+    kp_allocate_system_f32(&system, 7, 9, 0);
 
     EXPECT_EQ(kp_configure_joint(&system.config, 0, JOINT_TYPE_REVOLUTE, 0, 1), KINEPY_SUCCESS);
     EXPECT_EQ(kp_configure_joint(&system.config, 1, JOINT_TYPE_REVOLUTE, 0, 2), KINEPY_SUCCESS);
@@ -226,13 +226,13 @@ TEST(ComputationOrder, NoInputs) {
 
 
     kp_clear_resolution_steps(&kinematics);
-    kp_free_system_s(&system);
+    kp_free_system_f32(&system);
 }
 
 
 TEST(ComputationOrder, FiveBars) {
-    KpSystem_s system;
-    kp_allocate_system_s(&system, 5, 5, 0);
+    KpSystem_f32 system;
+    kp_allocate_system_f32(&system, 5, 5, 0);
 
 
     EXPECT_EQ(kp_configure_joint(&system.config, 0, JOINT_TYPE_REVOLUTE, 0, 1), KINEPY_SUCCESS);
@@ -276,5 +276,5 @@ TEST(ComputationOrder, FiveBars) {
 
 
     kp_clear_resolution_steps(&kinematics);
-    kp_free_system_s(&system);
+    kp_free_system_f32(&system);
 }

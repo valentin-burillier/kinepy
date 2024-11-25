@@ -1,31 +1,19 @@
 #ifndef KINEMATICS_KINEMATICS_H
 
-// TODO: remove that
-#define USE_AVX
+#include "interface/interface.h"
 
-#ifdef USE_AVX
-#include "immintrin.h"
-#endif
+#include "template/kinematics_names.h"
 
-#include "internal/define_names.h"
-
-#define float_type float
-#define type_suffix _s
-#define avx_type __m256
+#include "internal/float_names.h"
 #include "template/kinematics_template.h"
-#undef avx_type
-#undef float_type
-#undef type_suffix
-
-#define float_type double
-#define type_suffix _d
-#define avx_type __m256d
-#include "template/kinematics_template.h"
-#undef avx_type
-#undef float_type
-#undef type_suffix
-
 #include "internal/undef_names.h"
+
+#include "internal/double_names.h"
+#include "template/kinematics_template.h"
+#include "internal/undef_names.h"
+
+
+#include "template/undef_kinematics_names.h"
 
 #define KINEMATICS_KINEMATICS_H
 #endif //KINEMATICS_KINEMATICS_H

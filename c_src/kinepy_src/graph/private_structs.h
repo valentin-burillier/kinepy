@@ -34,7 +34,6 @@ typedef struct {
     uint32_t gear_queue_head;
     uint32_t gear_queue_tail;
     uint64_t * gear_queue;
-
 } Graph;
 
 #endif //PRIVATE_STRUCTS_H

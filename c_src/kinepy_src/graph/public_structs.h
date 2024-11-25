@@ -46,7 +46,6 @@ typedef enum {
     STEP_TYPE_RELATION_GEAR_RACK,
     STEP_TYPE_RELATION_DISTANT,
     STEP_TYPE_RELATION_EFFORTLESS,
-
 } StepType;
 
 typedef struct {

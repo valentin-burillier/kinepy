@@ -3,20 +3,7 @@
 #include "internal/enums.h"
 #include "interface_template.h"
 #include "interface/helper_functions.h"
-
-#ifndef allocate_array
-#define allocate_array(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME)
-#define allocate_array_jump(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME) {goto malloc_err;} ++allocated
-#ifdef USE_AVX
-#include "immintrin.h"
-#define allocate_result_array_jump(NAME, count) NAME = _mm_malloc((count) * sizeof(*(NAME)), 0x20); if (!NAME) {goto malloc_err;} ++allocated
-#define free_result_array _mm_free
-#else
-#define allocate_result_array_jump allocate_array_jump
-#define free_result_array free
-#endif
-#define allocate_array_jump(NAME, count) NAME = malloc((count) * sizeof(*(NAME))); if (!NAME) {goto malloc_err;} ++allocated
-#endif
+#include "internal/util_macros.h"
 
 uint32_t allocate_system(System * const system, uint32_t const solid_count, uint32_t const joint_count, uint32_t const relation_count) {
     uint8_t allocated = 0;
@@ -65,7 +52,7 @@ uint32_t update_solid_physics(System * const system, uint32_t const solid_index,
     if (!is_existing_solid(&system->config, solid_index)){
         return KINEPY_INVALID_INPUT_WRONG_OBJECT_INDEX;
     }
-    typeof(system->solid_parameters_ptr) array = system->solid_parameters_ptr + solid_index;
+    __typeof__(system->solid_parameters_ptr) array = system->solid_parameters_ptr + solid_index;
     array->mass = mass * system->unit_system->mass;
     array->moment_of_inertia = moment_of_inertia * system->unit_system->moment_of_inertia;
     array->gx = gx * system->unit_system->length;
@@ -80,7 +67,7 @@ uint32_t update_revolute_constraints(System * const system, uint32_t const joint
         return KINEPY_INVALID_INPUT_WRONG_JOINT_TYPE;
     }
 
-    typeof(system->joint_parameters_ptr) constraints = system->joint_parameters_ptr + joint_index;
+    __typeof__(system->joint_parameters_ptr) constraints = system->joint_parameters_ptr + joint_index;
     constraints->x1 = x1 * system->unit_system->length;
     constraints->y1 = y1 * system->unit_system->length;
     constraints->x2 = x2 * system->unit_system->length;
@@ -100,11 +87,11 @@ uint32_t update_prismatic_constraints(System * const system, uint32_t const join
     alpha2 *= system->unit_system->angle;
     distance2 *= system->unit_system->length;
 
-    typeof(system->joint_parameters_ptr) constraints = system->joint_parameters_ptr + joint_index;
-    constraints->x1 = -trig(sin)(alpha1) * distance1;
-    constraints->y1 = trig(cos)(alpha1) * distance1;
-    constraints->x2 = -trig(sin)(alpha2) * distance2;
-    constraints->y2 = trig(cos)(alpha2) * distance2;
+    __typeof__(system->joint_parameters_ptr) constraints = system->joint_parameters_ptr + joint_index;
+    constraints->x1 = -math(sin)(alpha1) * distance1;
+    constraints->y1 = math(cos)(alpha1) * distance1;
+    constraints->x2 = -math(sin)(alpha2) * distance2;
+    constraints->y2 = math(cos)(alpha2) * distance2;
     return KINEPY_SUCCESS;
 }
 
@@ -134,7 +121,7 @@ float_type get_ratio_unit(System const * const system, uint32_t const relation_i
 
 
 void update_relation_parameters(System * const system, uint32_t const obj_index, float_type const ratio, float_type const v0) {
-    typeof(system->relation_parameters_ptr) constraints = system->relation_parameters_ptr + obj_index;
+    __typeof__(system->relation_parameters_ptr) constraints = system->relation_parameters_ptr + obj_index;
     constraints->ratio = ratio * get_ratio_unit(system, obj_index);
     constraints->v0 = v0 * get_v0_unit(system, obj_index);
 }
@@ -157,10 +144,10 @@ uint32_t allocate_result(KpConfiguration const * config, uint32_t frame_count, R
         &result->_solid_torque,
         &result->joint_value
     };
-    allocate_result_array_jump(result->_temp_arrays[0], config->solid_count);
-    allocate_result_array_jump(result->_temp_arrays[1], config->solid_count);
-    allocate_result_array_jump(result->_temp_arrays[2], config->solid_count);
-    allocate_result_array_jump(result->_temp_arrays[3], config->solid_count);
+    allocate_result_array_jump(result->_temp_arrays[0], frame_count);
+    allocate_result_array_jump(result->_temp_arrays[1], frame_count);
+    allocate_result_array_jump(result->_temp_arrays[2], frame_count);
+    allocate_result_array_jump(result->_temp_arrays[3], frame_count);
 
     allocate_result_array_jump(result->solid_orientation_x, frame_count * config->solid_count);
     allocate_result_array_jump(result->solid_orientation_y, frame_count * config->solid_count);
@@ -172,6 +159,8 @@ uint32_t allocate_result(KpConfiguration const * config, uint32_t frame_count, R
     allocate_result_array_jump(result->_solid_torque, frame_count * config->solid_count);
 
     allocate_result_array_jump(result->joint_value, frame_count * config->joint_count);
+
+    result->frame_count = frame_count;
 
     return KINEPY_SUCCESS;
 malloc_err:
