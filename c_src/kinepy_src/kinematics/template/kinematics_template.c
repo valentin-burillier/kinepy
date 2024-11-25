@@ -30,7 +30,7 @@ void compute_solid_point_avx(Result const * const result, uint32_t const frame_i
 
     *out_x = avx(load_p)(result->solid_x + frame_index + point->solid_index * result->frame_count);
     *out_x = avx(fmadd_p)(solid_orientation_x, avx(broadcast_s)(&point->px), *out_x);
-    *out_x = avx(fmsub_p)(solid_orientation_y, avx(broadcast_s)(&point->py), *out_x);
+    *out_x = avx(fnmadd_p)(solid_orientation_y, avx(broadcast_s)(&point->py), *out_x);
 
     *out_y = avx(load_p)(result->solid_y + frame_index + point->solid_index * result->frame_count);
     *out_y = avx(fmadd_p)(solid_orientation_x, avx(broadcast_s)(&point->py), *out_y);
@@ -377,7 +377,7 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
         float_type const sin_angle = sign * math(sqrt)(1. - cos_angle * cos_angle);
 
         float_type const align_x = (vec1_x * vec0_x + vec1_y * vec0_y) * inv_01;
-        float_type const align_y = (vec1_y * vec0_x - vec1_x * vec0_y) * inv_01;
+        float_type const align_y = (vec0_y * vec1_x - vec0_x * vec1_y) * inv_01;
 
         *(result->_temp_arrays[2] + frame_index) = align_x * cos_angle - align_y * sin_angle;
         *(result->_temp_arrays[3] + frame_index) = align_x * sin_angle + align_y * cos_angle;

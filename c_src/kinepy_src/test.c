@@ -5,6 +5,9 @@
 #include "internal/enums.h"
 #include "kinematics/kinematics.h"
 #include "stdlib.h"
+#include <inttypes.h>
+#include "processthreadsapi.h"
+#include "realtimeapiset.h"
 
 #define FRAME_COUNT (1 << 24)
 
@@ -40,11 +43,24 @@ int main() {
         exit(1);
     }
     reset_results_f32(&system.config, &results, 0, FRAME_COUNT);
+    // Warm up
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
     solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
 
-    printf("0: x:%f y:%f ox:%f oy:%f\n", results.solid_x[0 * FRAME_COUNT], results.solid_y[0 * FRAME_COUNT], results.solid_orientation_x[0 * FRAME_COUNT], results.solid_orientation_y[0 * FRAME_COUNT]);
-    printf("1: x:%f y:%f ox:%f oy:%f\n", results.solid_x[1 * FRAME_COUNT], results.solid_y[1 * FRAME_COUNT], results.solid_orientation_x[1 * FRAME_COUNT], results.solid_orientation_y[1 * FRAME_COUNT]);
-    printf("2: x:%f y:%f ox:%f oy:%f\n", results.solid_x[2 * FRAME_COUNT], results.solid_y[2 * FRAME_COUNT], results.solid_orientation_x[2 * FRAME_COUNT], results.solid_orientation_y[2 * FRAME_COUNT]);
+    uint64_t date;
+    QueryProcessCycleTime(GetCurrentProcess(), &date);
+
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+    solve_graph_rrr_f32(&system, kinematics.steps.array, &results, 0, FRAME_COUNT);
+
+    uint64_t final_date;
+    QueryProcessCycleTime(GetCurrentProcess(), &final_date);
+
+    printf("%llu\n", (final_date - date) / 4);
 
     kp_free_result_f32(&results);
     kp_free_system_f32(&system);
