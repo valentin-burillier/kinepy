@@ -51,6 +51,7 @@ target_compile_options(
         C_Kinepy PUBLIC
 #        -mavx2
 #        -mfma
+#        -O3
 )
 target_link_libraries(test_unique
         C_Kinepy

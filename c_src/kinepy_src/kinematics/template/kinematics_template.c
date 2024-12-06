@@ -50,7 +50,7 @@ void compute_solid_point_diff_avx(Result const * const result, uint32_t const fr
 
 #endif
 
-void set_value(float_type * const ptr, uint32_t const start_index, uint32_t const end_index, float_type const value) {
+static inline void set_value(float_type * const ptr, uint32_t const start_index, uint32_t const end_index, float_type const value) {
     uint32_t frame_index = start_index;
 #ifdef USE_AVX
     while (frame_index + avx_count <= end_index) {
@@ -75,7 +75,7 @@ void reset_results(KpConfiguration const * const configuration, Result * const r
     }
 }
 
-void compute_solid_point(Result const * const result, uint32_t const frame_index, PointDescription const * const point, float_type * const out_x, float_type * const out_y) {
+static inline void compute_solid_point(Result const * const result, uint32_t const frame_index, PointDescription const * const point, float_type * const out_x, float_type * const out_y) {
     float_type const solid_orientation_x = *(result->solid_orientation_x + frame_index + point->solid_index * result->frame_count);
     float_type const solid_orientation_y = *(result->solid_orientation_y + frame_index + point->solid_index * result->frame_count);
 
@@ -89,7 +89,7 @@ void compute_solid_point(Result const * const result, uint32_t const frame_index
 }
 
 
-void compute_solid_point_diff(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, float_type * const out_x, float_type * const out_y) {
+static inline void compute_solid_point_diff(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, float_type * const out_x, float_type * const out_y) {
     float_type p_x0;
     float_type p_y0;
     compute_solid_point(result, frame_index, point0, &p_x0, &p_y0);
@@ -101,18 +101,9 @@ void compute_solid_point_diff(Result const * const result, uint32_t const frame_
 }
 
 
-void load_point(Result const * const result, uint32_t const start_index, uint32_t const end_index, PointDescription const * const point, float_type * const dest_x, float_type * const dest_y) {
+static inline void load_point(Result const * const result, uint32_t const start_index, uint32_t const end_index, PointDescription const * const point, float_type * const dest_x, float_type * const dest_y) {
     uint32_t frame_index = start_index;
 
-#ifdef USE_AVX
-    while (frame_index + avx_count <= end_index) {
-        avx_type x; avx_type y;
-        compute_solid_point_avx(result, frame_index, point, &x, &y);
-        avx(store_p)(dest_x + frame_index, x);
-        avx(store_p)(dest_y + frame_index, y);
-        frame_index += avx_count;
-    }
-#endif
     while (frame_index < end_index) {
         float_type ox = result->solid_orientation_x[frame_index + result->frame_count * point->solid_index];
         float_type oy = result->solid_orientation_x[frame_index + result->frame_count * point->solid_index];
@@ -124,19 +115,11 @@ void load_point(Result const * const result, uint32_t const start_index, uint32_
 }
 
 
-void move_eq_to_point(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const point_x, float_type const * const point_y, uint32_t const eq_size, uint32_t const * const eq_ptr) {
+static inline void move_eq_to_point(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const point_x, float_type const * const point_y, uint32_t const eq_size, uint32_t const * const eq_ptr) {
     for (uint32_t const * solid_index_ptr = eq_ptr; solid_index_ptr < eq_ptr + eq_size; ++solid_index_ptr) {
         uint32_t frame_index = start_index;
         uint32_t const result_index = *solid_index_ptr * result->frame_count;
 
-#ifdef USE_AVX
-        while (frame_index + avx_count <= end_index) {
-            avx(store_p)(result->solid_x + result_index + frame_index, avx(sub_p)(avx(load_p)(result->solid_x + result_index + frame_index), avx(load_p)(point_x + frame_index)));
-            avx(store_p)(result->solid_y + result_index + frame_index, avx(sub_p)(avx(load_p)(result->solid_y + result_index + frame_index), avx(load_p)(point_y + frame_index)));
-
-            frame_index += avx_count;
-        }
-#endif
         while (frame_index < end_index) {
             *(result->solid_x + result_index + frame_index) -= *(point_x + frame_index);
             *(result->solid_y + result_index + frame_index) -= *(point_y + frame_index);
@@ -145,24 +128,11 @@ void move_eq_to_point(Result const * const result, uint32_t const start_index, u
     }
 }
 
-void place_and_rotate_eq(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const point_x, float_type const * const point_y, float_type const * const rx, float_type const * const ry, uint32_t const eq_size, uint32_t const * const eq_ptr) {
+static inline void place_and_rotate_eq(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const point_x, float_type const * const point_y, float_type const * const rx, float_type const * const ry, uint32_t const eq_size, uint32_t const * const eq_ptr) {
     for (uint32_t const * solid_index_ptr = eq_ptr; solid_index_ptr < eq_ptr + eq_size; ++solid_index_ptr) {
         uint32_t frame_index = start_index;
         uint32_t const result_index = *solid_index_ptr * result->frame_count;
 
-#ifdef USE_AVX
-        while (frame_index + avx_count <= end_index) {
-            avx(store_p)(result->solid_x + result_index + frame_index, avx(add_p)(avx(load_p)(result->solid_x + result_index + frame_index), avx(load_p)(point_x + frame_index)));
-            avx(store_p)(result->solid_y + result_index + frame_index, avx(add_p)(avx(load_p)(result->solid_y + result_index + frame_index), avx(load_p)(point_y + frame_index)));
-
-            avx_type new_rx; avx_type new_ry;
-            complex_product_avx(avx(load_p)(result->solid_orientation_x + result_index + frame_index), avx(load_p)(result->solid_orientation_y + result_index + frame_index), avx(load_p)(rx + frame_index), avx(load_p)(ry + frame_index), &new_rx, &new_ry);
-            avx(store_p)(result->solid_orientation_x + result_index + frame_index, new_rx);
-            avx(store_p)(result->solid_orientation_y + result_index + frame_index, new_ry);
-
-            frame_index += avx_count;
-        }
-#endif
         while (frame_index < end_index) {
             *(result->solid_x + result_index + frame_index) += *(point_x + frame_index);
             *(result->solid_y + result_index + frame_index) += *(point_y + frame_index);
@@ -182,32 +152,7 @@ void place_and_rotate_eq(Result const * const result, uint32_t const start_index
 
 void paste_rr(Result const * const result, uint32_t const start_index, uint32_t const end_index, PointDescription const * const target_point, PointDescription const * const second_point, PointDescription const * const eq_point, uint32_t const eq_size, uint32_t const * const eq_ptr) {
     uint32_t frame_index = start_index;
-#ifdef USE_AVX
-    while (frame_index + avx_count <= end_index) {
-        avx_type target_x; avx_type target_y;
-        compute_solid_point_avx(result, frame_index, target_point, &target_x, &target_y);
-        avx(store_p)(result->_temp_arrays[0] + frame_index, target_x);
-        avx(store_p)(result->_temp_arrays[1] + frame_index, target_y);
 
-        avx_type second_x; avx_type second_y;
-        compute_solid_point_avx(result, frame_index, second_point, &second_x, &second_y);
-
-        target_x = avx(sub_p)(second_x, target_x);
-        target_y = avx(sub_p)(second_y, target_y);
-        float_type const one = 1.0;
-        avx_type inv_sq_mag = avx(div_p)(avx(broadcast_s)(&one), avx(add_p)(avx(mul_p)(target_x, target_x), avx(mul_p)(target_y, target_y)));
-
-        avx_type current_x; avx_type current_y;
-        compute_solid_point_avx(result, frame_index, eq_point, &current_x, &current_y);
-
-        avx_type rx; avx_type ry;
-        dot_det_avx(target_x, target_y, current_x, current_y, inv_sq_mag, &rx, &ry);
-        avx(store_p)(result->_temp_arrays[2] + frame_index, rx);
-        avx(store_p)(result->_temp_arrays[3] + frame_index, ry);
-
-        frame_index += avx_count;
-    }
-#endif
     while (frame_index < end_index) {
         float_type target_x; float_type target_y;
         compute_solid_point(result, frame_index, target_point, &target_x, &target_y);
@@ -313,64 +258,20 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
     float_type const sign = signs[graph_step->solution_index];
 
     uint32_t frame_index = start_index;
-#ifdef USE_AVX
-    while (frame_index + avx_count <= end_index) {
-        avx_type vec0_x; avx_type vec0_y;
-        compute_solid_point_diff_avx(result, frame_index, &p01, &p00, &vec0_x, &vec0_y);
-        avx_type sq_vec0 = avx(mul_p)(vec0_x, vec0_x);
-        sq_vec0 = avx(fmadd_p)(vec0_y, vec0_y, sq_vec0);
 
-        avx_type vec1_x; avx_type vec1_y;
-        compute_solid_point_avx(result, frame_index, &p12, &vec1_x, &vec1_y);
-        avx_type sq_vec1 = avx(mul_p)(vec1_x, vec1_x);
-        sq_vec1 = avx(fmadd_p)(vec1_y, vec1_y, sq_vec1);
-
-        avx_type vec2_x; avx_type vec2_y;
-        compute_solid_point_avx(result, frame_index, &p22, &vec2_x, &vec2_y);
-        avx_type sq_vec2 = avx(mul_p)(vec2_x, vec2_x);
-        sq_vec2 = avx(fmadd_p)(vec2_y, vec2_y, sq_vec2);
-
-        float_type const _one_half = 0.5;
-        avx_type const one_half = avx(broadcast_s)(&_one_half);
-        avx_type cos_angle = avx(add_p)(sq_vec0, sq_vec1);
-        cos_angle = avx(sub_p)(cos_angle, sq_vec2);
-        cos_angle = avx(mul_p)(cos_angle, one_half);
-
-        float_type const one = 1.;
-        avx_type inv_01 = avx(mul_p)(sq_vec0, sq_vec1);
-        inv_01 = avx(sqrt_p)(inv_01);
-        inv_01 = avx(div_p)(avx(broadcast_s)(&one), inv_01);
-        cos_angle = avx(mul_p)(cos_angle, inv_01);
-
-        avx_type sin_angle = avx(mul_p)(cos_angle, cos_angle);
-        sin_angle = avx(sub_p)(avx(broadcast_s)(&one), sin_angle);
-        sin_angle = avx(sqrt_p)(sin_angle);
-        sin_angle = avx(mul_p)(sin_angle, avx(broadcast_s)(&sign));
-
-        avx_type align_x; avx_type align_y;
-        dot_det_avx(vec0_x, vec0_y, vec1_x, vec1_y, inv_01, &align_x, &align_y);
-
-        avx_type rotation_x; avx_type rotation_y;
-        complex_product_avx(cos_angle, sin_angle, align_x, align_y, &rotation_x, &rotation_y);
-
-        avx(store_p)(result->_temp_arrays[2] + frame_index, rotation_x);
-        avx(store_p)(result->_temp_arrays[3] + frame_index, rotation_y);
-
-        frame_index += avx_count;
-    }
-#endif
     while (frame_index < end_index) {
         float_type vec0_x; float_type vec0_y;
         compute_solid_point_diff(result, frame_index, &p01, &p00, &vec0_x, &vec0_y);
         float_type sq_vec0 = vec0_x * vec0_x + vec0_y * vec0_y;
 
+        float_type vec2_x; float_type vec2_y;
+        compute_solid_point(result, frame_index, &p22, &vec2_x, &vec2_y);
+        float_type sq_vec2 = vec2_x * vec2_x + vec2_y * vec2_y;
+
         float_type vec1_x; float_type vec1_y;
         compute_solid_point(result, frame_index, &p12, &vec1_x, &vec1_y);
         float_type sq_vec1 = vec1_x * vec1_x + vec1_y * vec1_y;
 
-        float_type vec2_x; float_type vec2_y;
-        compute_solid_point(result, frame_index, &p22, &vec2_x, &vec2_y);
-        float_type sq_vec2 = vec2_x * vec2_x + vec2_y * vec2_y;
 
         float_type const inv_01 = 1.0 / math(sqrt)(sq_vec0 * sq_vec1);
         float_type const cos_angle = 0.5 * (sq_vec0 + sq_vec1 - sq_vec2) * inv_01;
