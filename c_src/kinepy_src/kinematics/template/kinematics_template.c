@@ -88,6 +88,22 @@ static inline void compute_solid_point(Result const * const result, uint32_t con
     *out_y += solid_orientation_y * point->px;
 }
 
+static inline void compute_prismatic_orientation(Result const * const result, uint32_t const frame_index, PointDescription const * const point, float_type * const out_x, float_type * const out_y) {
+    float_type const solid_orientation_x = *(result->solid_orientation_x + frame_index + point->solid_index * result->frame_count);
+    float_type const solid_orientation_y = *(result->solid_orientation_y + frame_index + point->solid_index * result->frame_count);
+
+    *out_x = solid_orientation_x * point->px;
+    *out_x -= solid_orientation_y * point->py;
+
+    *out_y = solid_orientation_x * point->py;
+    *out_y += solid_orientation_y * point->px;
+}
+
+static inline void move_to_prismatic_point(Result const * const result, uint32_t const frame_index, PointDescription const * const point, float_type * const out_x, float_type * const out_y) {
+    *out_x += *(result->solid_x + frame_index + point->solid_index * result->frame_count);
+    *out_y += *(result->solid_y + frame_index + point->solid_index * result->frame_count);
+}
+
 
 static inline void compute_solid_point_diff(Result const * const result, uint32_t const frame_index, PointDescription const * const point0, PointDescription const * const point1, float_type * const out_x, float_type * const out_y) {
     float_type p_x0;
@@ -123,6 +139,36 @@ static inline void move_eq_to_point(Result const * const result, uint32_t const 
         while (frame_index < end_index) {
             *(result->solid_x + result_index + frame_index) -= *(point_x + frame_index);
             *(result->solid_y + result_index + frame_index) -= *(point_y + frame_index);
+            ++frame_index;
+        }
+    }
+}
+
+static inline void rotate_eq(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const rx, float_type const * const ry, uint32_t const eq_size, uint32_t const * const eq_ptr) {
+    for (uint32_t const * solid_index_ptr = eq_ptr; solid_index_ptr < eq_ptr + eq_size; ++solid_index_ptr) {
+        uint32_t frame_index = start_index;
+        uint32_t const result_index = *solid_index_ptr * result->frame_count;
+
+        while (frame_index < end_index) {
+            float_type const new_rx = *(result->solid_orientation_x + result_index + frame_index) * rx[frame_index] - *(result->solid_orientation_y + result_index + frame_index) * ry[frame_index];
+            float_type const new_ry = *(result->solid_orientation_y + result_index + frame_index) * rx[frame_index] + *(result->solid_orientation_x + result_index + frame_index) * ry[frame_index];
+
+            *(result->solid_orientation_x + result_index + frame_index) = new_rx;
+            *(result->solid_orientation_y + result_index + frame_index) = new_ry;
+
+            ++frame_index;
+        }
+    }
+}
+
+static inline void place_eq(Result const * const result, uint32_t const start_index, uint32_t const end_index, float_type const * const point_x, float_type const * const point_y, uint32_t const eq_size, uint32_t const * const eq_ptr) {
+    for (uint32_t const * solid_index_ptr = eq_ptr; solid_index_ptr < eq_ptr + eq_size; ++solid_index_ptr) {
+        uint32_t frame_index = start_index;
+        uint32_t const result_index = *solid_index_ptr * result->frame_count;
+
+        while (frame_index < end_index) {
+            *(result->solid_x + result_index + frame_index) += *(point_x + frame_index);
+            *(result->solid_y + result_index + frame_index) += *(point_y + frame_index);
             ++frame_index;
         }
     }
@@ -186,7 +232,6 @@ void paste_rr(Result const * const result, uint32_t const start_index, uint32_t 
       /     \
      1 - R2- 2
 */
-
 void solve_graph_rrr(System const * const system, ResolutionStep const * const step, Result * const result, uint32_t const start_index, uint32_t const end_index) {
 
     GraphStep const * const graph_step = &step->graph_step;
@@ -243,17 +288,15 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
 
 
     load_point(result, start_index, end_index, &p10, result->_temp_arrays[0], result->_temp_arrays[1]);
-    uint32_t tmp0 = graph_step->eq_indices[2] - graph_step->eq_indices[1];
-    uint32_t * tmp1 = graph_step->eqs + graph_step->eq_indices[1];
-    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], tmp0, tmp1);
+    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
 
     load_point(result, start_index, end_index, &p21, result->_temp_arrays[0], result->_temp_arrays[1]);
     move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
 
 
     float_type const signs[] = {
-        1.,
-        -1.
+        math(1.0),
+        math(-1.0)
     };
     float_type const sign = signs[graph_step->solution_index];
 
@@ -273,9 +316,9 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
         float_type sq_vec1 = vec1_x * vec1_x + vec1_y * vec1_y;
 
 
-        float_type const inv_01 = 1.0 / math(sqrt)(sq_vec0 * sq_vec1);
-        float_type const cos_angle = 0.5 * (sq_vec0 + sq_vec1 - sq_vec2) * inv_01;
-        float_type const sin_angle = sign * math(sqrt)(1. - cos_angle * cos_angle);
+        float_type const inv_01 = math(1.0) / math(sqrt)(sq_vec0 * sq_vec1);
+        float_type const cos_angle = math(0.5) * (sq_vec0 + sq_vec1 - sq_vec2) * inv_01;
+        float_type const sin_angle = sign * math(sqrt)(math(1.0) - cos_angle * cos_angle);
 
         float_type const align_x = (vec1_x * vec0_x + vec1_y * vec0_y) * inv_01;
         float_type const align_y = (vec0_y * vec1_x - vec0_x * vec1_y) * inv_01;
@@ -290,4 +333,124 @@ void solve_graph_rrr(System const * const system, ResolutionStep const * const s
     place_and_rotate_eq(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], result->_temp_arrays[2], result->_temp_arrays[3], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
 
     paste_rr(result, start_index, end_index, &p01, &p12, &p22, graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
+}
+
+/*
+         0
+        / \
+       R0  R1
+      /     \
+     1 - P2- 2
+*/
+void solve_graph_rrp(System const * const system, ResolutionStep const * const step, Result * const result, uint32_t const start_index, uint32_t const end_index) {
+    GraphStep const * const graph_step = &step->graph_step;
+
+    __typeof__(graph_step->edges) const r0 = graph_step->edges + 0;
+    __typeof__(graph_step->edges) const r1 = graph_step->edges + 1;
+    __typeof__(graph_step->edges) const p2 = graph_step->edges + 2;
+
+    __typeof__(system->config.joints) solid_ptr_s[] = {
+        (__typeof__(system->config.joints)) &system->config.joints->solid1,
+        (__typeof__(system->config.joints)) &system->config.joints->solid2,
+    };
+    __typeof__(system->joint_parameters_ptr) param_ptr_s[] = {
+        (__typeof__(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x1,
+        (__typeof__(system->joint_parameters_ptr)) &system->joint_parameters_ptr->x2
+    };
+
+    /* p{eq}{joint} on graph */
+    PointDescription const p00 = {
+        .solid_index = *(uint32_t*)(solid_ptr_s[!r0->orientation] + r0->joint_index),
+        .px = *((float_type*)(param_ptr_s[!r0->orientation] + r0->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[!r0->orientation] + r0->joint_index) + 1)
+    };
+
+    PointDescription const p10 = {
+        .solid_index = *(uint32_t*)(solid_ptr_s[r0->orientation] + r0->joint_index),
+        .px = *((float_type*)(param_ptr_s[r0->orientation] + r0->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[r0->orientation] + r0->joint_index) + 1)
+    };
+
+    PointDescription const p01 =  {
+        .solid_index = *(uint32_t*)(solid_ptr_s[!r1->orientation] + r1->joint_index),
+        .px = *((float_type*)(param_ptr_s[!r1->orientation] + r1->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[!r1->orientation] + r1->joint_index) + 1)
+    };
+
+    PointDescription const p21 =  {
+        .solid_index = *(uint32_t*)(solid_ptr_s[r1->orientation] + r1->joint_index),
+        .px = *((float_type*)(param_ptr_s[r1->orientation] + r1->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[r1->orientation] + r1->joint_index) + 1)
+    };
+
+    PointDescription const p12 =  {
+        .solid_index = *(uint32_t*)(solid_ptr_s[!p2->orientation] + p2->joint_index),
+        .px = *((float_type*)(param_ptr_s[!p2->orientation] + p2->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[!p2->orientation] + p2->joint_index) + 1)
+    };
+
+    PointDescription const p22 =  {
+        .solid_index = *(uint32_t*)(solid_ptr_s[p2->orientation] + p2->joint_index),
+        .px = *((float_type*)(param_ptr_s[p2->orientation] + p2->joint_index) + 0),
+        .py = *((float_type*)(param_ptr_s[p2->orientation] + p2->joint_index) + 1)
+    };
+
+
+    load_point(result, start_index, end_index, &p10, result->_temp_arrays[0], result->_temp_arrays[1]);
+    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
+
+    load_point(result, start_index, end_index, &p21, result->_temp_arrays[0], result->_temp_arrays[1]);
+    move_eq_to_point(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
+
+
+    float_type const signs[] = {
+        1.,
+        -1.
+    };
+    float_type const sign = signs[graph_step->solution_index];
+
+    uint32_t frame_index = start_index;
+    while (frame_index < end_index) {
+        float_type x1; float_type y1;
+        compute_prismatic_orientation(result, frame_index, &p12, &x1, &y1);
+        float_type const nx = x1; float_type const ny = y1;
+
+        float_type x2; float_type y2;
+        compute_prismatic_orientation(result, frame_index, &p22, &x2, &y2);
+
+
+        float_type const inv_mag = math(1.0) / math(sqrt)((x1 * x1 + y1 * y1) * (x2 * x2 * y2 * y2));
+        float_type const prismatic_alignment_x = (x1 * x2 + y1 * y2) * inv_mag;
+        float_type const prismatic_alignment_y = (x2 * y1 - y2 * x1) * inv_mag;
+
+        move_to_prismatic_point(result, frame_index, &p12, &x1, &y1);
+        move_to_prismatic_point(result, frame_index, &p22, &x2, &y2);
+
+        float_type const vec2_x = - (x1 - prismatic_alignment_x * x2 - prismatic_alignment_y * y2);
+        float_type const vec2_y = - (y1 - prismatic_alignment_y * x2 + prismatic_alignment_x * y2);
+
+        float_type const cos_target = vec2_x * nx + vec2_y * ny;
+        float_type const sin_target = vec2_y * nx - vec2_x * ny;
+
+        float_type vec0_x; float_type vec0_y;
+        compute_solid_point_diff(result, frame_index, &p01, &p00, &vec0_x, &vec0_y);
+
+        float_type const sq_inv_vec0 = math(1.0) / (vec0_x * vec0_x + vec0_y * vec0_y) / (nx * nx + ny* ny);
+        float_type const cos_0 = vec0_x * nx + vec0_y * ny;
+        float_type const sin_0 = sign * (vec0_y * nx - vec0_x * ny);
+
+        *(result->_temp_arrays[0] + frame_index) = sq_inv_vec0 * (cos_0 * cos_target - sin_0 * sin_target);
+        *(result->_temp_arrays[1] + frame_index) = sq_inv_vec0 * (cos_0 * sin_target + sin_0 * cos_target);
+        *(result->_temp_arrays[2] + frame_index) =(*(result->_temp_arrays[0] + frame_index) * prismatic_alignment_x - *(result->_temp_arrays[1] + frame_index) * prismatic_alignment_y);
+        *(result->_temp_arrays[3] + frame_index) =(*(result->_temp_arrays[0] + frame_index) * prismatic_alignment_y + *(result->_temp_arrays[1] + frame_index) * prismatic_alignment_x);
+        ++frame_index;
+    }
+    rotate_eq(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
+    rotate_eq(result, start_index, end_index, result->_temp_arrays[2], result->_temp_arrays[3], graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
+
+    load_point(result, start_index, end_index, &p00, result->_temp_arrays[0], result->_temp_arrays[1]);
+    place_eq(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[2] - graph_step->eq_indices[1], graph_step->eqs + graph_step->eq_indices[1]);
+
+    load_point(result, start_index, end_index, &p01, result->_temp_arrays[0], result->_temp_arrays[1]);
+    place_eq(result, start_index, end_index, result->_temp_arrays[0], result->_temp_arrays[1], graph_step->eq_indices[3] - graph_step->eq_indices[2], graph_step->eqs + graph_step->eq_indices[2]);
 }

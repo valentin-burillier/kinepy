@@ -23,3 +23,4 @@
 #define paste_rr kinepy_internal(paste_rr)
 #define reset_results kinepy_internal(reset_results)
 #define set_value kinepy_internal(set_value)
+#define compute_prismatic_orientation kinepy_internal(compute_prismatic_orientation)

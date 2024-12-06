@@ -20,3 +20,4 @@
 #undef place_and_rotate_eq
 #undef paste_rr
 #undef reset_results
+#undef compute_prismatic_orientation
