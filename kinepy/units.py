@@ -250,10 +250,15 @@ import types
 from typing import Annotated
 import numpy as np
 import enum
+from functools import wraps
 
 
 class _PhysicsEnum(enum.Enum):
     LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE = range(4)
+
+
+class _IdEnum(enum.Enum):
+    SOLID, JOINT, RELATION = range(3)
 
 
 class Physics:
@@ -265,16 +270,55 @@ class Physics:
 
     POINT = Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
 
-    _units = {
-        _PhysicsEnum.LENGTH: 1.0,
-        _PhysicsEnum.MASS: 1.0,
-        _PhysicsEnum.MOMENT_OF_INERTIA: 1.0,
-        _PhysicsEnum.ANGLE: 1.0
+    _unit_values: dict[_PhysicsEnum, tuple[np.ndarray, str]] = {
+        _PhysicsEnum.LENGTH: (np.array(1.0), 'm'),
+        _PhysicsEnum.MASS: (np.array(1.0), 'kg'),
+        _PhysicsEnum.MOMENT_OF_INERTIA: (np.array(1.0), 'kg.m²'),
+        _PhysicsEnum.ANGLE: (np.array(1.0), 'rad')
     }
+
+    @classmethod
+    def get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
+        return cls._unit_values[phy][0]
+
+    @classmethod
+    def set_unit(cls, phy: _PhysicsEnum, value: _scalar_type, symbol: str) -> None:
+        cls._unit_values[phy] = np.array(value), symbol
+
+
+def kinepy_input(physics: _PhysicsEnum):
+    return lambda value: value * Physics.get_unit_value(physics)
+
+
+def identity(x):
+    return x
+
+
+def kinepy_output(physics):
+    if not hasattr(physics, '__metadata__'):
+        return identity
+    physics = physics.__metadata__[0]
+    return lambda value: value / Physics.get_unit_value(physics)
 
 
 def kinepy_function(func: types.FunctionType):
-    return func
+    arguments = func.__code__.co_varnames[:func.__code__.co_argcount]
+    defaults = dict(zip(arguments[::-1], (func.__defaults__ or ())[::-1]))
+
+    physical_transforms = {
+        name: kinepy_input(annotation.__metadata__[0])
+        for name, annotation in func.__annotations__.items() if hasattr(annotation, '__metadata__') and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
+    }
+
+    return_transform = kinepy_output(func.__annotations__.get('return', None))
+
+    @wraps(func)
+    def new_function(*args, **kwargs):
+        arg_dict = kwargs | dict(zip(arguments, args))
+        arg_dict = {name: physical_transforms.get(name, identity)(value) for name, value in arg_dict.items()}
+        return return_transform(func(**(defaults | arg_dict)))
+
+    return new_function
 
 
 def kinepy_class(cls: type):

@@ -200,7 +200,7 @@ def solve_graph12(eqs, js, sgn=None):
 
 
 def solve_graph(system, index, eqs, js, key):
-    SOLVE_GRAPHS[index](eqs, js, system.signs.get(system.tags[key], None))
+    SOLVE_GRAPHS[index](eqs, js, system.signs.get_unit_value(system.tags[key], None))
 
 
 def continuous_solid_angle(system):
