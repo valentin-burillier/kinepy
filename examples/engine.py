@@ -67,5 +67,6 @@ for x in d:
     list_force.append(np.nanmax(to.norm(r1.force)))
     
 plt.plot(d, list_force)
+plt.show()
 
 print('rayon pour le g optimal :', d[np.argmin(list_force)])

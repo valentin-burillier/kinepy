@@ -109,7 +109,7 @@ class Compiler:
                 self._compile(self.system.kin_joints, self.system.kin_sols, list(self.system.piloted), BOTH)
         else:
             self._hyperstatism(self.system.piloted, 'kinematic')
-            self._hyperstatism(self.system.piloted, 'dynamic')
+            self._hyperstatism(self.system.blocked, 'dynamic')
             self.system.kin_sols, self.system.kin_joints, self.system.kin_ghosted = self._set_ghosts(piloted)
             self.system.dyn_sols, self.system.dyn_joints, self.system.dyn_ghosted = self._set_ghosts(blocked)
             self.system.kin_instr = \

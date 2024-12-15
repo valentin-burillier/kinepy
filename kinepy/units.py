@@ -244,3 +244,50 @@ def set_unit_system(unit_system: dict):
     """
     for key in SYSTEM.dct:
         SYSTEM.dct[key] = unit_system.get(key, SYSTEM[key])
+
+
+import types
+from typing import Annotated
+import numpy as np
+import enum
+
+
+class _PhysicsEnum(enum.Enum):
+    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE = range(4)
+
+
+class Physics:
+    _scalar_type = float | np.ndarray
+    LENGTH = Annotated[_scalar_type, _PhysicsEnum.LENGTH]
+    MASS = Annotated[_scalar_type, _PhysicsEnum.MASS]
+    MOMENT_OF_INERTIA = Annotated[_scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
+    ANGLE = Annotated[_scalar_type, _PhysicsEnum.ANGLE]
+
+    POINT = Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
+
+    _units = {
+        _PhysicsEnum.LENGTH: 1.0,
+        _PhysicsEnum.MASS: 1.0,
+        _PhysicsEnum.MOMENT_OF_INERTIA: 1.0,
+        _PhysicsEnum.ANGLE: 1.0
+    }
+
+
+def kinepy_function(func: types.FunctionType):
+    return func
+
+
+def kinepy_class(cls: type):
+    # Retrieve all method definitions
+    for method_name, method in cls.__dict__.items():
+        if method_name != '__init__' and str.startswith(method_name, '__'):
+            continue
+        setattr(cls, method_name, kinepy_function(method))
+
+    # Retrieve all attributes that are annotated with physical quantities to place getters and setters
+    for attr, unit in cls.__annotations__.items():
+        setattr(cls, attr, property(
+            lambda self: getattr(self, f'_{attr}'),
+            lambda self, value: setattr(self, f'_{attr}', value)
+        ))
+    return cls
