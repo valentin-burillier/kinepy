@@ -280,4 +280,3 @@ def _degrees(graph: Adjacency):
 
 
 DEGREES = tuple(_degrees(adj) for adj in ADJACENCY)
-print(graph_rrr.__doc__)
