@@ -1,5 +1,10 @@
 from kinepy.objects.new_joints import Joint, Revolute, Prismatic
-from kinepy.strategy.graphs import *
+import enum
+from kinepy.strategy.graphs import NodeType, ADJACENCY, Adjacency, DEGREES
+
+
+class SystemConfigurationError(Exception):
+    pass
 
 
 class StrategyItem(enum.Enum):
@@ -29,14 +34,14 @@ PrimitiveJointList = list[Revolute | Prismatic]
 JointList = list[Joint]
 
 
-def make_joint_graph(solid_count: int, joints: PrimitiveJointList) -> tuple[JointGraph, Degrees]:
+def make_joint_graph(solid_count: int, joints: PrimitiveJointList) -> tuple[JointGraph, Eq, Degrees]:
     result_graph: JointGraph = [[GraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
 
     for joint in joints:
         result_graph[joint.s1][joint.s2].set_node_type(joint)
         result_graph[joint.s2][joint.s1].set_node_type(joint)
 
-    return result_graph, compute_degrees(result_graph)
+    return result_graph, tuple((i,) for i in range(solid_count)), compute_degrees(result_graph)
 
 
 def compute_degrees(joint_graph: JointGraph) -> Degrees:
@@ -84,67 +89,103 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int]) -> tuple
     return new_joint_graph, new_eqs, compute_degrees(new_joint_graph)
 
 
-def can_match(shuffle, stage, new_vertex, joint_graph: JointGraph, test_graph: Adjacency) -> bool:
-    index = stage
-    while index:
-        index -= 1
-        if test_graph[index][stage] != joint_graph[new_vertex][shuffle[index]].node_type.value:
+def can_match(current_isomorphism, new_test_graph_vertex, new_target_vertex, target_graph: JointGraph, test_graph: Adjacency) -> bool:
+    """
+    Check if the new vertex can be added to the current_isomorphism by comparing it with all previous vertices
+    """
+    test_graph_vertex = new_test_graph_vertex
+    while test_graph_vertex:
+        test_graph_vertex -= 1
+        if test_graph[test_graph_vertex][new_test_graph_vertex] != target_graph[new_target_vertex][current_isomorphism[test_graph_vertex]].node_type.value:
             return False
     return True
 
 
-def isomorphism_heuristic(src, target) -> bool:
-    return src[0] >= target[0] and src[1] >= target[1]
+def isomorphism_heuristic(target_degree: tuple[int, int], test_degree: tuple[int, int]) -> bool:
+    return target_degree[0] >= test_degree[0] and target_degree[1] >= test_degree[1]
 
 
-def find_isomorphism_test_graph(joint_graph: JointGraph, joint_degree, test_graph: Adjacency, test_degree) -> tuple[bool, tuple[int, ...]]:
-    stage = 0
-    stack: list[int] = list(range(len(test_graph)))
-    shuffle: list[int] = list(range(len(joint_graph)))
-    while stage < len(test_graph) and (stage != 0 or stack[0] < len(joint_graph)):
+def find_isomorphism_test_graph(target_graph: JointGraph, target_degrees, test_graph: Adjacency, test_degree) -> tuple[bool, tuple[int, ...]]:
+    """
+    Try to find an isomorphism from test_graph to a subgraph of target_graph
+    """
+
+    test_graph_vertex = 0
+
+    # current_isomorphism[test_graph_vertex:] is the set of target graph vertices that are not matched yet
+    current_isomorphism: list[int] = list(range(len(target_graph)))
+
+    # current_isomorphism[exploration_stack[test_graph_vertex]] is the is next target_graph vertex to try to match with test_graph_vertex
+    # exploration_stack[test_graph_vertex] >= test_graph_vertex for all test_graph_vertex
+    exploration_stack: list[int] = list(range(len(test_graph)))
+
+    while test_graph_vertex < len(test_graph) and (test_graph_vertex != 0 or exploration_stack[0] < len(target_graph)):
         # vertices remain to match target graph vertex
-        if stack[stage] < len(joint_graph):
-            shuffle_index = stack[stage]
-            vertex = shuffle[shuffle_index]
+        if exploration_stack[test_graph_vertex] < len(target_graph):
+            shuffle_index = exploration_stack[test_graph_vertex]
+            vertex = current_isomorphism[shuffle_index]
 
             # prepare next vertex
-            stack[stage] += 1
+            exploration_stack[test_graph_vertex] += 1
 
             # vertex is not eligible
-            if not isomorphism_heuristic(joint_degree[vertex], test_degree[stage]) or not can_match(shuffle, stage, vertex, joint_graph, test_graph):
+            if not isomorphism_heuristic(target_degrees[vertex], test_degree[test_graph_vertex]) or not can_match(current_isomorphism, test_graph_vertex, vertex, target_graph, test_graph):
                 continue
 
             # push vertex
-            shuffle[shuffle_index], shuffle[stage] = shuffle[stage], vertex
-            stage += 1
+            current_isomorphism[shuffle_index], current_isomorphism[test_graph_vertex] = current_isomorphism[test_graph_vertex], vertex
+            test_graph_vertex += 1
         # all vertices were tested on target graph vertex
         else:
             # pop the stack
-            stack[stage] = stage
-            stage -= 1
+            exploration_stack[test_graph_vertex] = test_graph_vertex
+            test_graph_vertex -= 1
 
-            exchange = stack[stage] - 1
+            exchange = exploration_stack[test_graph_vertex] - 1
             # restore shuffle
-            shuffle[exchange], shuffle[stage] = shuffle[stage], shuffle[exchange]
+            current_isomorphism[exchange], current_isomorphism[test_graph_vertex] = current_isomorphism[test_graph_vertex], current_isomorphism[exchange]
 
-    return stage == len(test_graph), tuple(shuffle[:len(test_graph)])
+    return test_graph_vertex == len(test_graph), tuple(current_isomorphism[:len(test_graph)])
 
 
-def find_isomorphism(joint_graph: JointGraph, degrees: Degrees) -> None | tuple[int, ...]:
-    for adj, deg in zip(ADJACENCY, DEGREES):
-        is_iso, iso = find_isomorphism_test_graph(joint_graph, degrees, adj, deg)
+def find_isomorphism(target_graph: JointGraph, target_degrees: Degrees) -> None | tuple[int, tuple[int, ...]]:
+    """
+    Try to find a test_graph that is isomorphic to a subgraph of target_graph with its isomorphism
+    """
+    for index, (adj, deg) in enumerate(zip(ADJACENCY, DEGREES)):
+        is_iso, iso = find_isomorphism_test_graph(target_graph, target_degrees, adj, deg)
         if not is_iso:
             continue
 
-        return iso
+        return index, iso
     return None
 
 
-def determine_computation_order(solid_count: int, joints: PrimitiveJointList, input_joints: JointList, strategy_output: list):
-    joint_graph, joint_degree = make_joint_graph(solid_count, joints)
+def determine_computation_order(solid_count: int, joints: PrimitiveJointList, input_joints: JointList, strategy_output: list) -> None:
+    strategy_output.clear()
+    joint_graph, eqs, joint_degree = make_joint_graph(solid_count, joints)
 
     # find all graphs before joint resolution
+    while len(eqs) > 1 and (iso := find_isomorphism(joint_graph, joint_degree)) is not None:
+        graph_index, isomorphism = iso
+
+        # TODO: register graph step
+
+        joint_graph, eqs, joint_degree = merge(joint_graph, eqs, isomorphism)
+
+        # TODO: infer joint relation resolution
 
     # solve input_joints
+    # TODO: Check gear formation
+    # TODO: register joint steps
+    # TODO: infer joint relation resolution
 
     # find the rest
+    while len(eqs) > 1 and (iso := find_isomorphism(joint_graph, joint_degree)) is not None:
+        graph_index, isomorphism = iso
+
+        # TODO: register graph step
+
+        joint_graph, eqs, joint_degree = merge(joint_graph, eqs, isomorphism)
+
+        # TODO: infer joint relation resolution

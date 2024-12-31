@@ -1,7 +1,7 @@
-from kinepy.units import kinepy_class, Physics
+from kinepy.units import Physics
 
 
-@kinepy_class
+@Physics.class_
 class Solid:
     name: str
     index: int

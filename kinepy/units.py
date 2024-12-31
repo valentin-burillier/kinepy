@@ -247,10 +247,14 @@ def set_unit_system(unit_system: dict):
 
 
 import types
-from typing import Annotated
+import typing
 import numpy as np
 import enum
 from functools import wraps
+
+
+# typing._AnnotatedAlias
+PhysicalQuantity = type(typing.Annotated[int, ''])
 
 
 class _PhysicsEnum(enum.Enum):
@@ -263,12 +267,12 @@ class _IdEnum(enum.Enum):
 
 class Physics:
     _scalar_type = float | np.ndarray
-    LENGTH = Annotated[_scalar_type, _PhysicsEnum.LENGTH]
-    MASS = Annotated[_scalar_type, _PhysicsEnum.MASS]
-    MOMENT_OF_INERTIA = Annotated[_scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
-    ANGLE = Annotated[_scalar_type, _PhysicsEnum.ANGLE]
+    LENGTH: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.LENGTH]
+    MASS: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.MASS]
+    MOMENT_OF_INERTIA: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
+    ANGLE: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.ANGLE]
 
-    POINT = Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
+    POINT: PhysicalQuantity = typing.Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
 
     _unit_values: dict[_PhysicsEnum, tuple[np.ndarray, str]] = {
         _PhysicsEnum.LENGTH: (np.array(1.0), 'm'),
@@ -278,60 +282,81 @@ class Physics:
     }
 
     @classmethod
-    def get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
+    def get_physical_quantities(cls) -> dict[str, PhysicalQuantity]:
+        return {attr_name: attr for attr_name, attr in cls.__dict__.items() if attr_name.upper() == attr_name and isinstance(attr, PhysicalQuantity)}
+
+    @classmethod
+    def get_unit_value(cls, phy: PhysicalQuantity) -> np.ndarray:
+        if not phy.__metadata__[0] or not isinstance(phy.__metadata__[0], _PhysicsEnum):
+            raise ValueError("Invalid physical quantity type")
+        return cls._get_unit_value(phy.__metadata__[0])
+
+    @classmethod
+    def _get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
         return cls._unit_values[phy][0]
 
     @classmethod
-    def set_unit(cls, phy: _PhysicsEnum, value: _scalar_type, symbol: str) -> None:
-        cls._unit_values[phy] = np.array(value), symbol
+    def set_unit(cls, phy: PhysicalQuantity, value: _scalar_type, symbol: str) -> None:
+        if not phy.__metadata__[0] or not isinstance(phy.__metadata__[0], _PhysicsEnum):
+            raise ValueError("Invalid physical quantity type")
+        cls._unit_values[phy.__metadata__[0]] = np.array(value), symbol
 
+    @classmethod
+    def _input(cls, physics: PhysicalQuantity):
+        phy = physics.__metadata__[0]
+        return lambda value: value * cls._get_unit_value(phy)
 
-def kinepy_input(physics: _PhysicsEnum):
-    return lambda value: value * Physics.get_unit_value(physics)
+    @classmethod
+    def _output(cls, physics: None | PhysicalQuantity):
+        if physics is None or not isinstance(physics, PhysicalQuantity) or not physics.__metadata__ or not isinstance(physics.__metadata__[0], _PhysicsEnum):
+            return identity
+        phy = physics.__metadata__[0]
+        return lambda value: value / cls._get_unit_value(phy)
+
+    @classmethod
+    def function(cls, func: types.FunctionType):
+        """
+        Function decorator that manages all arguments annotated with a PhysicalQuantity and the return value
+        """
+        arguments = func.__code__.co_varnames[:func.__code__.co_argcount]
+        defaults = dict(zip(arguments[::-1], (func.__defaults__ or ())[::-1]))
+
+        # all parameters that are annotated with a physical quantity
+        physical_transforms = {
+            name: cls._input(annotation)
+            for name, annotation in func.__annotations__.items() if isinstance(annotation, PhysicalQuantity) and annotation.__metadata__ and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
+        }
+        return_transform = cls._output(func.__annotations__.get('return', None))
+
+        @wraps(func)
+        def new_function(*args, **kwargs):
+            arg_dict = kwargs | dict(zip(arguments, args))
+            arg_dict = {name: physical_transforms.get(name, identity)(value) for name, value in arg_dict.items()}
+            return return_transform(func(**(defaults | arg_dict)))
+
+        return new_function
+
+    @classmethod
+    def class_(cls, target_class: type) -> type:
+        """
+        Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity"""
+        # Retrieve all method definitions
+        for method_name, method in target_class.__dict__.items():
+            if not isinstance(method, types.FunctionType) or (method_name != '__init__' and str.startswith(method_name, '__')):
+                continue
+            setattr(target_class, method_name, cls.function(method))
+
+        # Retrieve all attributes that are annotated with physical quantities to place getters and setters on them
+        for attr, unit in target_class.__annotations__.items():
+            if not isinstance(unit, PhysicalQuantity) or not unit.__metadata__ or not isinstance(unit.__metadata__[0], _PhysicsEnum):
+                continue
+            phy: _PhysicsEnum = unit.__metadata__[0]
+            setattr(target_class, attr, property(
+                lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
+                lambda self, value: setattr(self, f'_{attr}', value * cls._get_unit_value(phy))
+            ))
+        return target_class
 
 
 def identity(x):
     return x
-
-
-def kinepy_output(physics):
-    if not hasattr(physics, '__metadata__'):
-        return identity
-    physics = physics.__metadata__[0]
-    return lambda value: value / Physics.get_unit_value(physics)
-
-
-def kinepy_function(func: types.FunctionType):
-    arguments = func.__code__.co_varnames[:func.__code__.co_argcount]
-    defaults = dict(zip(arguments[::-1], (func.__defaults__ or ())[::-1]))
-
-    physical_transforms = {
-        name: kinepy_input(annotation.__metadata__[0])
-        for name, annotation in func.__annotations__.items() if hasattr(annotation, '__metadata__') and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
-    }
-
-    return_transform = kinepy_output(func.__annotations__.get('return', None))
-
-    @wraps(func)
-    def new_function(*args, **kwargs):
-        arg_dict = kwargs | dict(zip(arguments, args))
-        arg_dict = {name: physical_transforms.get(name, identity)(value) for name, value in arg_dict.items()}
-        return return_transform(func(**(defaults | arg_dict)))
-
-    return new_function
-
-
-def kinepy_class(cls: type):
-    # Retrieve all method definitions
-    for method_name, method in cls.__dict__.items():
-        if method_name != '__init__' and str.startswith(method_name, '__'):
-            continue
-        setattr(cls, method_name, kinepy_function(method))
-
-    # Retrieve all attributes that are annotated with physical quantities to place getters and setters
-    for attr, unit in cls.__annotations__.items():
-        setattr(cls, attr, property(
-            lambda self: getattr(self, f'_{attr}'),
-            lambda self, value: setattr(self, f'_{attr}', value)
-        ))
-    return cls

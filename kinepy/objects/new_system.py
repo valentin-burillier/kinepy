@@ -1,14 +1,14 @@
 from kinepy.objects.new_solid import Solid
 from kinepy.objects.new_relation import Relation
 from kinepy.objects.new_joints import Joint, Revolute, Prismatic, GhostHolder, PinSlot, Translation, ThreeDOF
-from kinepy.units import kinepy_class, Physics
+from kinepy.units import Physics
 import numpy as np
 
 
-@kinepy_class
+@Physics.class_
 class System:
     def __init__(self):
-        self._solids: list[Solid] = [Solid(self, "Ground", 0)]
+        self._solids: list[Solid] = [Solid(self, 'Ground', 0)]
         self._joints: list[Joint] = []
         self._relations: list[Relation] = []
         self._blocked = []
@@ -20,14 +20,14 @@ class System:
     def get_ground(self) -> Solid:
         return self._solids[0]
 
-    def _check_solids(self, *solids: Solid):
-        for solid in solids:
+    def _check_solids(self, *solids: Solid, kw_solids=()):
+        for solid in solids + kw_solids:
             if solid.system is not self or solid.index >= len(self._solids) or self._solids[solid.index] is not solid:
                 raise ValueError(f"Solid: {solid.name} does not belong to this system")
         return True
 
-    def _check_joints(self, *joints: Joint):
-        for joint in joints:
+    def _check_joints(self, *joints: Joint, kw_joints=()):
+        for joint in joints + kw_joints:
             if joint.system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
                 raise ValueError(f"Joint {joint} does not belong to this system")
         return True
@@ -87,11 +87,11 @@ class System:
         return ThreeDOF(self, -1, ghost_solids, ghost_joints, 0, s.index)
 
     def pilot(self, *joints: Joint):
-        self._check_joints(*joints)
+        self._check_joints(kw_joints=joints)
         self._piloted.extend(joints)
 
     def block(self, *joints: Joint):
-        self._check_joints(*joints)
+        self._check_joints(kw_joints=joints)
         self._blocked.extend(joints)
 
     def _hyper_statism_value(self, joint_input: list[Joint]) -> int:

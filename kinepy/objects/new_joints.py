@@ -1,5 +1,6 @@
-from kinepy.units import Physics, kinepy_class
+from kinepy.units import Physics
 from kinepy.objects.new_solid import Solid
+
 
 class Joint:
     s1: int
@@ -23,7 +24,7 @@ class Joint:
         return self,
 
 
-@kinepy_class
+@Physics.class_
 class Revolute(Joint):
     p1: Physics.POINT
     p2: Physics.POINT
@@ -34,7 +35,7 @@ class Revolute(Joint):
         self._p2 = p2
 
 
-@kinepy_class
+@Physics.class_
 class Prismatic(Joint):
     alpha1: Physics.ANGLE
     distance1: Physics.LENGTH
