@@ -283,7 +283,12 @@ class Physics:
 
     @classmethod
     def get_physical_quantities(cls) -> dict[str, PhysicalQuantity]:
-        return {attr_name: attr for attr_name, attr in cls.__dict__.items() if attr_name.upper() == attr_name and isinstance(attr, PhysicalQuantity)}
+        """
+        Retrieve all attributes that are used to set or get units along with their names
+
+        :return: dict of the form: { 'LENGTH': Physics.LENGTH, ... }
+        """
+        return {attr_name: attr for attr_name, attr in cls.__dict__.items() if attr_name.upper() == attr_name and isinstance(attr, PhysicalQuantity) and attr.__origin__ is cls._scalar_type}
 
     @classmethod
     def get_unit_value(cls, phy: PhysicalQuantity) -> np.ndarray:
@@ -309,8 +314,8 @@ class Physics:
     @classmethod
     def _output(cls, physics: None | PhysicalQuantity):
         if physics is None or not isinstance(physics, PhysicalQuantity) or not physics.__metadata__ or not isinstance(physics.__metadata__[0], _PhysicsEnum):
-            return identity
-        phy = physics.__metadata__[0]
+            return _identity
+        phy = getattr(physics, '__metadata__')[0]
         return lambda value: value / cls._get_unit_value(phy)
 
     @classmethod
@@ -324,14 +329,14 @@ class Physics:
         # all parameters that are annotated with a physical quantity
         physical_transforms = {
             name: cls._input(annotation)
-            for name, annotation in func.__annotations__.items() if isinstance(annotation, PhysicalQuantity) and annotation.__metadata__ and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
+            for name, annotation in func.__annotations__.items() if isinstance(annotation, PhysicalQuantity) and getattr(annotation, '__metadata__') and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
         }
         return_transform = cls._output(func.__annotations__.get('return', None))
 
         @wraps(func)
         def new_function(*args, **kwargs):
             arg_dict = kwargs | dict(zip(arguments, args))
-            arg_dict = {name: physical_transforms.get(name, identity)(value) for name, value in arg_dict.items()}
+            arg_dict = {name: physical_transforms.get(name, _identity)(value) for name, value in arg_dict.items()}
             return return_transform(func(**(defaults | arg_dict)))
 
         return new_function
@@ -348,9 +353,9 @@ class Physics:
 
         # Retrieve all attributes that are annotated with physical quantities to place getters and setters on them
         for attr, unit in target_class.__annotations__.items():
-            if not isinstance(unit, PhysicalQuantity) or not unit.__metadata__ or not isinstance(unit.__metadata__[0], _PhysicsEnum):
+            if not isinstance(unit, PhysicalQuantity) or not getattr(unit, '__metadata__') or not isinstance(unit.__metadata__[0], _PhysicsEnum):
                 continue
-            phy: _PhysicsEnum = unit.__metadata__[0]
+            phy: _PhysicsEnum = getattr(unit, '__metadata__')[0]
             setattr(target_class, attr, property(
                 lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
                 lambda self, value: setattr(self, f'_{attr}', value * cls._get_unit_value(phy))
@@ -358,5 +363,5 @@ class Physics:
         return target_class
 
 
-def identity(x):
+def _identity(x):
     return x
