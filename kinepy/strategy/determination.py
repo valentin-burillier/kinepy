@@ -232,7 +232,7 @@ def register_solved_joints(joints: Generator[PrimitiveJoint, None, None], joint_
     for joint in joints:
         joint_index = joint.index
         if joint_states[joint_index] & JointFlags.SOLVED_BIT:
-            # TODO: add context
+            # TODO: add context here or catch to add context
             raise SystemConfigurationError("Trying to solve a joint that is already solved")
         joint_states[joint_index] |= JointFlags.SOLVED_BIT | (certain_continuity or isinstance(joint, Prismatic)) * JointFlags.CONTINUOUS_BIT | value_is_computed * JointFlags.COMPUTED_BIT
 
