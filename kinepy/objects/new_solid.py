@@ -24,4 +24,3 @@ class Solid:
     @property
     def system(self):
         return self._system
-

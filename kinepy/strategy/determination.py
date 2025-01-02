@@ -1,7 +1,7 @@
-from kinepy.objects.new_joints import Joint, Revolute, Prismatic
+from kinepy.objects.new_joints import Joint, Revolute, Prismatic, PrimitiveJoint
 from kinepy.strategy.graph_data import NodeType
 import kinepy.strategy.graph_data as graph_data
-from typing import Generator
+from typing import Generator, TypeAlias
 
 
 class SystemConfigurationError(Exception):
@@ -24,14 +24,13 @@ class GraphNode:
         self.node_type = NodeType.EMPTY if joint is None else NodeType.REVOLUTE if isinstance(joint, Revolute) else NodeType.PRISMATIC
 
 
-JointGraph = list[list[GraphNode]]
-Degrees = tuple[tuple[int, int], ...]
-Eq = tuple[tuple[int, ...], ...]
-EqMapping = tuple[int, ...]
-Isomorphism = tuple[int, ...]
-PrimitiveJoint = Revolute | Prismatic
-PrimitiveJointList = list[PrimitiveJoint, ...]
-JointList = list[Joint, ...]
+JointGraph: TypeAlias = list[list[GraphNode]]
+Degrees: TypeAlias = tuple[tuple[int, int], ...]
+Eq: TypeAlias = tuple[tuple[int, ...], ...]
+EqMapping: TypeAlias = tuple[int, ...]
+Isomorphism: TypeAlias = tuple[int, ...]
+PrimitiveJointList: TypeAlias = list[PrimitiveJoint, ...]
+JointList: TypeAlias = list[Joint, ...]
 
 
 class ResolutionStep:
@@ -70,8 +69,8 @@ def make_joint_graph(solid_count: int, joints: PrimitiveJointList) -> tuple[Join
     result_graph: JointGraph = [[GraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
 
     for joint in joints:
-        result_graph[joint.s1][joint.s2].set_node_type(joint)
-        result_graph[joint.s2][joint.s1].set_node_type(joint)
+        result_graph[joint.s1._index][joint.s2._index].set_node_type(joint)
+        result_graph[joint.s2._index][joint.s1._index].set_node_type(joint)
 
     return result_graph, tuple((i,) for i in range(solid_count)), tuple(range(solid_count)), compute_degrees(result_graph)
 
@@ -207,7 +206,7 @@ def register_graph_step(graph_index: int, isomorphism: Isomorphism, joint_graph:
         edge_joint_index = joint_graph[src_eq][dest_eq].joint_index
         edge_joint: PrimitiveJoint = joints[edge_joint_index]
 
-        joint_src_eq, joint_dest_eq = solid_to_eq[edge_joint.s1], solid_to_eq[edge_joint.s2]
+        joint_src_eq, joint_dest_eq = solid_to_eq[edge_joint.s1._index], solid_to_eq[edge_joint.s2._index]
 
         edge_orientations.append((edge_joint, joint_src_eq == src_eq))
 
@@ -239,8 +238,8 @@ def register_solved_joints(joints: Generator[PrimitiveJoint, None, None], joint_
 
 def register_input_joints(input_joints: JointList, joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joint_degree: Degrees, strategy_output: list[ResolutionStep]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
     for input_index, joint in enumerate(j for joint in input_joints for j in joint.get_all_joints()):
-        eq1_index: int = solid_to_eq[joint.s1]
-        eq2_index: int = solid_to_eq[joint.s2]
+        eq1_index: int = solid_to_eq[joint.s1._index]
+        eq2_index: int = solid_to_eq[joint.s2._index]
         step: JointStep = JointStep(input_index, joint, eqs[eq1_index], eqs[eq2_index])
         strategy_output.append(step)
         joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (eq1_index, eq2_index))

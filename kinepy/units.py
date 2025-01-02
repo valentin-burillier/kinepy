@@ -253,42 +253,35 @@ import enum
 from functools import wraps
 
 
-# typing._AnnotatedAlias
-PhysicalQuantity = type(typing.Annotated[int, ''])
+PhysicalQuantity = typing._AnnotatedAlias
 
 
 class _PhysicsEnum(enum.Enum):
-    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE = range(4)
-
-
-class _IdEnum(enum.Enum):
-    SOLID, JOINT, RELATION = range(3)
+    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE, DIMENSIONLESS = range(5)
 
 
 class Physics:
-    _scalar_type = float | np.ndarray
-    LENGTH: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.LENGTH]
-    MASS: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.MASS]
-    MOMENT_OF_INERTIA: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
-    ANGLE: PhysicalQuantity = typing.Annotated[_scalar_type, _PhysicsEnum.ANGLE]
-
+    scalar_type = float | np.ndarray
     POINT: PhysicalQuantity = typing.Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
+
+    # Just run this file for this region to be updated
+    # region PhysicsTypes
+
+    LENGTH: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.LENGTH]
+    MASS: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.MASS]
+    MOMENT_OF_INERTIA: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
+    ANGLE: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.ANGLE]
+    DIMENSIONLESS: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.DIMENSIONLESS]
+
+    # endregion PhysicsTypes
 
     _unit_values: dict[_PhysicsEnum, tuple[np.ndarray, str]] = {
         _PhysicsEnum.LENGTH: (np.array(1.0), 'm'),
         _PhysicsEnum.MASS: (np.array(1.0), 'kg'),
         _PhysicsEnum.MOMENT_OF_INERTIA: (np.array(1.0), 'kg.m²'),
-        _PhysicsEnum.ANGLE: (np.array(1.0), 'rad')
+        _PhysicsEnum.ANGLE: (np.array(1.0), 'rad'),
+        _PhysicsEnum.DIMENSIONLESS: (np.array(1.0), '')
     }
-
-    @classmethod
-    def get_physical_quantities(cls) -> dict[str, PhysicalQuantity]:
-        """
-        Retrieve all attributes that are used to set or get units along with their names
-
-        :return: dict of the form: { 'LENGTH': Physics.LENGTH, ... }
-        """
-        return {attr_name: attr for attr_name, attr in cls.__dict__.items() if attr_name.upper() == attr_name and isinstance(attr, PhysicalQuantity) and attr.__origin__ is cls._scalar_type}
 
     @classmethod
     def get_unit_value(cls, phy: PhysicalQuantity) -> np.ndarray:
@@ -301,7 +294,7 @@ class Physics:
         return cls._unit_values[phy][0]
 
     @classmethod
-    def set_unit(cls, phy: PhysicalQuantity, value: _scalar_type, symbol: str) -> None:
+    def set_unit(cls, phy: PhysicalQuantity, value: scalar_type, symbol: str) -> None:
         if not phy.__metadata__[0] or not isinstance(phy.__metadata__[0], _PhysicsEnum):
             raise ValueError("Invalid physical quantity type")
         cls._unit_values[phy.__metadata__[0]] = np.array(value), symbol
@@ -365,3 +358,25 @@ class Physics:
 
 def _identity(x):
     return x
+
+
+if __name__ == '__main__':
+    """
+    Automatically writes Physical quantity types from _PhysicsEnum in Physics
+    """
+
+    with open(__file__, 'r') as this:
+        whole_file = this.read()
+
+    top_separator = "# region PhysicsTypes\n"
+    bottom_separator = "# endregion PhysicsTypes\n"
+
+    top, _ = whole_file.split(top_separator, maxsplit=1)
+    _, bottom = whole_file.split(bottom_separator, maxsplit=1)
+
+    center = '\n    '.join(f'{phy.name}: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.{phy.name}]' for phy in _PhysicsEnum)
+
+    new_file = f'{top}{top_separator}\n    {center}\n\n    {bottom_separator}{bottom}'
+
+    with open(__file__, 'w') as this:
+        this.write(new_file)
