@@ -29,6 +29,7 @@ class RelationGraphNode:
     is_1_to_2: bool
     relation: Relation
     target_joint: PrimitiveJoint
+    solved = False
 
     def __init__(self, is_1_to_2: bool, relation: Relation, target_joint: PrimitiveJoint):
         self.is_1_to_2, self.relation, self.target_joint = is_1_to_2, relation, target_joint
@@ -244,7 +245,7 @@ class JointFlags:
     SOLVED_BIT = 1 << 0
 
     # joint value is certified to be computed for joints that are solved: -by inputs; -by relations.
-    # relations may have to compute the joint values for those that are not available yet, otherwise these computations are not necessary and depend on user queries
+    # relations may have to compute the joint values for those that are not available yet, otherwise these computations are not necessary and will depend on user queries
     COMPUTED_BIT = 1 << 1
 
     # joint value is certified to be continuous for all prismatic joints, and for revolute joints that are solved: -before inputs; -by inputs; -by relations.
@@ -252,13 +253,19 @@ class JointFlags:
     CONTINUOUS_BIT = 1 << 2
 
 
-def register_solved_joints(joints: Generator[PrimitiveJoint, None, None], joint_states: list[int], *, value_is_computed: bool, certain_continuity: bool) -> None:
+def register_solved_joints(joints: Generator[PrimitiveJoint, None, None], joint_states: list[int], joint_queue: list[PrimitiveJoint], *, value_is_computed: bool, certain_continuity: bool) -> None:
     for joint in joints:
         joint_index = joint.index
         if joint_states[joint_index] & JointFlags.SOLVED_BIT:
             # TODO: add context here or catch to add context
             raise SystemConfigurationError("Trying to solve a joint that is already solved")
         joint_states[joint_index] |= JointFlags.SOLVED_BIT | (certain_continuity or isinstance(joint, Prismatic)) * JointFlags.CONTINUOUS_BIT | value_is_computed * JointFlags.COMPUTED_BIT
+        joint_queue.append(joint)
+
+
+def find_solved_relations(joints: Generator[PrimitiveJoint, None, None], relation_graph: RelationGraph, joint_queue: list[PrimitiveJoint]):
+    while joint_queue:
+        joint = joint_queue.pop(0)
 
 
 def register_input_joints(input_joints: list[Joint], joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joint_degree: Degrees, strategy_output: list[ResolutionStep]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
@@ -276,6 +283,7 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
     strategy_output.clear()
 
     joint_states: list[int] = [0] * len(joints)
+    joint_queue: list[PrimitiveJoint] = []
 
     joint_graph, eqs, solid_to_eq, joint_degree = make_joint_graph(solid_count, joints)
     relation_graph = make_relation_graph(len(joints), relations)
@@ -285,7 +293,7 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
         graph_index, isomorphism = iso
         step: GraphStep = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output)
         joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, isomorphism)
-        register_solved_joints(step.get_joints(), joint_states, value_is_computed=False, certain_continuity=True)
+        register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=True)
 
         # TODO: infer joint relation resolution
 
@@ -300,6 +308,6 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
         graph_index, isomorphism = iso
         step: GraphStep = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output)
         joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, isomorphism)
-        register_solved_joints(step.get_joints(), joint_states, value_is_computed=False, certain_continuity=False)
+        register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=False)
 
         # TODO: infer joint relation resolution
