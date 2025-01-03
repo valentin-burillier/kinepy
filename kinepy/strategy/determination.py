@@ -1,4 +1,5 @@
 from kinepy.objects.new_joints import Joint, Revolute, Prismatic, PrimitiveJoint
+from kinepy.objects.new_relation import Relation, _GearRelation
 from kinepy.strategy.graph_data import NodeType
 import kinepy.strategy.graph_data as graph_data
 from typing import Generator, TypeAlias
@@ -8,7 +9,7 @@ class SystemConfigurationError(Exception):
     pass
 
 
-class GraphNode:
+class JointGraphNode:
 
     node_type: NodeType
     joint_index: int = -1
@@ -24,13 +25,21 @@ class GraphNode:
         self.node_type = NodeType.EMPTY if joint is None else NodeType.REVOLUTE if isinstance(joint, Revolute) else NodeType.PRISMATIC
 
 
-JointGraph: TypeAlias = list[list[GraphNode]]
+class RelationGraphNode:
+    is_1_to_2: bool
+    relation: Relation
+    target_joint: PrimitiveJoint
+
+    def __init__(self, is_1_to_2: bool, relation: Relation, target_joint: PrimitiveJoint):
+        self.is_1_to_2, self.relation, self.target_joint = is_1_to_2, relation, target_joint
+
+
+JointGraph: TypeAlias = list[list[JointGraphNode]]
+RelationGraph: TypeAlias = list[list[RelationGraphNode]]
 Degrees: TypeAlias = tuple[tuple[int, int], ...]
 Eq: TypeAlias = tuple[tuple[int, ...], ...]
 EqMapping: TypeAlias = tuple[int, ...]
 Isomorphism: TypeAlias = tuple[int, ...]
-PrimitiveJointList: TypeAlias = list[PrimitiveJoint, ...]
-JointList: TypeAlias = list[Joint, ...]
 
 
 class ResolutionStep:
@@ -65,14 +74,30 @@ class RelationStep(ResolutionStep):
     pass
 
 
-def make_joint_graph(solid_count: int, joints: PrimitiveJointList) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
-    result_graph: JointGraph = [[GraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
+def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
+    """
+    Create adjacency matrix for joint graph, initial eqs, initial eq mapping (solid -> eq), compute initial value degrees
+    """
+    result_graph: JointGraph = [[JointGraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
 
     for joint in joints:
         result_graph[joint.s1._index][joint.s2._index].set_node_type(joint)
         result_graph[joint.s2._index][joint.s1._index].set_node_type(joint)
 
     return result_graph, tuple((i,) for i in range(solid_count)), tuple(range(solid_count)), compute_degrees(result_graph)
+
+
+def make_relation_graph(joint_count: int, relations: list[Relation]) -> RelationGraph:
+    """
+    Create adjacency lists for relation graph
+    """
+    result_graph: RelationGraph = [[] for _ in range(joint_count)]
+
+    for relation in relations:
+        result_graph[relation.j1._index].append(RelationGraphNode(True, relation, relation.j2))
+        result_graph[relation.j2._index].append(RelationGraphNode(False, relation, relation.j1))
+
+    return result_graph
 
 
 def compute_degrees(joint_graph: JointGraph) -> Degrees:
@@ -100,7 +125,7 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
             new_eqs[target_eq] += eq
     new_eqs = tuple(new_eqs)
 
-    new_joint_graph = [[GraphNode(None) for _ in new_eqs] for _ in new_eqs]
+    new_joint_graph = [[JointGraphNode(None) for _ in new_eqs] for _ in new_eqs]
 
     merge_count = 0
     for x in range(len(eqs)):
@@ -197,7 +222,7 @@ def find_isomorphism(target_graph: JointGraph, target_degrees: Degrees) -> None 
     return None
 
 
-def register_graph_step(graph_index: int, isomorphism: Isomorphism, joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joints: PrimitiveJointList, strategy_output: list[ResolutionStep]) -> GraphStep:
+def register_graph_step(graph_index: int, isomorphism: Isomorphism, joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joints: list[PrimitiveJoint], strategy_output: list[ResolutionStep]) -> GraphStep:
 
     edge_orientations = []
     for src, dest in graph_data.EDGES[graph_index]:
@@ -236,7 +261,7 @@ def register_solved_joints(joints: Generator[PrimitiveJoint, None, None], joint_
         joint_states[joint_index] |= JointFlags.SOLVED_BIT | (certain_continuity or isinstance(joint, Prismatic)) * JointFlags.CONTINUOUS_BIT | value_is_computed * JointFlags.COMPUTED_BIT
 
 
-def register_input_joints(input_joints: JointList, joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joint_degree: Degrees, strategy_output: list[ResolutionStep]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
+def register_input_joints(input_joints: list[Joint], joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, joint_degree: Degrees, strategy_output: list[ResolutionStep]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
     for input_index, joint in enumerate(j for joint in input_joints for j in joint.get_all_joints()):
         eq1_index: int = solid_to_eq[joint.s1._index]
         eq2_index: int = solid_to_eq[joint.s2._index]
@@ -247,12 +272,13 @@ def register_input_joints(input_joints: JointList, joint_graph: JointGraph, eqs:
     return joint_graph, eqs, solid_to_eq, joint_degree
 
 
-def determine_computation_order(solid_count: int, joints: PrimitiveJointList, input_joints: JointList, strategy_output: list[ResolutionStep]) -> None:
+def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
     strategy_output.clear()
 
     joint_states: list[int] = [0] * len(joints)
 
     joint_graph, eqs, solid_to_eq, joint_degree = make_joint_graph(solid_count, joints)
+    relation_graph = make_relation_graph(len(joints), relations)
 
     # find all graphs before joint resolution
     while len(eqs) > 1 and (iso := find_isomorphism(joint_graph, joint_degree)) is not None:
