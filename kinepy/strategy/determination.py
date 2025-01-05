@@ -35,15 +35,15 @@ class RelationGraphNode:
     def __init__(self, is_1_to_2: bool, relation: Relation):
         self.is_1_to_2, self.relation = is_1_to_2, relation
 
-    def yield_target_joint(self):
+    def yield_target_joint(self) -> Generator[PrimitiveJoint, None, None]:
         yield self.get_target_joint()
 
-    def get_source_joint(self):
+    def get_source_joint(self) -> PrimitiveJoint:
         if self.is_1_to_2:
             return self.relation.j1
         return self.relation.j2
 
-    def get_target_joint(self):
+    def get_target_joint(self) -> PrimitiveJoint:
         if self.is_1_to_2:
             return self.relation.j2
         return self.relation.j1
@@ -96,6 +96,15 @@ class RelationStep(ResolutionStep):
         self.is_1_to_2 = is_1_to_2
         self.eq1 = eq1
         self.eq2 = eq2
+
+
+class JointValueComputationStep(ResolutionStep):
+    joint: PrimitiveJoint
+    flags: int
+
+    def __init__(self, joint: PrimitiveJoint, flags: int):
+        self.joint = joint
+        self.flags = flags
 
 
 def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
@@ -349,8 +358,15 @@ def register_input_joints(input_joints: list[Joint], joint_graph: JointGraph, eq
     return joint_graph, eqs, solid_to_eq, joint_degree
 
 
-def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_eq: EqMapping, strategy_output: list[ResolutionStep]):
-    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eqs[solid_to_eq[relation_node.get_target_joint().s1._index]], eqs[solid_to_eq[relation_node.get_target_joint().s2._index]]))
+def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_eq: EqMapping, joint_states: list[int], strategy_output: list[ResolutionStep]) -> None:
+    source = relation_node.get_source_joint()
+    target = relation_node.get_target_joint()
+
+    if not joint_states[source._index] & JointFlags.COMPUTED_BIT or not joint_states[source._index] & JointFlags.CONTINUOUS_BIT:
+        strategy_output.append(JointValueComputationStep(source, joint_states[source._index] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT)))
+        joint_states[source._index] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
+
+    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eqs[solid_to_eq[target.s1._index]], eqs[solid_to_eq[target.s2._index]]))
 
 
 def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
@@ -378,7 +394,7 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
         # infer joint relation
         for relation_node in find_solved_relations_with_delayed_gears(relation_graph, solid_to_eq, joint_queue, gear_queue):
             register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-            register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+            register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
             joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
     if gear_queue:
@@ -392,7 +408,7 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
     # infer joint relation
     for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
         register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-        register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+        register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
         joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
     # find the rest
@@ -410,5 +426,8 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
         # infer joint relation
         for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
             register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-            register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+            register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
             joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
+
+    if len(eqs) > 1:
+        raise SystemConfigurationError("Could not solve entire system")
