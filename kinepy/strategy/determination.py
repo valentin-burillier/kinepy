@@ -86,7 +86,16 @@ class JointStep(ResolutionStep):
 
 
 class RelationStep(ResolutionStep):
-    pass
+    relation: Relation
+    is_1_to_2: bool
+    eq1: tuple[int]
+    eq2: tuple[int]
+
+    def __init__(self, relation: Relation, is_1_to_2: bool, eq1: tuple[int], eq2: tuple[int]):
+        self.relation = relation
+        self.is_1_to_2 = is_1_to_2
+        self.eq1 = eq1
+        self.eq2 = eq2
 
 
 def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
@@ -303,6 +312,8 @@ def find_solved_relations(relation_graph: RelationGraph, solid_to_eq: EqMapping,
             if relation_node.solved:
                 continue
             if test_gear_conformity(relation_node, solid_to_eq):
+                relation_node.solved = True
+                relation_node.pair.solved = True
                 yield relation_node
                 continue
             if not gears_may_not_be_formed:
@@ -318,7 +329,11 @@ def find_solved_relations_with_delayed_gears(relation_graph: RelationGraph, soli
             queue_tail += 1
             continue
 
-        yield gear_queue.pop(queue_tail)
+        gear = gear_queue.pop(queue_tail)
+        gear.solved = True
+        gear.pair.solved = True
+
+        yield gear
         yield from find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=True)
         queue_tail = 0
 
@@ -334,8 +349,8 @@ def register_input_joints(input_joints: list[Joint], joint_graph: JointGraph, eq
     return joint_graph, eqs, solid_to_eq, joint_degree
 
 
-def register_relation_step():
-    pass
+def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_eq: EqMapping, strategy_output: list[ResolutionStep]):
+    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eqs[solid_to_eq[relation_node.get_target_joint().s1._index]], eqs[solid_to_eq[relation_node.get_target_joint().s2._index]]))
 
 
 def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
@@ -360,21 +375,40 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
         if not at_least_one:
             break
 
+        # infer joint relation
         for relation_node in find_solved_relations_with_delayed_gears(relation_graph, solid_to_eq, joint_queue, gear_queue):
             register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-        # TODO: infer joint relation resolution
+            register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+            joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
+
+    if gear_queue:
+        # TODO: add context
+        raise SystemConfigurationError("Some gear relation are not formed before input joints")
 
     # solve input_joints
-    # TODO: Check gear formation
     joint_graph, eqs, solid_to_eq, joint_degree = register_input_joints(input_joints, joint_graph, eqs, solid_to_eq, joint_degree, strategy_output)
-    register_solved_joints((j for joint in input_joints for j in joint.get_all_joints()), joint_states, value_is_computed=True, certain_continuity=True)
-    # TODO: infer joint relation resolution
+    register_solved_joints((j for joint in input_joints for j in joint.get_all_joints()), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
+
+    # infer joint relation
+    for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
+        register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
+        register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+        joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
     # find the rest
-    while len(eqs) > 1 and (iso := find_isomorphism(joint_graph, joint_degree)) is not None:
-        graph_index, isomorphism = iso
-        step: GraphStep = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output)
-        joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, isomorphism)
-        register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=False)
+    while len(eqs) > 1:
+        at_least_one = False
+        while (iso := find_isomorphism(joint_graph, joint_degree)) is not None:
+            at_least_one = True
+            graph_index, isomorphism = iso
+            step: GraphStep = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output)
+            joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, isomorphism)
+            register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=False)
+        if not at_least_one:
+            break
 
-        # TODO: infer joint relation resolution
+        # infer joint relation
+        for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
+            register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
+            register_relation_step(relation_node, eqs, solid_to_eq, strategy_output)
+            joint_graph, eqs, solid_to_eq, joint_degree = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
