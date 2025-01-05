@@ -425,11 +425,13 @@ uint8_t test_gear_conformity(KpConfiguration const * const config, Graph const *
     __typeof__(config->joints) joint1_config = config->joints + relation_config->joint1;
     __typeof__(config->joints) joint2_config = config->joints + relation_config->joint2;
 
+
     uint32_t const eq11 = graph->solid_to_eq[joint1_config->solid1];
     uint32_t const eq12 = graph->solid_to_eq[joint1_config->solid2];
     uint32_t const eq21 = graph->solid_to_eq[joint2_config->solid1];
     uint32_t const eq22 = graph->solid_to_eq[joint2_config->solid2];
 
+    // TODO: this is wrong
     if (eq21 == eq11) {
         return 0b00;
     } else if (eq22 == eq11) {

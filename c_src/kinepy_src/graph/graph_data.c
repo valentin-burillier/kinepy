@@ -8,7 +8,6 @@
       /     \
      1 - R - 2
 */
-
 uint8_t const GRAPH_RRR_ADJACENCY[] = {
     JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE, JOINT_TYPE_REVOLUTE
 };
