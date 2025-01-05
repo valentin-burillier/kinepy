@@ -109,7 +109,7 @@ class JointValueComputationStep(ResolutionStep):
 
 def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[JointGraph, Eq, EqMapping, Degrees]:
     """
-    Create adjacency matrix for joint graph, initial eqs, initial eq mapping (solid -> eq), compute initial value degrees
+    Create adjacency matrix for joint graph, initial eqs, initial eq mapping (solid_index -> eq_index), compute initial value of degrees
     """
     result_graph: JointGraph = [[JointGraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
 
@@ -122,7 +122,7 @@ def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[Jo
 
 def make_relation_graph(joint_count: int, relations: list[Relation]) -> RelationGraph:
     """
-    Create adjacency lists for relation graph
+    Create adjacency lists for the relation graph
     """
     result_graph: RelationGraph = [[] for _ in range(joint_count)]
 
@@ -161,16 +161,23 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
             new_eqs[target_eq] += eq
     new_eqs = tuple(new_eqs)
 
+    # region joint_graph merge
+
     new_joint_graph = [[JointGraphNode(None) for _ in new_eqs] for _ in new_eqs]
 
+    # number of merging vertices met after the merging target; index displacement of non-merging vertices when met
     merge_count = 0
+
     for x in range(len(eqs)):
         merge_count += merge_state[x] - (x == target_eq)
         new_x = target_eq if merge_state[x] else x - merge_count
         _old_merge_count = merge_count
+
         for y in range(x+1, len(eqs)):
             merge_count += merge_state[y] - (y == target_eq)
             new_y = target_eq if merge_state[y] else y - merge_count
+
+            # edges in the merging group are not ported (empty diagonals)
             if new_x == new_y or joint_graph[x][y].node_type == graph_data.NodeType.EMPTY:
                 continue
             new_joint_graph[new_x][new_y] = joint_graph[x][y]
@@ -178,11 +185,14 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
 
         merge_count = _old_merge_count
 
+    # endregion
+
     new_solid_to_eq = [-1] * sum(len(eq) for eq in eqs)
     for index, eq in enumerate(eqs):
         for solid in eq:
             new_solid_to_eq[solid] = index
 
+    # TODO: reduce useless compute_degrees usage (only find_isomorphism needs it)
     return new_joint_graph, new_eqs, tuple(new_solid_to_eq), compute_degrees(new_joint_graph)
 
 
@@ -202,10 +212,14 @@ def isomorphism_heuristic(target_degree: tuple[int, int], test_degree: tuple[int
     return target_degree[0] >= test_degree[0] and target_degree[1] >= test_degree[1]
 
 
-def find_isomorphism_test_graph(target_graph: JointGraph, target_degrees, test_graph: graph_data.Adjacency, test_degree) -> tuple[bool, Isomorphism]:
+def find_isomorphism_test_graph(target_graph: JointGraph, target_degrees: Degrees, test_graph: graph_data.Adjacency, test_degree: Degrees) -> tuple[bool, Isomorphism]:
     """
-    Try to find an isomorphism from test_graph to a subgraph of target_graph
+    Try to find an isomorphism from test_graph to a subgraph of target_graph.
+    The potential isomorphism is built vertex by vertex with backtracking (naive approach with degree heuristic)
     """
+
+    if len(test_graph) > len(target_graph):
+        return False, ()
 
     test_graph_vertex = 0
 
