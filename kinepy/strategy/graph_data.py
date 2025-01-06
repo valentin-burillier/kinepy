@@ -5,9 +5,9 @@ class NodeType(enum.Enum):
     EMPTY, REVOLUTE, PRISMATIC = range(3)
 
 
-E, R, P = NodeType.EMPTY.value, NodeType.REVOLUTE.value, NodeType.PRISMATIC.value
+E, R, P = NodeType.EMPTY, NodeType.REVOLUTE, NodeType.PRISMATIC
 
-Adjacency = tuple[tuple[int, ...], ...]
+Adjacency = tuple[tuple[NodeType, ...], ...]
 
 
 graph_rrr: Adjacency = (
@@ -274,8 +274,8 @@ def _degrees(graph: Adjacency):
     for index, adj_list in enumerate(graph):
         sums = [0, 0, 0]
         for joint_id in adj_list:
-            sums[joint_id] += 1
-        result[index] = sums[R], sums[P]
+            sums[joint_id.value] += 1
+        result[index] = sums[R.value], sums[P.value]
     return tuple(result)
 
 

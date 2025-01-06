@@ -8,7 +8,7 @@ def make_joint_graph(solid_count: int, joints: list[PrimitiveJoint]) -> tuple[Jo
     """
     Create adjacency matrix for joint graph, initial eqs, initial eq mapping (solid_index -> eq_index), compute initial value of degrees
     """
-    result_graph: JointGraph = [[JointGraphNode(None) for _ in range(solid_count)] for _ in range(solid_count)]
+    result_graph: JointGraph = [[JointGraphNode(NodeType.EMPTY) for _ in range(solid_count)] for _ in range(solid_count)]
 
     for joint in joints:
         result_graph[joint.s1._index][joint.s2._index].set_node_type(joint)
@@ -50,17 +50,17 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
         merge_state[index] = True
     target_eq = min(group_to_merge)
 
-    new_eqs = []
+    new_eqs: list[tuple[int, ...], ...] = []
     for index, eq in enumerate(eqs):
         if index <= target_eq or not merge_state[index]:
             new_eqs.append(eq)
         else:
             new_eqs[target_eq] += eq
-    new_eqs = tuple(new_eqs)
+    new_eqs: Eq = tuple(new_eqs)
 
     # region joint_graph merge
 
-    new_joint_graph = [[JointGraphNode(None) for _ in new_eqs] for _ in new_eqs]
+    new_joint_graph = [[JointGraphNode(NodeType.EMPTY) for _ in new_eqs] for _ in new_eqs]
 
     # number of merging vertices met after the merging target; index displacement of non-merging vertices when met
     merge_count = 0
@@ -85,8 +85,8 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
     # endregion
 
     new_solid_to_eq = [-1] * sum(len(eq) for eq in eqs)
-    for index, eq in enumerate(eqs):
-        for solid in eq:
+    for index, _ in enumerate(new_eqs):
+        for solid in new_eqs[index]:
             new_solid_to_eq[solid] = index
 
     return new_joint_graph, new_eqs, tuple(new_solid_to_eq)
@@ -99,7 +99,7 @@ def can_match(current_isomorphism, new_test_graph_vertex, new_target_vertex, tar
     test_graph_vertex = new_test_graph_vertex
     while test_graph_vertex:
         test_graph_vertex -= 1
-        if test_graph[test_graph_vertex][new_test_graph_vertex] != target_graph[new_target_vertex][current_isomorphism[test_graph_vertex]].node_type.value:
+        if test_graph[test_graph_vertex][new_test_graph_vertex] != target_graph[new_target_vertex][current_isomorphism[test_graph_vertex]].node_type:
             return False
     return True
 

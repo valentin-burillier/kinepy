@@ -1,6 +1,6 @@
 from kinepy.objects.relations import Prismatic, Revolute, Relation, PrimitiveJoint
 from typing import TypeAlias, Self, Generator
-from graph_data import NodeType
+from kinepy.strategy.graph_data import NodeType
 
 
 class SystemConfigurationError(Exception):
@@ -12,8 +12,9 @@ class JointGraphNode:
     node_type: NodeType
     joint_index: int = -1
 
-    def __init__(self, joint: Revolute | Prismatic | None):
-        self.set_node_type(joint)
+    def __init__(self, joint_type: NodeType, joint_index: int = -1):
+        self.node_type = joint_type
+        self.joint_index = joint_index
 
     def set_node_type(self, joint: Revolute | Prismatic | None):
         if joint is not None:
@@ -21,6 +22,12 @@ class JointGraphNode:
         else:
             self.joint_index = -1
         self.node_type = NodeType.EMPTY if joint is None else NodeType.REVOLUTE if isinstance(joint, Revolute) else NodeType.PRISMATIC
+
+    def __repr__(self):
+        return self.node_type.__repr__()
+
+    def __eq__(self, other: Self):
+        return self.node_type == other.node_type and self.joint_index == other.joint_index
 
 
 class RelationGraphNode:
