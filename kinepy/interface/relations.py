@@ -1,6 +1,6 @@
 import kinepy.objects as obj
 from kinepy.interface.metaclass import *
-import kinepy.units as units
+import kinepy.old_units as units
 
 
 class EffortlessRelation(obj.EffortlessRelation, metaclass=MetaUnit):

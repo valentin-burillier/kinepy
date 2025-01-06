@@ -1,5 +1,5 @@
-import kinepy.units as units
-from kinepy.units import *
+import kinepy.old_units as units
+from kinepy.old_units import *
 
 
 P1, P2 = ('p1', LENGTH), ('p2', LENGTH)

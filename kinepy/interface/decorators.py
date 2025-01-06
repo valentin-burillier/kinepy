@@ -1,5 +1,5 @@
 import numpy as np
-import kinepy.units as units
+import kinepy.old_units as units
 
 
 def get_object(self):

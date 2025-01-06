@@ -1,96 +1,73 @@
-from kinepy.math.dynamic import group_tmd, group_trd, set_force, set_normal
-from kinepy.math.geometry import get_point, sq_mag, z_cross, np, unit, get_angle, dot, get_zero
+from kinepy.units import Physics, _PhysicsEnum
+from kinepy.objects.joints import Revolute, Prismatic, PrimitiveJoint
 
 
-class LinearRelation:
-    IDS = GENERIC, EFFORTLESS, DISTANT, GEAR, GEAR_RACK = range(5)
-    id_ = GENERIC
-    v0 = r = j1 = j2 = None
+class Relation:
+    """
+    j2.value = j1.value * r + v0
+    """
 
-    def __init__(self, j1, j2, r, v0):
-        self.j1, self.j2, self.r, self.v0 = j1, j2, r, v0
+    j1: PrimitiveJoint
+    j2: PrimitiveJoint
 
-    def rel_pilot(self, j_index, eq1, eq2):
-        v = (self.j1.get_value() * self.r + self.v0) if j_index else (self.j2.get_value() - self.v0) / self.r
-        (self.j1, self.j2)[j_index].set_value(v, eq1, eq2)
+    def __init__(self, system, index, j1: PrimitiveJoint, j2: PrimitiveJoint, r=0.0, v0=0.0):
+        self._system = system
+        self._index = index
+        self.j1, self.j2 = j1, j2
 
-    def rel_block(self, direction, eq0, eq1, ref):
-        (self.j1, self.j2)[direction].block(eq0, eq1, ref)
-
-
-class EffortlessRelation(LinearRelation):
-    id_ = LinearRelation.EFFORTLESS
+        self._r = r
+        self._v0 = v0
 
 
-class DistantRelation(LinearRelation):
-    id_ = LinearRelation.DISTANT
-
-    def rel_block(self, direction, eq0, eq1, ref):
-        LinearRelation.rel_block(self, direction, eq0, eq1, ref)
-        (self.j1, self.j2)[not direction].put_effort((self.j1, self.j2)[direction] * self.r ** (-1, 1)[direction])
+class _GearRelation(Relation):
+    pass
 
 
-class GearRelation(LinearRelation):
-    common_eq = False, False
-    contact_point = contact_force = None
-
-    def __init__(self, j1, j2, r, v0, pa):
-        LinearRelation.__init__(self, j1, j2, r, v0)
-        self.pressure_angle = pa
-
-    def _solve_contact(self, direction, radius, vec, contact_point, t_gear):
-        n_gear = np.tan(self.pressure_angle) * abs(t_gear) * (1, -1)[(radius > 0)]
-        # force applied on the propagated gear
-        f_gear = vec * n_gear + z_cross(vec) * t_gear
-
-        # add the force to gears
-        j1, j2 = ((self.j2, self.j1), (self.j1, self.j2))[direction]
-        (j2.s1, j2.s2)[not self.common_eq[direction]].add_mech_action(f_gear, contact_point, 0.)
-        (j1.s1, j1.s2)[not self.common_eq[not direction]].add_mech_action(-f_gear, contact_point, 0.)
-
-        self.contact_force = f_gear * (1, -1)[direction]
-
-    def get_radii(self):
-        pass
+@Physics.class_
+class Gear(_GearRelation):
+    r: Physics.DIMENSIONLESS
+    v0: Physics.ANGLE
 
 
-class Gear(GearRelation):
-    id_ = LinearRelation.GEAR
-
-    def rel_block(self, direction, eq0, eq1, ref):
-        eff_r = (self.r, -self.r)[self.common_eq[0] ^ self.common_eq[1]]
-        p1, p2 = get_point(self.j1, 0), get_point(self.j2, 0)
-        radius = eff_r ** (1, 0)[direction] / (eff_r - 1)
-        t_gear = group_tmd((eq0, eq1), (not self.common_eq[direction],), ref, (p1, p2)[direction]) / radius
-
-        vec = p2 - p1
-        self.contact_point = contact_point = p1 + vec * eff_r / (eff_r - 1)
-        self._solve_contact(direction, radius, vec / sq_mag(vec), contact_point, t_gear)
-
-        # RevoluteJoint force
-        set_force((self.j1, self.j2)[direction], True, group_trd((eq0, eq1), (0,), ref))
-
-    def get_radii(self):
-        eff_r = (self.r, -self.r)[self.common_eq[0] ^ self.common_eq[1]]
-        return abs(eff_r / (eff_r - 1)), abs(1 / (eff_r - 1))
+@Physics.class_
+class GearRack(_GearRelation):
+    r: Physics.LENGTH
+    v0: Physics.LENGTH
 
 
-class GearRack(GearRelation):
-    id_ = LinearRelation.GEAR_RACK
+class _NonGearRelation(Relation):
+    # TODO: find a better name
 
-    def rel_block(self, direction, eq0, eq1, ref):
-        eff_r = self.r * (1, -1)[self.common_eq[0] ^ self.common_eq[1]]
-        v = -z_cross(u := unit(get_angle(self.j2, 0)))
-        self.contact_point = contact_point = get_point(self.j1, 0) + v * eff_r
-        if not direction:
-            t_gear = group_tmd((eq0, eq1), (not self.common_eq[direction],), ref, get_point(self.j1, 0)) / eff_r
-            self._solve_contact(direction, eff_r, v, contact_point, t_gear)
-            set_force(self.j1, True, group_trd((eq1, eq0), (0,), ref))
-        else:
-            t_gear = dot(group_trd((eq0, eq1), (not self.common_eq[direction],), ref), u)
-            self._solve_contact(direction, -eff_r, v, contact_point, t_gear)
-            n_10, m_10 = group_trd((eq0, eq1), (0,), ref), group_tmd((eq0, eq1), (0,), ref, get_zero(self.j2, 0, u))
-            set_normal(self.j2, True, n_10, m_10, u)
+    def _get_j1_physics(self):
+        return _PhysicsEnum.LENGTH if isinstance(self.j1, Prismatic) else _PhysicsEnum.ANGLE
 
-    def get_radii(self):
-        return abs(self.r), None
+    def _get_j2_physics(self):
+        return _PhysicsEnum.LENGTH if isinstance(self.j2, Prismatic) else _PhysicsEnum.ANGLE
+
+    def _get_r_unit(self):
+        u1, u2 = self._get_j1_physics(), self._get_j2_physics()
+        return Physics._get_unit_value(_PhysicsEnum.DIMENSIONLESS) if u1 == u2 else Physics._get_unit_value(u2) / Physics._get_unit_value(u1)
+
+    @property
+    def r(self):
+        return self._r / self._get_r_unit()
+
+    @r.setter
+    def r(self, value):
+        self._r = value * self._get_r_unit()
+
+    @property
+    def v0(self):
+        return self._v0 / Physics._get_unit_value(self._get_j2_physics())
+
+    @v0.setter
+    def v0(self, value):
+        self._v0 = value * Physics._get_unit_value(self._get_j2_physics())
+
+
+class DistantRelation(_NonGearRelation):
+    pass
+
+
+class EffortlessRelation(_NonGearRelation):
+    pass

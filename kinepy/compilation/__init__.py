@@ -2,8 +2,8 @@ from kinepy.compilation.graph_operations import isomorphic, degrees, distances, 
     make_relation_graph, match_graph
 from kinepy.compilation.graphs import GRAPHS, DEGREES, SOLVED, NAMES, EDGES, SIGNS
 from kinepy.compilation.preparation import *
-from kinepy.objects.joints import GhostRevolute, GhostPrismatic
-from kinepy.objects.relations import GearRelation
+from kinepy.objects.old_joints import GhostRevolute, GhostPrismatic
+from kinepy.objects.old_relations import GearRelation
 
 
 class CompilationError(Exception):

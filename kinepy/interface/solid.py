@@ -1,7 +1,7 @@
 import numpy as np
 
 from kinepy.interface.metaclass import *
-import kinepy.units as units
+import kinepy.old_units as units
 import kinepy.objects as obj
 from kinepy.math.geometry import rvec, ZERO_F, ZERO_ARRAY_F
 from kinepy.interface.decorators import physics_input_method, physics_output, FUNCTION_TYPE

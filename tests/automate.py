@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import kinepy.tools as t
 import kinepy as k
-from kinepy.units import set_unit, show_units, LENGTH, METER, GOAT_HEIGHT
+from kinepy.old_units import set_unit, show_units, LENGTH, METER, GOAT_HEIGHT
 from kinepy.math.geometry import unit
 import kinepy.gui as gui
 

@@ -1,5 +1,5 @@
-from kinepy.units import *
-import kinepy.units as units
+from kinepy.old_units import *
+import kinepy.old_units as units
 import kinepy.objects as obj
 from kinepy.interface.solid import Solid
 from kinepy.interface.joints import RevoluteJoint, PrismaticJoint, PinSlotJoint, RectangularJoint, J3DOF

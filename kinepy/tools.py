@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from kinepy.units import *
+from kinepy.old_units import *
 from kinepy.interface.decorators import physics_input_function, physics_output, physics_input_function_variable
 
 # ---------------------------------------------------- Inputs ----------------------------------------------------------

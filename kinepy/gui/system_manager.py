@@ -2,8 +2,8 @@ import numpy as np
 from kinepy.gui.drawing_tool import *
 from kinepy.math.geometry import unit, z_cross, rvec, sq_mag, get_point
 from kinepy.math.calculus import derivative_vec
-from kinepy.objects.joints import Joint
-from kinepy.objects.relations import LinearRelation
+from kinepy.objects.old_joints import Joint
+from kinepy.objects.old_relations import LinearRelation
 
 
 class SystemManager:

@@ -1,12 +1,12 @@
 import kinepy.objects as obj
 from kinepy.interface.metaclass import *
-import kinepy.units as units
+import kinepy.old_units as units
 from kinepy.math.geometry import ZERO_21, unit, get_angle, get_zero, rvec
 from kinepy.interface.decorators import get_object
 
 
 class Gravity(obj.Gravity, metaclass=MetaUnit):
-    read_write = ('g', ACCELERATION),
+    read_write = ('g', units.ACCELERATION),
 
 
 class Spring(obj.Spring, metaclass=MetaUnit):
