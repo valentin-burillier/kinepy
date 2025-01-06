@@ -1,6 +1,7 @@
 from kinepy.objects.solid import Solid
 from kinepy.objects.relations import Relation, Gear, GearRack, DistantRelation, EffortlessRelation
 from kinepy.objects.joints import Joint, Revolute, Prismatic, GhostHolder, PinSlot, Translation, ThreeDOF, PrimitiveJoint
+import kinepy.strategy as strategy
 from kinepy.units import Physics
 import numpy as np
 
@@ -121,8 +122,8 @@ class System:
     def _hyper_statism_value(self, joint_input: list[Joint]) -> int:
         return 2 * len(self._joints) - 3 * (len(self._solids) - 1) + len(joint_input) + len(self._relations)
 
-    def _determine_computation_order(self, joint_input, strategy_output):
-        pass
+    def _determine_computation_order(self, input_joints, strategy_output):
+        strategy.determine_computation_order(len(self._solids), self._joints, self._relations, input_joints, strategy_output)
 
     def determine_computation_order(self):
         if self._blocked:

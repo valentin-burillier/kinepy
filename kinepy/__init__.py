@@ -1,1 +1,1 @@
-from kinepy.interface.system import System
+from kinepy.objects.system import System
