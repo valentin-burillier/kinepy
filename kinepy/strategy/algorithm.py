@@ -324,7 +324,6 @@ def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_e
         strategy_output.append(JointValueComputationStep(source, joint_states[source._index] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT)))
         joint_states[source._index] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
 
-    # TODO: gear relations need to know which solids are the gears/common_eq (-before inputs: target is easy, source is hard; -after inputs: they should be known right before solving inputs)
     relation = relation_node.relation
     eq1, eq2 = eqs[solid_to_eq[target.s1._index]], eqs[solid_to_eq[target.s2._index]]
     src_g, dst_g = ('_g1', '_g2')[::2 * relation_node.is_1_to_2 - 1]
@@ -369,7 +368,6 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
             register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
             joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
-    # TODO: this is not enough, check 3 eqs for remaining gears
     if gear_queue or not check_gear_formation(relations, solid_to_eq):
         # TODO: add context
         raise SystemConfigurationError("Some gear relation are not formed before input joints")
