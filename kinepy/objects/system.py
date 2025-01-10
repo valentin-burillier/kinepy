@@ -4,6 +4,7 @@ from kinepy.objects.joints import Joint, Revolute, Prismatic, GhostHolder, PinSl
 import kinepy.strategy as strategy
 from kinepy.units import Physics
 import numpy as np
+from typing import Iterable
 
 
 @Physics.class_
@@ -87,19 +88,31 @@ class System:
         self._joints.extend(ghost_joints)
         return ThreeDOF(self, -1, ghost_solids, ghost_joints, self.get_ground(), s)
 
-    def add_gear(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0) -> Gear:
+    @staticmethod
+    def _check_gear_solids(j1: PrimitiveJoint, j2: PrimitiveJoint, g1: None | Solid, g2: None | Solid):
+        if g1 is not None:
+            if g1 is not j1.s1 or g1 is not j1.s2:
+                raise ValueError("Solid does not belong to joint")
+        if g2 is not None:
+            if g2 is not j2.s1 or g2 is not j2.s2:
+                raise ValueError("Solid does not belong to joint")
+
+    def add_gear(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> Gear:
         self._check_joints(j1, j2)
-        self._relations.append(g := Gear(self, len(self._relations), j1, j2, r, v0))
+        self._check_gear_solids(j1, j2, pinion1, pinion2)
+        self._relations.append(g := Gear(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion1, pinion2))
         return g
 
-    def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: Physics.LENGTH = 0.0, v0: Physics.LENGTH = 0.0) -> GearRack:
+    def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: Physics.LENGTH = 0.0, v0: Physics.LENGTH = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion: None | Solid = None, rack: None | Solid = None) -> GearRack:
         self._check_joints(j1, j2)
-        self._relations.append(g := GearRack(self, len(self._relations), j1, j2, r, v0))
+        self._check_gear_solids(j1, j2, pinion, rack)
+        self._relations.append(g := GearRack(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion, rack))
         return g
 
     def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> DistantRelation:
         self._check_joints(j1, j2)
         rel = DistantRelation(self, len(self._relations), j1, j2)
+        # Manages units once configured
         rel.r, rel.v0 = r, v0
         self._relations.append(rel)
         return rel
@@ -107,17 +120,20 @@ class System:
     def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> EffortlessRelation:
         self._check_joints(j1, j2)
         rel = EffortlessRelation(self, len(self._relations), j1, j2)
+        # Manages units once configured
         rel.r, rel.v0 = r, v0
         self._relations.append(rel)
         return rel
 
-    def pilot(self, *joints: Joint):
-        self._check_joints(kw_joints=joints)
-        self._piloted.extend(joints)
+    def pilot(self, *joints: Joint, kw_joints: Iterable[Joint] = ()) -> None:
+        total_joints = joints + tuple(kw_joints)
+        self._check_joints(kw_joints=total_joints)
+        self._piloted.extend(total_joints)
 
-    def block(self, *joints: Joint):
-        self._check_joints(kw_joints=joints)
-        self._blocked.extend(joints)
+    def block(self, *joints: Joint, kw_joints: Iterable[Joint] = ()) -> None:
+        total_joints = joints + tuple(kw_joints)
+        self._check_joints(kw_joints=total_joints)
+        self._blocked.extend(total_joints)
 
     def _hyper_statism_value(self, joint_input: list[Joint]) -> int:
         return 2 * len(self._joints) - 3 * (len(self._solids) - 1) + len(joint_input) + len(self._relations)

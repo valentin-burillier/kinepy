@@ -1,5 +1,6 @@
 from kinepy.units import Physics, _PhysicsEnum
-from kinepy.objects.joints import Revolute, Prismatic, PrimitiveJoint
+from kinepy.objects.joints import Prismatic, PrimitiveJoint
+from kinepy.objects.solid import Solid
 
 
 class Relation:
@@ -19,8 +20,18 @@ class Relation:
         self._v0 = v0
 
 
+@Physics.class_
 class _GearRelation(Relation):
-    pass
+    _g1: None | Solid = None
+    _g2: None | Solid = None
+    pressure_angle: Physics.ANGLE
+
+    def __index__(self, system, index, j1: PrimitiveJoint, j2: PrimitiveJoint, r=0.0, v0=0.0, pa=0.0, g1=None, g2=None):
+        Relation.__init__(self, system, index, j1, j2, r, v0)
+        self._g1 = g1
+        self._g1 = g2
+
+        self._pressure_angle = pa
 
 
 @Physics.class_
@@ -38,13 +49,13 @@ class GearRack(_GearRelation):
 class _NonGearRelation(Relation):
     # TODO: find a better name
 
-    def _get_j1_physics(self):
+    def _get_j1_physics(self) -> _PhysicsEnum:
         return _PhysicsEnum.LENGTH if isinstance(self.j1, Prismatic) else _PhysicsEnum.ANGLE
 
-    def _get_j2_physics(self):
+    def _get_j2_physics(self) -> _PhysicsEnum:
         return _PhysicsEnum.LENGTH if isinstance(self.j2, Prismatic) else _PhysicsEnum.ANGLE
 
-    def _get_r_unit(self):
+    def _get_r_unit(self) -> Physics.scalar_type:
         u1, u2 = self._get_j1_physics(), self._get_j2_physics()
         return Physics._get_unit_value(_PhysicsEnum.DIMENSIONLESS) if u1 == u2 else Physics._get_unit_value(u2) / Physics._get_unit_value(u1)
 

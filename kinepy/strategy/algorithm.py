@@ -1,6 +1,7 @@
 from kinepy.objects.joints import Joint
 from kinepy.objects.relations import _GearRelation
 from kinepy.strategy.types import *
+from kinepy.objects.solid import Solid
 import kinepy.strategy.graph_data as graph_data
 
 
@@ -207,13 +208,26 @@ def test_gear_conformity(relation_node: RelationGraphNode, solid_to_eq: EqMappin
         target: PrimitiveJoint = relation_node.get_target_joint()
         eq1, eq2 = solid_to_eq[target.s1._index], solid_to_eq[target.s2._index]
 
-        relation_node.common_eq = 0 if eq1 == src_eq else 1 if eq2 == src_eq else relation_node.common_eq
+        attr: str = ('_g1', '_g2')[relation_node.is_1_to_2]
+
+        if eq1 == src_eq:
+            relation_node.common_eq = 0
+            if getattr(rel, attr) is None:
+                setattr(rel, attr, target.s1)
+            elif getattr(rel, attr) is not target.s1:
+                raise SystemConfigurationError("inferred pinion/rack does not match configuration")
+        elif eq2 == src_eq:
+            relation_node.common_eq = 1
+            if getattr(rel, attr) is None:
+                setattr(rel, attr, target.s2)
+            elif getattr(rel, attr) is not target.s2:
+                raise SystemConfigurationError("inferred pinion/rack does not match configuration")
 
         return relation_node.common_eq != -1
     return True
 
 
-def find_solved_relations(relation_graph: RelationGraph, solid_to_eq: EqMapping, joint_queue: list[PrimitiveJoint], gear_queue: list[RelationGraphNode], *, gears_may_not_be_formed: bool) -> Generator[RelationGraphNode, None, None]:
+def find_solved_relations_push_gears(relation_graph: RelationGraph, solid_to_eq: EqMapping, joint_queue: list[PrimitiveJoint], gear_queue: list[RelationGraphNode]) -> Generator[RelationGraphNode, None, None]:
     while joint_queue:
         joint = joint_queue.pop(0)
 
@@ -225,13 +239,21 @@ def find_solved_relations(relation_graph: RelationGraph, solid_to_eq: EqMapping,
                 relation_node.pair.solved = True
                 yield relation_node
                 continue
-            if not gears_may_not_be_formed:
-                raise SystemConfigurationError("Gears should be formed by now")
             gear_queue.append(relation_node)
 
 
+def find_solved_relations(relation_graph: RelationGraph, joint_queue: list[PrimitiveJoint]) -> Generator[RelationGraphNode, None, None]:
+    while joint_queue:
+        joint = joint_queue.pop(0)
+
+        for relation_node in relation_graph[joint._index]:
+            if relation_node.solved:
+                continue
+            yield relation_node
+
+
 def find_solved_relations_with_delayed_gears(relation_graph: RelationGraph, solid_to_eq: EqMapping, joint_queue: list[PrimitiveJoint], gear_queue: list[RelationGraphNode]):
-    yield from find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=True)
+    yield from find_solved_relations_push_gears(relation_graph, solid_to_eq, joint_queue, gear_queue)
     queue_tail = 0
     while queue_tail < len(gear_queue):
         if not test_gear_conformity(gear_queue[queue_tail], solid_to_eq):
@@ -243,7 +265,7 @@ def find_solved_relations_with_delayed_gears(relation_graph: RelationGraph, soli
         gear.pair.solved = True
 
         yield gear
-        yield from find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=True)
+        yield from find_solved_relations_push_gears(relation_graph, solid_to_eq, joint_queue, gear_queue)
         queue_tail = 0
 
 
@@ -258,6 +280,42 @@ def register_input_joints(input_joints: list[Joint], joint_graph: JointGraph, eq
     return joint_graph, eqs, solid_to_eq
 
 
+def infer_pinion_rack(relation: _GearRelation, solid: Solid, attr: str) -> None:
+    if getattr(relation, attr) is None:
+        setattr(relation, attr, solid)
+    elif getattr(relation, attr) is not solid:
+        raise SystemConfigurationError("inferred pinion/rack does not match configuration")
+
+
+def check_gear_formation(relations: list[Relation], solid_to_eq: EqMapping) -> bool:
+    # Pre-requisite: no gear is in the gear queue, i.e. (eq11 == eq12 xor eq21 == eq22) is false for every relation
+    for relation in relations:
+        if not isinstance(relation, _GearRelation):
+            continue
+        relation: _GearRelation
+        eq11, eq12, eq21, eq22 = solid_to_eq[relation.j1.s1._index], solid_to_eq[relation.j1.s2._index], solid_to_eq[relation.j2.s1._index], solid_to_eq[relation.j2.s2._index]
+
+        if eq11 == eq12 == eq21 == eq22:
+            # Already solved
+            continue
+
+        if eq11 == eq21:
+            infer_pinion_rack(relation, relation.j1.s2, '_g1')
+            infer_pinion_rack(relation, relation.j2.s2, '_g2')
+        elif eq12 == eq21:
+            infer_pinion_rack(relation, relation.j1.s1, '_g1')
+            infer_pinion_rack(relation, relation.j2.s2, '_g2')
+        elif eq11 == eq22:
+            infer_pinion_rack(relation, relation.j1.s2, '_g1')
+            infer_pinion_rack(relation, relation.j2.s1, '_g2')
+        elif eq12 == eq22:
+            infer_pinion_rack(relation, relation.j1.s1, '_g1')
+            infer_pinion_rack(relation, relation.j2.s1, '_g2')
+        else:
+            return False
+    return True
+
+
 def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_eq: EqMapping, joint_states: list[int], strategy_output: list[ResolutionStep]) -> None:
     source = relation_node.get_source_joint()
     target = relation_node.get_target_joint()
@@ -266,7 +324,21 @@ def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_e
         strategy_output.append(JointValueComputationStep(source, joint_states[source._index] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT)))
         joint_states[source._index] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
 
-    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eqs[solid_to_eq[target.s1._index]], eqs[solid_to_eq[target.s2._index]]))
+    # TODO: gear relations need to know which solids are the gears/common_eq (-before inputs: target is easy, source is hard; -after inputs: they should be known right before solving inputs)
+    relation = relation_node.relation
+    eq1, eq2 = eqs[solid_to_eq[target.s1._index]], eqs[solid_to_eq[target.s2._index]]
+    src_g, dst_g = ('_g1', '_g2')[::2 * relation_node.is_1_to_2 - 1]
+    if isinstance(relation, _GearRelation):
+        src_eq = solid_to_eq[source.s1._index]
+        if src_eq == eq1:
+            infer_pinion_rack(relation, target.s2, dst_g)
+        elif src_eq == eq2:
+            infer_pinion_rack(relation, target.s1, dst_g)
+        else:
+            raise SystemConfigurationError("(internal error) no common eq on solved gear")
+        if getattr(relation, src_g) is None:
+            raise SystemConfigurationError("Could not infer pinion/rack")
+    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eq1, eq2))
 
 
 def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
@@ -286,18 +358,19 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
             at_least_one = True
             graph_index, isomorphism = iso
             step: GraphStep = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output)
-            joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, isomorphism)
             register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=True)
+            joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, isomorphism)
         if not at_least_one:
             break
 
         # infer joint relation
         for relation_node in find_solved_relations_with_delayed_gears(relation_graph, solid_to_eq, joint_queue, gear_queue):
-            register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
             register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
+            register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
             joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
-    if gear_queue:
+    # TODO: this is not enough, check 3 eqs for remaining gears
+    if gear_queue or not check_gear_formation(relations, solid_to_eq):
         # TODO: add context
         raise SystemConfigurationError("Some gear relation are not formed before input joints")
 
@@ -305,14 +378,14 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
     joint_graph, eqs, solid_to_eq = register_input_joints(input_joints, joint_graph, eqs, solid_to_eq, strategy_output)
     register_solved_joints((j for joint in input_joints for j in joint.get_all_joints()), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
 
-    # infer joint relation
-    for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
-        register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-        register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
-        joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
-
     # find the rest
     while len(eqs) > 1:
+        # infer joint relation
+        for relation_node in find_solved_relations(relation_graph, joint_queue):
+            register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
+            register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
+            joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
+
         at_least_one = False
         while (iso := find_isomorphism(joint_graph)) is not None:
             at_least_one = True
@@ -322,12 +395,6 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
             register_solved_joints(step.get_joints(), joint_states, joint_queue, value_is_computed=False, certain_continuity=False)
         if not at_least_one:
             break
-
-        # infer joint relation
-        for relation_node in find_solved_relations(relation_graph, solid_to_eq, joint_queue, gear_queue, gears_may_not_be_formed=False):
-            register_solved_joints(relation_node.yield_target_joint(), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
-            register_relation_step(relation_node, eqs, solid_to_eq, joint_states, strategy_output)
-            joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
     if len(eqs) > 1:
         raise SystemConfigurationError("Could not solve entire system")

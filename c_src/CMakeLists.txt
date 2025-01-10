@@ -53,9 +53,9 @@ target_compile_options(
 #        -mfma
 #        -O3
 )
-target_link_libraries(test_unique
-        C_Kinepy
-)
+#target_link_libraries(test_unique
+#        C_Kinepy
+#)
 
 
 target_compile_options(
