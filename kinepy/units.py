@@ -68,21 +68,24 @@ class Physics:
         """
         Function decorator that manages all arguments annotated with a PhysicalQuantity and the return value
         """
-        arguments = func.__code__.co_varnames[:func.__code__.co_argcount]
-        defaults = dict(zip(arguments[::-1], (func.__defaults__ or ())[::-1]))
+        arguments = func.__code__.co_varnames[:func.__code__.co_argcount + func.__code__.co_kwonlyargcount]
 
-        # all parameters that are annotated with a physical quantity
+        # all parameters that are annotated with a physical quantity with *args
         physical_transforms = {
             name: cls._input(annotation)
             for name, annotation in func.__annotations__.items() if isinstance(annotation, PhysicalQuantity) and getattr(annotation, '__metadata__') and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
         }
+        # *args
+        variadic_transform = physical_transforms.pop(func.__code__.co_varnames[len(arguments)], _identity) if len(arguments) < len(func.__code__.co_varnames) else _identity
+
         return_transform = cls._output(func.__annotations__.get('return', None))
 
         @wraps(func)
         def new_function(*args, **kwargs):
-            arg_dict = kwargs | dict(zip(arguments, args))
-            arg_dict = {name: physical_transforms.get(name, _identity)(value) for name, value in arg_dict.items()}
-            return return_transform(func(**(defaults | arg_dict)))
+            new_args = (physical_transforms.get(name, _identity)(value) for name, value in zip(arguments, args))
+            vari_args = (variadic_transform(value) for value in args[len(arguments):])
+            arg_dict = {name: physical_transforms.get(name, _identity)(value) for name, value in kwargs.items()}
+            return return_transform(func(*new_args, *vari_args, **arg_dict))
 
         return new_function
 

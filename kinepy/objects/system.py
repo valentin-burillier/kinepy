@@ -7,6 +7,10 @@ import numpy as np
 from typing import Iterable
 
 
+class OverDeterminationError(Exception):
+    pass
+
+
 @Physics.class_
 class System:
     def __init__(self):
@@ -22,17 +26,17 @@ class System:
     def get_ground(self) -> Solid:
         return self._solids[0]
 
-    def _check_solids(self, *solids: Solid, kw_solids=()):
+    def _check_solids(self, *solids: Solid, kw_solids: tuple[Solid, ...] = ()):
         for solid in solids + kw_solids:
-            if solid.system is not self or solid.index >= len(self._solids) or self._solids[solid.index] is not solid:
+            print(solid._system)
+            if solid._system is not self or solid.index >= len(self._solids) or self._solids[solid.index] is not solid:
                 raise ValueError(f"Solid: {solid.name} does not belong to this system")
-        return True
 
-    def _check_joints(self, *joints: Joint, kw_joints=()):
+    def _check_joints(self, *joints: Joint, kw_joints: tuple[Joint, ...] = ()):
+        test: int
         for joint in joints + kw_joints:
-            if joint.system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
+            if joint._system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
                 raise ValueError(f"Joint {joint} does not belong to this system")
-        return True
 
     def add_solid(self, name='', mass: Physics.MASS = 0., moment_of_inertia: Physics.MOMENT_OF_INERTIA = 0., g: Physics.POINT = (0., 0.)) -> Solid:
         name = name or f'Solid {len(self._solids)}'
@@ -40,19 +44,26 @@ class System:
         return self._solids[-1]
 
     def add_prismatic(self, s1: Solid, s2: Solid, alpha1: Physics.ANGLE = 0.0, distance1: Physics.LENGTH = 0.0, alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> Prismatic:
+        print(self._check_solids(s1, s2))
         self._check_solids(s1, s2)
+        if s1 is s2:
+            raise ValueError("You can't use the same solid")
         result = Prismatic(self, len(self._joints), s1, s2, alpha1, distance1, alpha2, distance2)
         self._joints.append(result)
         return result
 
     def add_revolute(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), p2: Physics.POINT = (0.0, 0.0)) -> Revolute:
         self._check_solids(s1, s2)
+        if s1 is s2:
+            raise ValueError("You can't use the same solid")
         result = Revolute(self, len(self._joints), s1, s2, p1, p2)
         self._joints.append(result)
         return result
 
     def add_pin_slot(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> PinSlot:
         self._check_solids(s1, s2)
+        if s1 is s2:
+            raise ValueError("You can't use the same solid")
         ghost_solid = Solid(self, f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
@@ -64,6 +75,8 @@ class System:
 
     def add_translation(self, s1: Solid, s2: Solid, alpha1: Physics.ANGLE = 0.0, distance1: Physics.LENGTH = 0.0, alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> Translation:
         self._check_solids(s1, s2)
+        if s1 is s2:
+            raise ValueError("You can't use the same solid")
         ghost_solid = Solid(f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
@@ -99,18 +112,24 @@ class System:
 
     def add_gear(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> Gear:
         self._check_joints(j1, j2)
+        if j1 is j2:
+            raise ValueError("You can't use the same joints")
         self._check_gear_solids(j1, j2, pinion1, pinion2)
         self._relations.append(g := Gear(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion1, pinion2))
         return g
 
     def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: Physics.LENGTH = 0.0, v0: Physics.LENGTH = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion: None | Solid = None, rack: None | Solid = None) -> GearRack:
         self._check_joints(j1, j2)
+        if j1 is j2:
+            raise ValueError("You can't use the same joints")
         self._check_gear_solids(j1, j2, pinion, rack)
         self._relations.append(g := GearRack(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion, rack))
         return g
 
     def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> DistantRelation:
         self._check_joints(j1, j2)
+        if j1 is j2:
+            raise ValueError("You can't use the same joints")
         rel = DistantRelation(self, len(self._relations), j1, j2)
         # Manages units once configured
         rel.r, rel.v0 = r, v0
@@ -119,6 +138,8 @@ class System:
 
     def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> EffortlessRelation:
         self._check_joints(j1, j2)
+        if j1 is j2:
+            raise ValueError("You can't use the same joints")
         rel = EffortlessRelation(self, len(self._relations), j1, j2)
         # Manages units once configured
         rel.r, rel.v0 = r, v0
@@ -139,6 +160,9 @@ class System:
         return 2 * len(self._joints) - 3 * (len(self._solids) - 1) + len(joint_input) + len(self._relations)
 
     def _determine_computation_order(self, input_joints, strategy_output):
+        h = self._hyper_statism_value(input_joints)
+        if h != 0:
+            raise OverDeterminationError()
         strategy.determine_computation_order(len(self._solids), self._joints, self._relations, input_joints, strategy_output)
 
     def determine_computation_order(self):

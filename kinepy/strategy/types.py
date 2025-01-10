@@ -1,4 +1,5 @@
-from kinepy.objects.relations import Prismatic, Revolute, Relation, PrimitiveJoint
+from kinepy.objects.joints import Revolute, PrimitiveJoint, Prismatic
+from kinepy.objects.relations import Relation
 from typing import TypeAlias, Self, Generator
 from kinepy.strategy.graph_data import NodeType
 
@@ -16,7 +17,7 @@ class JointGraphNode:
         self.node_type = joint_type
         self.joint_index = joint_index
 
-    def set_node_type(self, joint: Revolute | Prismatic | None):
+    def set_node_type(self, joint: PrimitiveJoint | None):
         if joint is not None:
             self.joint_index = joint.index
         else:
