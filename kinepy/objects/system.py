@@ -1,14 +1,11 @@
 from kinepy.objects.solid import Solid
-from kinepy.objects.relations import Relation, Gear, GearRack, DistantRelation, EffortlessRelation
+from kinepy.objects.relations import Relation, GearPair, GearRack, DistantRelation, EffortlessRelation
 from kinepy.objects.joints import Joint, Revolute, Prismatic, GhostHolder, PinSlot, Translation, ThreeDOF, PrimitiveJoint
+import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 from kinepy.units import Physics
 import numpy as np
-from typing import Iterable
-
-
-class OverDeterminationError(Exception):
-    pass
+from collections.abc import Iterable
 
 
 @Physics.class_
@@ -20,23 +17,22 @@ class System:
         self._blocked = []
         self._piloted = []
 
-        self._dynamic_strategy = []
-        self._kinematic_strategy = []
+        self._dynamic_strategy: list[strategy.ResolutionStep] = []
+        self._kinematic_strategy: list[strategy.ResolutionStep] = []
 
     def get_ground(self) -> Solid:
         return self._solids[0]
 
     def _check_solids(self, *solids: Solid, kw_solids: tuple[Solid, ...] = ()):
         for solid in solids + kw_solids:
-            print(solid._system)
-            if solid._system is not self or solid.index >= len(self._solids) or self._solids[solid.index] is not solid:
-                raise ValueError(f"Solid: {solid.name} does not belong to this system")
+            if solid.system is not self or solid.index >= len(self._solids) or self._solids[solid.index] is not solid:
+                raise ex.UnrelatedObjectsError(f"Solid \"{solid}\" does not belong to this system")
 
     def _check_joints(self, *joints: Joint, kw_joints: tuple[Joint, ...] = ()):
         test: int
         for joint in joints + kw_joints:
-            if joint._system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
-                raise ValueError(f"Joint {joint} does not belong to this system")
+            if joint.system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
+                raise ex.UnrelatedObjectsError(f"Joint \"{joint}\" does not belong to this system")
 
     def add_solid(self, name='', mass: Physics.MASS = 0., moment_of_inertia: Physics.MOMENT_OF_INERTIA = 0., g: Physics.POINT = (0., 0.)) -> Solid:
         name = name or f'Solid {len(self._solids)}'
@@ -47,7 +43,7 @@ class System:
         print(self._check_solids(s1, s2))
         self._check_solids(s1, s2)
         if s1 is s2:
-            raise ValueError("You can't use the same solid")
+            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         result = Prismatic(self, len(self._joints), s1, s2, alpha1, distance1, alpha2, distance2)
         self._joints.append(result)
         return result
@@ -55,7 +51,7 @@ class System:
     def add_revolute(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), p2: Physics.POINT = (0.0, 0.0)) -> Revolute:
         self._check_solids(s1, s2)
         if s1 is s2:
-            raise ValueError("You can't use the same solid")
+            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         result = Revolute(self, len(self._joints), s1, s2, p1, p2)
         self._joints.append(result)
         return result
@@ -63,7 +59,7 @@ class System:
     def add_pin_slot(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> PinSlot:
         self._check_solids(s1, s2)
         if s1 is s2:
-            raise ValueError("You can't use the same solid")
+            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         ghost_solid = Solid(self, f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
@@ -76,7 +72,7 @@ class System:
     def add_translation(self, s1: Solid, s2: Solid, alpha1: Physics.ANGLE = 0.0, distance1: Physics.LENGTH = 0.0, alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> Translation:
         self._check_solids(s1, s2)
         if s1 is s2:
-            raise ValueError("You can't use the same solid")
+            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         ghost_solid = Solid(f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
@@ -105,23 +101,23 @@ class System:
     def _check_gear_solids(j1: PrimitiveJoint, j2: PrimitiveJoint, g1: None | Solid, g2: None | Solid):
         if g1 is not None:
             if g1 is not j1.s1 or g1 is not j1.s2:
-                raise ValueError("Solid does not belong to joint")
+                raise ex.UnrelatedObjectsError(f"{j1} does not constrain {g1}")
         if g2 is not None:
             if g2 is not j2.s1 or g2 is not j2.s2:
-                raise ValueError("Solid does not belong to joint")
+                raise ex.UnrelatedObjectsError(f"{j2} does not constrain {g2}")
 
-    def add_gear(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> Gear:
+    def add_gear_pair(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0, pressure_angle: Physics.ANGLE = np.pi / 6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> GearPair:
         self._check_joints(j1, j2)
         if j1 is j2:
-            raise ValueError("You can't use the same joints")
+            raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
         self._check_gear_solids(j1, j2, pinion1, pinion2)
-        self._relations.append(g := Gear(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion1, pinion2))
+        self._relations.append(g := GearPair(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion1, pinion2))
         return g
 
     def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: Physics.LENGTH = 0.0, v0: Physics.LENGTH = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion: None | Solid = None, rack: None | Solid = None) -> GearRack:
         self._check_joints(j1, j2)
         if j1 is j2:
-            raise ValueError("You can't use the same joints")
+            raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
         self._check_gear_solids(j1, j2, pinion, rack)
         self._relations.append(g := GearRack(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion, rack))
         return g
@@ -129,7 +125,7 @@ class System:
     def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> DistantRelation:
         self._check_joints(j1, j2)
         if j1 is j2:
-            raise ValueError("You can't use the same joints")
+            raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
         rel = DistantRelation(self, len(self._relations), j1, j2)
         # Manages units once configured
         rel.r, rel.v0 = r, v0
@@ -139,7 +135,7 @@ class System:
     def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> EffortlessRelation:
         self._check_joints(j1, j2)
         if j1 is j2:
-            raise ValueError("You can't use the same joints")
+            raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
         rel = EffortlessRelation(self, len(self._relations), j1, j2)
         # Manages units once configured
         rel.r, rel.v0 = r, v0
@@ -159,10 +155,12 @@ class System:
     def _hyper_statism_value(self, joint_input: list[Joint]) -> int:
         return 2 * len(self._joints) - 3 * (len(self._solids) - 1) + len(joint_input) + len(self._relations)
 
-    def _determine_computation_order(self, input_joints, strategy_output):
+    def _determine_computation_order(self, input_joints, strategy_output: list[strategy.ResolutionStep]):
         h = self._hyper_statism_value(input_joints)
-        if h != 0:
-            raise OverDeterminationError()
+        if h > 0:
+            raise ex.OverDeterminationError(f"System has {h} constraints in excess")
+        if h < 0:
+            raise ex.UnderDeterminationError(f"System is lacking {-h} constraints")
         strategy.determine_computation_order(len(self._solids), self._joints, self._relations, input_joints, strategy_output)
 
     def determine_computation_order(self):

@@ -27,8 +27,8 @@ s3 = sys.add_solid('Planétaire')
 r1 = sys.add_revolute(0, 1)
 r2 = sys.add_revolute(1, 2, p1=(d/2, 0))
 r3 = sys.add_revolute(1, 3)
-g1 = sys.add_gear(r1, r2, r=-D/d2)
-g2 = sys.add_gear(r2, r3, r=-d2/d1)
+g1 = sys.add_gear_pair(r1, r2, r=-D / d2)
+g2 = sys.add_gear_pair(r2, r3, r=-d2 / d1)
 
 
 sys.pilot(r1)

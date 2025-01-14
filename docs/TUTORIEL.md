@@ -104,13 +104,13 @@ On intègre chaque liaison au mécanisme avec un paramétrage correspondant au s
 Le mécanisme est composé d'un train d'engrenage simple. Cette relation lie le mouvement de la liaison `r1` à celui de `r2`. On considère un angle de pression de 20° et l'on met une valeur initiale de l'angle à 180° pour faciliter le pilotage ([doc engrenage](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#ajout-de-relations)).
 
 ```python
-r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
+r1 = sys.add_revolute(0, 1, p1=(rA + rB, 0))
 r2 = sys.add_revolute(0, 2, p1=(0, 0))
-gear = sys.add_gear(r1, r2, -rA/rB, np.pi)
+gear = sys.add_gear_pair(r1, r2, -rA / rB, np.pi)
 r3 = sys.add_revolute(2, 3, p1=(l, 0), p2=(l, 0))
-r4 = sys.add_revolute(3, 4, p1=(2*l, 0))
+r4 = sys.add_revolute(3, 4, p1=(2 * l, 0))
 ps1 = sys.add_pin_slot(0, 3)
-ps2 = sys.add_pin_slot(4, 2, p2=(2*l, 0))
+ps2 = sys.add_pin_slot(4, 2, p2=(2 * l, 0))
 ```
 
 Le mécanisme est actionné par un moteur électrique connecté à la pivot entre le pignon et le bâti. Un mécanisme intermédiaire de réduction de vitesse est interposé entre le moteur et cette liaison mais il n'est pas concidéré ici. On pilote donc cette liaison pivot ([doc pilotage](https://github.com/valentin-burillier/kinepy/blob/main/docs/system.md#pilotage-et-blocage-du-mécanisme)).

@@ -141,5 +141,6 @@ class StrategyTests(unittest.TestCase):
         self.assertEqual(merged_mapping, (0,) * 7)
         self.assertEqual(merged_graph, [[JGN(algo.NodeType.EMPTY)]])
 
+
 if __name__ == '__main__':
     unittest.main()

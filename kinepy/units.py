@@ -37,9 +37,9 @@ class Physics:
 
     @classmethod
     def get_unit_value(cls, phy: PhysicalQuantity) -> np.ndarray:
-        if not phy.__metadata__[0] or not isinstance(phy.__metadata__[0], _PhysicsEnum):
+        if (phy := cls._physical_quantity_annotation(phy)) is None:
             raise ValueError("Invalid physical quantity type")
-        return cls._get_unit_value(phy.__metadata__[0])
+        return cls._get_unit_value(phy)
 
     @classmethod
     def _get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
@@ -47,20 +47,16 @@ class Physics:
 
     @classmethod
     def set_unit(cls, phy: PhysicalQuantity, value: scalar_type, symbol: str) -> None:
-        if not phy.__metadata__[0] or not isinstance(phy.__metadata__[0], _PhysicsEnum):
+        if (phy := cls._physical_quantity_annotation(phy)) is None:
             raise ValueError("Invalid physical quantity type")
-        cls._unit_values[phy.__metadata__[0]] = np.array(value), symbol
+        cls._unit_values[phy] = np.array(value), symbol
 
     @classmethod
-    def _input(cls, physics: PhysicalQuantity):
-        phy = physics.__metadata__[0]
+    def _input(cls, phy: _PhysicsEnum):
         return lambda value: value * cls._get_unit_value(phy)
 
     @classmethod
-    def _output(cls, physics: None | PhysicalQuantity):
-        if physics is None or not isinstance(physics, PhysicalQuantity) or not physics.__metadata__ or not isinstance(physics.__metadata__[0], _PhysicsEnum):
-            return _identity
-        phy = getattr(physics, '__metadata__')[0]
+    def _output(cls, phy: _PhysicsEnum):
         return lambda value: value / cls._get_unit_value(phy)
 
     @classmethod
@@ -70,21 +66,22 @@ class Physics:
         """
         arguments = func.__code__.co_varnames[:func.__code__.co_argcount + func.__code__.co_kwonlyargcount]
 
-        # all parameters that are annotated with a physical quantity with *args
-        physical_transforms = {
-            name: cls._input(annotation)
-            for name, annotation in func.__annotations__.items() if isinstance(annotation, PhysicalQuantity) and getattr(annotation, '__metadata__') and isinstance(annotation.__metadata__[0], _PhysicsEnum) and name != 'return'
+        # all parameters that are annotated with a physical quantity including *args
+        named_transforms = {
+            name: cls._input(phy)
+            for name, annotation in func.__annotations__.items() if (phy := cls._physical_quantity_annotation(annotation)) is not None and name != 'return'
         }
         # *args
-        variadic_transform = physical_transforms.pop(func.__code__.co_varnames[len(arguments)], _identity) if len(arguments) < len(func.__code__.co_varnames) else _identity
+        variadic_transform = named_transforms.pop(func.__code__.co_varnames[len(arguments)], _identity) if len(arguments) < len(func.__code__.co_varnames) else _identity
 
-        return_transform = cls._output(func.__annotations__.get('return', None))
+        return_annotation = func.__annotations__.get('return', None)
+        return_transform = cls._output(phy) if (phy := cls._physical_quantity_annotation(return_annotation)) is not None else _identity
 
         @wraps(func)
         def new_function(*args, **kwargs):
-            new_args = (physical_transforms.get(name, _identity)(value) for name, value in zip(arguments, args))
+            new_args = (named_transforms.get(name, _identity)(value) for name, value in zip(arguments, args))
             vari_args = (variadic_transform(value) for value in args[len(arguments):])
-            arg_dict = {name: physical_transforms.get(name, _identity)(value) for name, value in kwargs.items()}
+            arg_dict = {name: named_transforms.get(name, _identity)(value) for name, value in kwargs.items()}
             return return_transform(func(*new_args, *vari_args, **arg_dict))
 
         return new_function
@@ -100,15 +97,20 @@ class Physics:
             setattr(target_class, method_name, cls.function(method))
 
         # Retrieve all attributes that are annotated with physical quantities to place getters and setters on them
-        for attr, unit in target_class.__annotations__.items():
-            if not isinstance(unit, PhysicalQuantity) or not getattr(unit, '__metadata__') or not isinstance(unit.__metadata__[0], _PhysicsEnum):
+        for attr, annotation in target_class.__annotations__.items():
+            if (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
-            phy: _PhysicsEnum = getattr(unit, '__metadata__')[0]
             setattr(target_class, attr, property(
                 lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
                 lambda self, value: setattr(self, f'_{attr}', value * cls._get_unit_value(phy))
             ))
         return target_class
+
+    @staticmethod
+    def _physical_quantity_annotation(annotation: typing.Any) -> None | _PhysicsEnum:
+        if isinstance(annotation, PhysicalQuantity) and isinstance(annotation.__metadata__[0], _PhysicsEnum):
+            return annotation.__metadata__[0]
+        return None
 
 
 def _identity(x):

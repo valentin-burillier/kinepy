@@ -1,19 +1,18 @@
 from kinepy.units import Physics, _PhysicsEnum
+from kinepy.objects.system_element import SystemElement
 from kinepy.objects.joints import Prismatic, PrimitiveJoint
 from kinepy.objects.solid import Solid
 
 
-class Relation:
+class Relation(SystemElement):
     """
     j2.value = j1.value * r + v0
     """
-
     j1: PrimitiveJoint
     j2: PrimitiveJoint
-
+    
     def __init__(self, system, index, j1: PrimitiveJoint, j2: PrimitiveJoint, r=0.0, v0=0.0):
-        self._system = system
-        self._index = index
+        SystemElement.__init__(self, system, index)
         self.j1, self.j2 = j1, j2
 
         self._r = r
@@ -21,7 +20,7 @@ class Relation:
 
 
 @Physics.class_
-class _GearRelation(Relation):
+class GearRelation(Relation):
     _g1: None | Solid = None
     _g2: None | Solid = None
     pressure_angle: Physics.ANGLE
@@ -35,20 +34,18 @@ class _GearRelation(Relation):
 
 
 @Physics.class_
-class Gear(_GearRelation):
+class GearPair(GearRelation):
     r: Physics.DIMENSIONLESS
     v0: Physics.ANGLE
 
 
 @Physics.class_
-class GearRack(_GearRelation):
+class GearRack(GearRelation):
     r: Physics.LENGTH
     v0: Physics.LENGTH
 
 
 class _NonGearRelation(Relation):
-    # TODO: find a better name
-
     def _get_j1_physics(self) -> _PhysicsEnum:
         return _PhysicsEnum.LENGTH if isinstance(self.j1, Prismatic) else _PhysicsEnum.ANGLE
 

@@ -27,7 +27,7 @@ sys.bill_of_materials()
 
 r1 = sys.add_revolute(0, 1, p1=(rA+rB, 0))
 r2 = sys.add_revolute(0, 2, p1=(0, 0))
-gear = sys.add_gear(r1, r2, -rA/rB, np.pi)
+gear = sys.add_gear_pair(r1, r2, -rA / rB, np.pi)
 r3 = sys.add_revolute(2, 3, p1=(l, 0), p2=(l, 0))
 r4 = sys.add_revolute(3, 4, p1=(2*l, 0))
 ps1 = sys.add_pin_slot(0, 3)

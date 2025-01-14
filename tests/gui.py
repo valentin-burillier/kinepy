@@ -30,7 +30,7 @@ r5 = sys.add_revolute(4, 5, (40, 0))
 ps = sys.add_pin_slot(0, 5, a1=np.pi/4, d1=-60, p2=(30, 0))
 
 R = 1/2
-gear = sys.add_gear(r1, r2, -R)
+gear = sys.add_gear_pair(r1, r2, -R)
 
 sys.pilot(r1)
 

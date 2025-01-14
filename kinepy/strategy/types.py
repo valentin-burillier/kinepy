@@ -4,8 +4,7 @@ from typing import TypeAlias, Self, Generator
 from kinepy.strategy.graph_data import NodeType
 
 
-class SystemConfigurationError(Exception):
-    pass
+
 
 
 class JointGraphNode:

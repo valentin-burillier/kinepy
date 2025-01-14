@@ -1,24 +1,16 @@
 from kinepy.units import Physics
+from kinepy.objects.system_element import SystemElement
 from kinepy.objects.solid import Solid
 
 
-class Joint:
+class Joint(SystemElement):
     s1: Solid
     s2: Solid
     index: int
 
     def __init__(self, system, index: int, s1: Solid, s2: Solid):
-        self._system = system
-        self._index = index
+        SystemElement.__init__(self, system, index)
         self.s1, self.s2 = s1, s2
-
-    @property
-    def index(self):
-        return self._index
-
-    @property
-    def system(self):
-        return self._system
 
     def get_all_joints(self):
         return self,
@@ -60,7 +52,7 @@ class GhostHolder(Joint):
         return self._ghost_joints
 
 
-def ghost_property(*args):
+def _ghost_property(*args):
     def getter(self):
         return getattr(self._ghost_joints[args[0]], args[1])
 
@@ -72,9 +64,9 @@ def ghost_property(*args):
 
 
 class PinSlot(GhostHolder):
-    p1: Physics.POINT = ghost_property(0, 'p1')
-    alpha2: Physics.ANGLE = ghost_property(1, 'alpha1', 1, 'alpha2')
-    distance2: Physics.LENGTH = ghost_property(1, 'distance2')
+    p1: Physics.POINT = _ghost_property(0, 'p1')
+    alpha2: Physics.ANGLE = _ghost_property(1, 'alpha1', 1, 'alpha2')
+    distance2: Physics.LENGTH = _ghost_property(1, 'distance2')
 
     def __init__(self, system, index: int, ghost_solid, ghost_joints, s1: Solid, s2: Solid):
         Joint.__init__(self, system, index, s1, s2)
@@ -83,10 +75,10 @@ class PinSlot(GhostHolder):
 
 
 class Translation(GhostHolder):
-    alpha1: Physics.ANGLE = ghost_property(0, 'alpha1', 0, 'alpha2')
-    distance1: Physics.LENGTH = ghost_property(0, 'distance1')
-    alpha2: Physics.ANGLE = ghost_property(1, 'alpha1', 1, 'alpha2')
-    distance2: Physics.LENGTH = ghost_property(0, 'distance1')
+    alpha1: Physics.ANGLE = _ghost_property(0, 'alpha1', 0, 'alpha2')
+    distance1: Physics.LENGTH = _ghost_property(0, 'distance1')
+    alpha2: Physics.ANGLE = _ghost_property(1, 'alpha1', 1, 'alpha2')
+    distance2: Physics.LENGTH = _ghost_property(0, 'distance1')
 
     def __init__(self, system, index: int, ghost_solid, ghost_joints, s1: Solid, s2: Solid):
         Joint.__init__(self, system, index, s1, s2)
@@ -95,7 +87,7 @@ class Translation(GhostHolder):
 
 
 class ThreeDOF(GhostHolder):
-    p: Physics.POINT = ghost_property(2, 'p2')
+    p: Physics.POINT = _ghost_property(2, 'p2')
 
     def __init__(self, system, index: int, ghost_solids, ghost_joints, s1: Solid, s2: Solid):
         Joint.__init__(self, system, index, s1, s2)
