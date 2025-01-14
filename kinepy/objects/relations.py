@@ -46,14 +46,8 @@ class GearRack(GearRelation):
 
 
 class _NonGearRelation(Relation):
-    def _get_j1_physics(self) -> _PhysicsEnum:
-        return _PhysicsEnum.LENGTH if isinstance(self.j1, Prismatic) else _PhysicsEnum.ANGLE
-
-    def _get_j2_physics(self) -> _PhysicsEnum:
-        return _PhysicsEnum.LENGTH if isinstance(self.j2, Prismatic) else _PhysicsEnum.ANGLE
-
     def _get_r_unit(self) -> Physics.scalar_type:
-        u1, u2 = self._get_j1_physics(), self._get_j2_physics()
+        u1, u2 = self.j1.get_input_physics(), self.j2.get_input_physics()
         return Physics._get_unit_value(_PhysicsEnum.DIMENSIONLESS) if u1 == u2 else Physics._get_unit_value(u2) / Physics._get_unit_value(u1)
 
     @property
@@ -66,11 +60,11 @@ class _NonGearRelation(Relation):
 
     @property
     def v0(self):
-        return self._v0 / Physics._get_unit_value(self._get_j2_physics())
+        return self._v0 / Physics._get_unit_value(self.j2.get_input_physics())
 
     @v0.setter
     def v0(self, value):
-        self._v0 = value * Physics._get_unit_value(self._get_j2_physics())
+        self._v0 = value * Physics._get_unit_value(self.j2.get_input_physics())
 
 
 class DistantRelation(_NonGearRelation):
