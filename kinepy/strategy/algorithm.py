@@ -380,9 +380,9 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
     while len(eqs) > 1:
         at_least_one = False
         while (iso := find_isomorphism(joint_graph)) is not None:
-            at_least_one = True
             graph_index, isomorphism = iso
             joint_graph, eqs, solid_to_eq = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output, joint_states, joint_queue, before_inputs=True)
+            at_least_one = True
         if not at_least_one:
             break
 
@@ -404,9 +404,9 @@ def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], 
 
         at_least_one = False
         while (iso := find_isomorphism(joint_graph)) is not None:
-            at_least_one = True
             graph_index, isomorphism = iso
             joint_graph, eqs, solid_to_eq = register_graph_step(graph_index, isomorphism, joint_graph, eqs, solid_to_eq, joints, strategy_output, joint_states, joint_queue, before_inputs=False)
+            at_least_one = True
         if not at_least_one:
             break
 
