@@ -18,6 +18,7 @@ class System:
         self._piloted = []
 
         self._dynamic_strategy: list[strategy.ResolutionStep] = []
+        self._kinematic_inputs: np.ndarray = np.array([], dtype=np.float64)
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
 
     def get_ground(self) -> Solid:
@@ -168,8 +169,33 @@ class System:
             self._determine_computation_order(self._blocked, self._dynamic_strategy)
         self._determine_computation_order(self._joints, self._kinematic_strategy)
 
-    def solve_kinematics(self):
+    def show_input_order(self):
         pass
 
-    def solve_dynamics(self):
-        pass
+    def solve_kinematics(self, input_values: np.ndarray) -> None:
+        if not self._kinematic_strategy:
+            return
+
+        # save input values
+        self._kinematic_inputs = input_values.copy()
+        for index, joint in enumerate(j for joint in self._joints for j in joint.get_all_joints()):
+            joint: PrimitiveJoint
+            self._kinematic_inputs[index, :] *= Physics._get_unit_value(joint.get_input_physics())
+
+        # TODO: reset every position and forces
+
+        for step in self._kinematic_strategy:
+            step.solve_kinematics()
+
+        # TODO: replace everything in ground's frame of reference
+
+    def solve_dynamics(self, simulation_duration: Physics.TIME = 1.0) -> None:
+        dynamics_strategy = self._dynamic_strategy or self._kinematic_strategy
+        if not dynamics_strategy:
+            return
+
+        # TODO: compute inertia
+        # TODO: compute interactions
+
+        for step in reversed(dynamics_strategy):
+            step.solve_dynamics()

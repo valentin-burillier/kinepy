@@ -1,4 +1,6 @@
-from kinepy.units import Physics
+import numpy as np
+
+from kinepy.units import Physics, _PhysicsEnum
 from kinepy.objects.system_element import SystemElement
 from kinepy.objects.solid import Solid
 
@@ -26,6 +28,10 @@ class Revolute(Joint):
         self._p1 = p1
         self._p2 = p2
 
+    @staticmethod
+    def get_input_physics() -> _PhysicsEnum:
+        return _PhysicsEnum.ANGLE
+
 
 @Physics.class_
 class Prismatic(Joint):
@@ -41,6 +47,10 @@ class Prismatic(Joint):
         self._alpha2 = alpha2
         self._distance2 = distance2
 
+    @staticmethod
+    def get_input_physics() -> _PhysicsEnum:
+        return _PhysicsEnum.LENGTH
+
 
 PrimitiveJoint = Revolute | Prismatic
 
@@ -48,7 +58,7 @@ PrimitiveJoint = Revolute | Prismatic
 class GhostHolder(Joint):
     _ghost_joints: tuple[PrimitiveJoint, ...]
 
-    def get_all_joints(self):
+    def get_all_joints(self) -> tuple[PrimitiveJoint, ...]:
         return self._ghost_joints
 
 

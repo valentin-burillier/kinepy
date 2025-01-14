@@ -9,7 +9,7 @@ PhysicalQuantity = typing._AnnotatedAlias
 
 
 class _PhysicsEnum(enum.Enum):
-    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE, DIMENSIONLESS = range(5)
+    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE, DIMENSIONLESS, TIME = range(6)
 
 
 class Physics:
@@ -24,6 +24,7 @@ class Physics:
     MOMENT_OF_INERTIA: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
     ANGLE: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.ANGLE]
     DIMENSIONLESS: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.DIMENSIONLESS]
+    TIME: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.TIME]
 
     # endregion PhysicsTypes
 
@@ -32,7 +33,8 @@ class Physics:
         _PhysicsEnum.MASS: (np.array(1.0), 'kg'),
         _PhysicsEnum.MOMENT_OF_INERTIA: (np.array(1.0), 'kg.m²'),
         _PhysicsEnum.ANGLE: (np.array(1.0), 'rad'),
-        _PhysicsEnum.DIMENSIONLESS: (np.array(1.0), '(no unit)')
+        _PhysicsEnum.DIMENSIONLESS: (np.array(1.0), '(no unit)'),
+        _PhysicsEnum.TIME: (np.array(1.0), 's')
     }
 
     @classmethod
