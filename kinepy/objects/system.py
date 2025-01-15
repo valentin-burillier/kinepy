@@ -12,14 +12,18 @@ from collections.abc import Iterable
 class System:
     def __init__(self):
         self._solids: list[Solid] = [Solid(self, 'Ground', 0)]
-        self._joints: list[Joint] = []
+        self._joints: list[PrimitiveJoint] = []
         self._relations: list[Relation] = []
         self._blocked = []
         self._piloted = []
 
-        self._dynamic_strategy: list[strategy.ResolutionStep] = []
         self._kinematic_inputs: np.ndarray = np.array([], dtype=np.float64)
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
+
+        self._solid_values: np.ndarray = np.array([], dtype=np.float64)
+        self._joint_values: np.ndarray = np.array([], dtype=np.float64)
+
+        self._dynamic_strategy: list[strategy.ResolutionStep] = []
 
     def get_ground(self) -> Solid:
         return self._solids[0]
@@ -176,16 +180,26 @@ class System:
         if not self._kinematic_strategy:
             return
 
+        for j in self._joints:
+            # convert prismatic alpha/distances into points
+            j._set_points()
+
         # save input values
         self._kinematic_inputs = input_values.copy()
         for index, joint in enumerate(j for joint in self._joints for j in joint.get_all_joints()):
             joint: PrimitiveJoint
             self._kinematic_inputs[index, :] *= Physics._get_unit_value(joint.get_input_physics())
 
-        # TODO: reset every position and forces
+        frame_count = self._kinematic_inputs.shape[1]
+        self._solid_values.reshape((len(self._solids), 4, frame_count))
+        # shapes: m, 4, n <-  1, 4, 1
+        self._solid_values[:] = ((0.,), (0., ), (1.0,), (0.,)),
+
+        self._joint_values.reshape((len(self._joints), frame_count))
+        self._joint_values[:] = 0.0
 
         for step in self._kinematic_strategy:
-            step.solve_kinematics()
+            step.solve_kinematics(self._solid_values, self._joint_values, self._kinematic_inputs)
 
         # TODO: replace everything in ground's frame of reference
 

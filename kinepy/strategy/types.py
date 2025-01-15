@@ -1,10 +1,22 @@
 from kinepy.objects.joints import Revolute, PrimitiveJoint, Prismatic
 from kinepy.objects.relations import Relation
-from typing import TypeAlias, Self, Generator
+from typing import TypeAlias, Self
+from collections.abc import Generator, Callable
 from kinepy.strategy.graph_data import NodeType
+from kinepy.units import _PhysicsEnum
+import numpy as np
+import kinepy.math.kinematics as kin
 
+class JointFlags:
+    SOLVED_BIT = 1 << 0
 
+    # joint value is certified to be computed for joints that are solved: -by inputs; -by relations.
+    # relations may have to compute the joint values for those that are not available yet, otherwise these computations are not necessary and will depend on user queries
+    COMPUTED_BIT = 1 << 1
 
+    # joint value is certified to be continuous for all prismatic joints, and for revolute joints that are solved: -before inputs; -by inputs; -by relations.
+    # when driven by a revolute joint, relations may have to compute the continuous version of its angle if not already available
+    CONTINUOUS_BIT = 1 << 2
 
 
 class JointGraphNode:
@@ -63,7 +75,7 @@ Isomorphism: TypeAlias = tuple[int, ...]
 
 
 class ResolutionStep:
-    def solve_kinematics(self):
+    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
         pass
 
     def solve_dynamics(self):
@@ -83,11 +95,28 @@ class GraphStep(ResolutionStep):
 
 
 class JointStep(ResolutionStep):
+    function: Callable[[np.ndarray, np.ndarray, int, int, np.ndarray, np.ndarray, tuple[int, ...], tuple[int, ...]], None]
+
     def __init__(self, input_index: int, joint: PrimitiveJoint, eq1: tuple[int, ...], eq2: tuple[int, ...]):
         ResolutionStep.__init__(self)
-        self._input_index = input_index
-        self._joint = joint
-        self._eq1, self._eq2 = eq1, eq2
+        self.input_index = input_index
+        self.joint = joint
+        self.eq1, self.eq2 = eq1, eq2
+        self.function = self.function_chooser[joint.get_input_physics()]
+
+    function_chooser = {
+        _PhysicsEnum.ANGLE: kin.JointInput.solve_revolute,
+        _PhysicsEnum.LENGTH: kin.JointInput.solve_prismatic
+    }
+
+    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
+        value = kinematic_inputs[self.input_index, ...]
+        joint_values[self.joint._index, ...] = value
+
+        s1 = self.joint.s1._index
+        s2 = self.joint.s2._index
+
+        self.function(solid_values, value, s1, s2, self.joint._p1, self.joint._p2, self.eq1, self.eq2)
 
 
 class RelationStep(ResolutionStep):
@@ -102,23 +131,57 @@ class RelationStep(ResolutionStep):
         self.eq1 = eq1
         self.eq2 = eq2
 
+        self.formula = self.relation_formulae[is_1_to_2]
+        self.function = JointStep.function_chooser[(relation.j2 if is_1_to_2 else relation.j1).get_input_physics()]
+
+        self.target = relation.j2 if is_1_to_2 else relation.j1
+        self.source = relation.j1 if is_1_to_2 else relation.j2
+
+    relation_formulae = (
+        lambda value, r, v0: (value - v0) / r,
+        lambda value, r, v0: value * r + v0
+    )
+
+    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
+        value = self.formula(joint_values[self.source._index, ...], self.relation._r, self.relation._v0)
+        joint_values[self.target._index, ...] = value
+
+        s1 = self.target.s1._index
+        s2 = self.target.s2._index
+
+        self.function(solid_values, value, s1, s2, self.target._p1, self.target._p2, self.eq1, self.eq2)
+
 
 class JointValueComputationStep(ResolutionStep):
     joint: PrimitiveJoint
     flags: int
+    value_function: Callable[[np.ndarray, int, int, np.ndarray, np.ndarray], np.ndarray]
+    continuity_function: Callable[[np.ndarray], None]
 
     def __init__(self, joint: PrimitiveJoint, flags: int):
         self.joint = joint
         self.flags = flags
 
+        if self.flags & JointFlags.COMPUTED_BIT:
+            self.value_function = kin.JointValueComputation.do_not_compute_value
+        else:
+            self.value_function = self.value_chooser[self.joint.get_input_physics()]
 
-class JointFlags:
-    SOLVED_BIT = 1 << 0
+        if self.flags & JointFlags.CONTINUOUS_BIT:
+            self.continuity_function = kin.JointValueComputation.do_not_compute_continuity
+        else:
+            self.continuity_function = self.continuity_chooser[self.joint.get_input_physics()]
 
-    # joint value is certified to be computed for joints that are solved: -by inputs; -by relations.
-    # relations may have to compute the joint values for those that are not available yet, otherwise these computations are not necessary and will depend on user queries
-    COMPUTED_BIT = 1 << 1
+    value_chooser = {
+        _PhysicsEnum.ANGLE: kin.JointValueComputation.compute_revolute_value,
+        _PhysicsEnum.LENGTH: kin.JointValueComputation.compute_prismatic_value
+    }
 
-    # joint value is certified to be continuous for all prismatic joints, and for revolute joints that are solved: -before inputs; -by inputs; -by relations.
-    # when driven by a revolute joint, relations may have to compute the continuous version of its angle if not already available
-    CONTINUOUS_BIT = 1 << 2
+    continuity_chooser = {
+        _PhysicsEnum.ANGLE: kin.JointValueComputation.compute_revolute_value,
+        _PhysicsEnum.LENGTH: kin.JointValueComputation.do_not_compute_continuity
+    }
+
+    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
+        joint_values[self.joint._index, ...] = self.value_function(solid_values, self.joint.s1, self.joint.s2, self.joint._p1, self.joint._p2)
+        self.continuity_function(joint_values[self.joint._index, ...])

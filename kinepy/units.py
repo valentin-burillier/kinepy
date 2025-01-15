@@ -14,7 +14,8 @@ class _PhysicsEnum(enum.Enum):
 
 class Physics:
     scalar_type = float | np.ndarray
-    POINT: PhysicalQuantity = typing.Annotated[tuple[float, float] | list[float, float] | np.ndarray, _PhysicsEnum.LENGTH]
+    point_type = tuple[float, float] | list[float, float] | np.ndarray
+    POINT: PhysicalQuantity = typing.Annotated[point_type, _PhysicsEnum.LENGTH]
 
     # Just run this file for this region to be updated
     # region PhysicsTypes

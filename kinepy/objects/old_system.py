@@ -1,7 +1,7 @@
 import numpy as np
 
 from kinepy.compilation import *
-from kinepy.math.kinematic import KIN
+from kinepy.math.old_kinematics import KIN
 from kinepy.math.dynamic import DYN
 
 

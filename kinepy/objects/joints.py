@@ -32,6 +32,9 @@ class Revolute(Joint):
     def get_input_physics() -> _PhysicsEnum:
         return _PhysicsEnum.ANGLE
 
+    def _set_points(self):
+        pass
+
 
 @Physics.class_
 class Prismatic(Joint):
@@ -46,10 +49,16 @@ class Prismatic(Joint):
         self._distance1 = distance1
         self._alpha2 = alpha2
         self._distance2 = distance2
+        self._p1 = 0., 0.
+        self._p2 = 0., 0.
 
     @staticmethod
     def get_input_physics() -> _PhysicsEnum:
         return _PhysicsEnum.LENGTH
+
+    def _set_points(self):
+        self._p1 = (np.cos(self._alpha1), np.sin(self._alpha1)) * np.array(self._distance1)
+        self._p2 = (np.cos(self._alpha2), np.sin(self._alpha2)) * np.array(self._distance2)
 
 
 PrimitiveJoint = Revolute | Prismatic
