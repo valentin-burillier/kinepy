@@ -1,6 +1,6 @@
-from kinepy.units import Physics, _PhysicsEnum
+import kinepy.units as u
 from kinepy.objects.system_element import SystemElement
-from kinepy.objects.joints import Prismatic, PrimitiveJoint
+from kinepy.objects.joints import PrimitiveJoint
 from kinepy.objects.solid import Solid
 
 
@@ -19,11 +19,11 @@ class Relation(SystemElement):
         self._v0 = v0
 
 
-@Physics.class_
+@u.UnitSystem.class_
 class GearRelation(Relation):
     _g1: None | Solid = None
     _g2: None | Solid = None
-    pressure_angle: Physics.ANGLE
+    pressure_angle: u.Angle.phy
 
     def __index__(self, system, index, j1: PrimitiveJoint, j2: PrimitiveJoint, r=0.0, v0=0.0, pa=0.0, g1=None, g2=None):
         Relation.__init__(self, system, index, j1, j2, r, v0)
@@ -33,22 +33,22 @@ class GearRelation(Relation):
         self._pressure_angle = pa
 
 
-@Physics.class_
+@u.UnitSystem.class_
 class GearPair(GearRelation):
-    r: Physics.DIMENSIONLESS
-    v0: Physics.ANGLE
+    r: u.Dimensionless.phy
+    v0: u.Angle.phy
 
 
-@Physics.class_
+@u.UnitSystem.class_
 class GearRack(GearRelation):
-    r: Physics.LENGTH
-    v0: Physics.LENGTH
+    r: u.Length.phy
+    v0: u.Length.phy
 
 
 class _NonGearRelation(Relation):
-    def _get_r_unit(self) -> Physics.scalar_type:
+    def _get_r_unit(self) -> u.scalar_type:
         u1, u2 = self.j1.get_input_physics(), self.j2.get_input_physics()
-        return Physics._get_unit_value(_PhysicsEnum.DIMENSIONLESS) if u1 == u2 else Physics._get_unit_value(u2) / Physics._get_unit_value(u1)
+        return u.UnitSystem._get_unit_value(u._PhysicsEnum.DIMENSIONLESS) if u1 == u2 else u.UnitSystem._get_unit_value(u2) / u.UnitSystem._get_unit_value(u1)
 
     @property
     def r(self):
@@ -60,11 +60,11 @@ class _NonGearRelation(Relation):
 
     @property
     def v0(self):
-        return self._v0 / Physics._get_unit_value(self.j2.get_input_physics())
+        return self._v0 / u.UnitSystem._get_unit_value(self.j2.get_input_physics())
 
     @v0.setter
     def v0(self, value):
-        self._v0 = value * Physics._get_unit_value(self.j2.get_input_physics())
+        self._v0 = value * u.UnitSystem._get_unit_value(self.j2.get_input_physics())
 
 
 class DistantRelation(_NonGearRelation):

@@ -3,12 +3,12 @@ from kinepy.objects.relations import Relation, GearPair, GearRack, DistantRelati
 from kinepy.objects.joints import Joint, Revolute, Prismatic, GhostHolder, PinSlot, Translation, ThreeDOF, PrimitiveJoint
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
-from kinepy.units import Physics
+import kinepy.units as u
 import numpy as np
 from collections.abc import Iterable
 
 
-@Physics.class_
+@u.UnitSystem.class_
 class System:
     def __init__(self):
         self._solids: list[Solid] = [Solid(self, 'Ground', 0)]
@@ -39,12 +39,12 @@ class System:
             if joint.system is not self or (not isinstance(joint, GhostHolder) and (joint.index >= len(self._joints) or self._joints[joint.index] is not joint)):
                 raise ex.UnrelatedObjectsError(f"Joint \"{joint}\" does not belong to this system")
 
-    def add_solid(self, name='', mass: Physics.MASS = 0., moment_of_inertia: Physics.MOMENT_OF_INERTIA = 0., g: Physics.POINT = (0., 0.)) -> Solid:
+    def add_solid(self, name='', mass: u.Mass.phy = 0., moment_of_inertia: u.MomentOfInertia.phy = 0., g: u.Length.point = (0., 0.)) -> Solid:
         name = name or f'Solid {len(self._solids)}'
         self._solids.append(Solid(self, name, len(self._solids), mass, moment_of_inertia, g))
         return self._solids[-1]
 
-    def add_prismatic(self, s1: Solid, s2: Solid, alpha1: Physics.ANGLE = 0.0, distance1: Physics.LENGTH = 0.0, alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> Prismatic:
+    def add_prismatic(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> Prismatic:
         print(self._check_solids(s1, s2))
         self._check_solids(s1, s2)
         if s1 is s2:
@@ -53,7 +53,7 @@ class System:
         self._joints.append(result)
         return result
 
-    def add_revolute(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), p2: Physics.POINT = (0.0, 0.0)) -> Revolute:
+    def add_revolute(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0)) -> Revolute:
         self._check_solids(s1, s2)
         if s1 is s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
@@ -61,7 +61,7 @@ class System:
         self._joints.append(result)
         return result
 
-    def add_pin_slot(self, s1: Solid, s2: Solid, p1: Physics.POINT = (0.0, 0.0), alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> PinSlot:
+    def add_pin_slot(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> PinSlot:
         self._check_solids(s1, s2)
         if s1 is s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
@@ -74,7 +74,7 @@ class System:
         self._joints.extend(ghost_joints)
         return PinSlot(self, -1, ghost_solid, ghost_joints, s1, s2)
 
-    def add_translation(self, s1: Solid, s2: Solid, alpha1: Physics.ANGLE = 0.0, distance1: Physics.LENGTH = 0.0, alpha2: Physics.ANGLE = 0.0, distance2: Physics.LENGTH = 0.0) -> Translation:
+    def add_translation(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> Translation:
         self._check_solids(s1, s2)
         if s1 is s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
@@ -87,7 +87,7 @@ class System:
         self._joints.extend(ghost_joints)
         return Translation(self, -1, ghost_solid, ghost_joints, s1, s2)
 
-    def add_3dof_to_ground(self, s: Solid, p: Physics.POINT = (0., 0.)) -> ThreeDOF:
+    def add_3dof_to_ground(self, s: Solid, p: u.Length.point = (0., 0.)) -> ThreeDOF:
         self._check_solids(s)
         ghost_solids = (
             Solid(self, f'GhostSolid {len(self._solids)}', len(self._solids)),
@@ -111,7 +111,7 @@ class System:
             if g2 is not j2.s1 or g2 is not j2.s2:
                 raise ex.UnrelatedObjectsError(f"{j2} does not constrain {g2}")
 
-    def add_gear_pair(self, j1: Revolute, j2: Revolute, r: Physics.DIMENSIONLESS = 0.0, v0: Physics.ANGLE = 0.0, pressure_angle: Physics.ANGLE = np.pi / 6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> GearPair:
+    def add_gear_pair(self, j1: Revolute, j2: Revolute, r: u.Dimensionless.phy = 0.0, v0: u.Angle.phy = 0.0, pressure_angle: u.Angle.phy = np.pi / 6, pinion1: None | Solid = None, pinion2: None | Solid = None) -> GearPair:
         self._check_joints(j1, j2)
         if j1 is j2:
             raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
@@ -119,7 +119,7 @@ class System:
         self._relations.append(g := GearPair(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion1, pinion2))
         return g
 
-    def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: Physics.LENGTH = 0.0, v0: Physics.LENGTH = 0.0, pressure_angle: Physics.ANGLE = np.pi/6, pinion: None | Solid = None, rack: None | Solid = None) -> GearRack:
+    def add_gear_rack(self, j1: Revolute, j2: Prismatic, r: u.Length.phy = 0.0, v0: u.Length.phy = 0.0, pressure_angle: u.Angle.phy = np.pi/6, pinion: None | Solid = None, rack: None | Solid = None) -> GearRack:
         self._check_joints(j1, j2)
         if j1 is j2:
             raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
@@ -127,7 +127,7 @@ class System:
         self._relations.append(g := GearRack(self, len(self._relations), j1, j2, r, v0, pressure_angle, pinion, rack))
         return g
 
-    def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> DistantRelation:
+    def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: u.scalar_type = 0.0, v0: u.scalar_type = 0.0) -> DistantRelation:
         self._check_joints(j1, j2)
         if j1 is j2:
             raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
@@ -137,7 +137,7 @@ class System:
         self._relations.append(rel)
         return rel
 
-    def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: Physics.scalar_type = 0.0, v0: Physics.scalar_type = 0.0) -> EffortlessRelation:
+    def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, r: u.scalar_type = 0.0, v0: u.scalar_type = 0.0) -> EffortlessRelation:
         self._check_joints(j1, j2)
         if j1 is j2:
             raise ex.ConstraintOnSameObjectError(f"Joint arguments are identical ({j1})")
@@ -188,7 +188,7 @@ class System:
         self._kinematic_inputs = input_values.copy()
         for index, joint in enumerate(j for joint in self._joints for j in joint.get_all_joints()):
             joint: PrimitiveJoint
-            self._kinematic_inputs[index, :] *= Physics._get_unit_value(joint.get_input_physics())
+            self._kinematic_inputs[index, :] *= u.UnitSystem._get_unit_value(joint.get_input_physics())
 
         frame_count = self._kinematic_inputs.shape[1]
         self._solid_values.reshape((len(self._solids), 4, frame_count))
@@ -203,7 +203,7 @@ class System:
 
         # TODO: replace everything in ground's frame of reference
 
-    def solve_dynamics(self, simulation_duration: Physics.TIME = 1.0) -> None:
+    def solve_dynamics(self, simulation_duration: u.Time.phy = 1.0) -> None:
         dynamics_strategy = self._dynamic_strategy or self._kinematic_strategy
         if not dynamics_strategy:
             return

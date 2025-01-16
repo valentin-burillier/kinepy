@@ -9,50 +9,324 @@ PhysicalQuantity = typing._AnnotatedAlias
 
 
 class _PhysicsEnum(enum.Enum):
-    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE, DIMENSIONLESS, TIME = range(6)
+    LENGTH, MASS, MOMENT_OF_INERTIA, ANGLE, DIMENSIONLESS, TIME, VELOCITY, ACCELERATION, ANGULAR_VELOCITY, ANGULAR_ACCELERATION, DENSITY, FORCE, TORQUE, SPRING_CONSTANT = range(14)
 
 
-class Physics:
-    scalar_type = float | np.ndarray
-    point_type = tuple[float, float] | list[float, float] | np.ndarray
-    POINT: PhysicalQuantity = typing.Annotated[point_type, _PhysicsEnum.LENGTH]
+scalar_type = float | np.ndarray
+point_type = tuple[float, float] | list[float, float] | np.ndarray
 
-    # Just run this file for this region to be updated
-    # region PhysicsTypes
+Unit = tuple[_PhysicsEnum, str, str, np.ndarray]
 
-    LENGTH: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.LENGTH]
-    MASS: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.MASS]
-    MOMENT_OF_INERTIA: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.MOMENT_OF_INERTIA]
-    ANGLE: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.ANGLE]
-    DIMENSIONLESS: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.DIMENSIONLESS]
-    TIME: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.TIME]
 
-    # endregion PhysicsTypes
-
-    _unit_values: dict[_PhysicsEnum, tuple[np.ndarray, str]] = {
-        _PhysicsEnum.LENGTH: (np.array(1e-3), 'mm'),
-        _PhysicsEnum.MASS: (np.array(1.0), 'kg'),
-        _PhysicsEnum.MOMENT_OF_INERTIA: (np.array(1.0), 'kg.m²'),
-        _PhysicsEnum.ANGLE: (np.array(1.0), 'rad'),
-        _PhysicsEnum.DIMENSIONLESS: (np.array(1.0), '(no unit)'),
-        _PhysicsEnum.TIME: (np.array(1.0), 's')
-    }
+class UnitSet:
+    _PHYSICS: _PhysicsEnum
+    phy: PhysicalQuantity
+    SI_UNIT: Unit
 
     @classmethod
-    def get_unit_value(cls, phy: PhysicalQuantity) -> np.ndarray:
-        if (phy := cls._physical_quantity_annotation(phy)) is None:
-            raise ValueError("Invalid physical quantity type")
-        return cls._get_unit_value(phy)
+    def new_unit(cls, fullname: str, symbol: str, value: scalar_type) -> Unit:
+        return cls._PHYSICS, fullname, symbol, np.ndarray(value)
+
+
+class Length(UnitSet):
+    # region auto-fill LENGTH
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.LENGTH
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill LENGTH
+    point: PhysicalQuantity = typing.Annotated[point_type, _PHYSICS]
+
+    METRE: Unit = _PHYSICS, 'metre', 'm', np.array(1.0)
+    MILLIMETRE: Unit = _PHYSICS, 'millimetre', 'mm', np.array(1e-3)
+    CENTIMETRE: Unit = _PHYSICS, 'centimetre', 'cm', np.array(1e-2)
+    INCH: Unit = _PHYSICS, 'inch', 'in', np.array(2.54e-2)
+    FOOT: Unit = _PHYSICS, 'foot', 'ft', np.array(0.3048)
+    YARD: Unit = _PHYSICS, 'yard', 'yd', np.array(0.9144)
+    GOAT: Unit = _PHYSICS, 'goat height', 'gt', np.array(.673)
+
+    SI_UNIT = METRE
+
+
+class Mass(UnitSet):
+    # region auto-fill MASS
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.MASS
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill MASS
+
+    KILOGRAM: Unit = _PHYSICS, 'kilograms', 'kg', np.array(1.)
+    GRAM: Unit = _PHYSICS, 'grams', 'g', np.array(1e-3)
+    POUND: Unit = _PHYSICS, 'pounds', 'lb', np.array(0.453592)
+    GOAT: Unit = _PHYSICS, 'goats', 'gt', np.array(60.)
+
+    SI_UNIT = KILOGRAM
+
+
+class MomentOfInertia(UnitSet):
+    # region auto-fill MOMENT_OF_INERTIA
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.MOMENT_OF_INERTIA
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill MOMENT_OF_INERTIA
+
+    KILOGRAM_METRE_SQUARED: Unit = _PHYSICS, 'kilogram metre squared', 'kg.m²', np.array(1.)
+    POUND_FORCE_FOOT_SECOND_SQUARED: Unit = _PHYSICS, 'pound-force foot second squared', 'lbf.ft.s2', np.array(1.3423)
+
+    SI_UNIT = KILOGRAM_METRE_SQUARED
+
+
+class Angle(UnitSet):
+    # region auto-fill ANGLE
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.ANGLE
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill ANGLE
+
+    RADIAN: Unit = _PHYSICS, 'radians', 'rad', np.array(1.)
+    DEGREE: Unit = _PHYSICS, 'degrees', '°', np.array(np.pi / 180)
+    REVOLUTION: Unit = _PHYSICS, 'revolutions', 'r', np.array(2*np.pi)
+
+    SI_UNIT = RADIAN
+
+
+class Dimensionless(UnitSet):
+    # region auto-fill DIMENSIONLESS
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.DIMENSIONLESS
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill DIMENSIONLESS
+
+    NO_UNIT: Unit = _PHYSICS, 'no unit', '', np.array(1.)
+    PERCENT: Unit = _PHYSICS, 'percents', '%', np.array(.01)
+    GOAT: Unit = _PHYSICS, 'goats', 'gt', np.array(1.)  # simply count your goats
+
+    SI_UNIT = NO_UNIT
+
+
+class Time(UnitSet):
+    # region auto-fill TIME
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.TIME
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill TIME
+
+    SECOND: Unit = _PHYSICS, 'seconds', 's', np.array(1.)
+    MILLISECOND: Unit = _PHYSICS, 'milliseconds', 'ms', np.array(1e-3)
+    MINUTE: Unit = _PHYSICS, 'minutes', 'min', np.array(60.)
+    BLEAT: Unit = _PHYSICS, 'goat bleats', 'baa', np.array(1.534)  # measured one bleat that took this long
+    SI_UNIT = SECOND
+
+
+class Velocity(UnitSet):
+    # region auto-fill VELOCITY
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.VELOCITY
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill VELOCITY
+
+    METRE_PER_SECOND: Unit = _PHYSICS, 'metres per second', 'm/s', np.array(1.)
+    MILLIMETRE_PER_SECOND: Unit = _PHYSICS, 'millimetres per second', 'mm/s', np.array(1e-3)
+    KILOMETRE_PER_HOUR: Unit = _PHYSICS, 'kilometres per hour', 'km/h', np.array(1/3.6)
+    FOOT_PER_SECOND: Unit = _PHYSICS, 'feet per second', 'ft/s', np.array(0.3048)
+    MILE_PER_HOUR: Unit = _PHYSICS, 'miles per hour', 'mph', np.array(0.44704)
+    GOAT: Unit = _PHYSICS, 'goat speed', 'gt', np.array(16 / 3.6)
+
+    SI_UNIT = METRE_PER_SECOND
+
+
+class Acceleration(UnitSet):
+    # region auto-fill ACCELERATION
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.ACCELERATION
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill ACCELERATION
+
+    METRE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'metres per second squared', 'm/s²', np.array(1.)
+    MILLIMETRE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'millimetres per second squared', 'mm/s²', np.array(1e-3)
+    FOOT_PER_SECOND_SQUARED: Unit = _PHYSICS, 'feet per second squared', 'ft/s²', np.array(0.3048)
+    G: Unit = _PHYSICS, 'earth gravitation', 'G', np.array(9.8067)
+
+    SI_UNIT = METRE_PER_SECOND_SQUARED
+
+
+class AngularVelocity(UnitSet):
+    # region auto-fill ANGULAR_VELOCITY
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.ANGULAR_VELOCITY
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill ANGULAR_VELOCITY
+
+    RADIAN_PER_SECOND: Unit = _PHYSICS, 'radians per second', 'rad/s', np.array(1.)
+    REVOLUTION_PER_MINUTE: Unit = _PHYSICS, 'revolutions pêr minute', 'rpm', np.array(np.pi/30)
+    HERTZ: Unit = _PHYSICS, 'hertz', 'Hz', np.array(2*np.pi)
+    DEGREE_PER_SECOND: Unit = _PHYSICS, 'degrees per second', '°/s', np.array(np.pi / 180)
+
+    SI_UNIT = RADIAN_PER_SECOND
+
+
+class AngularAcceleration(UnitSet):
+    # region auto-fill ANGULAR_ACCELERATION
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.ANGULAR_ACCELERATION
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill ANGULAR_ACCELERATION
+
+    RADIAN_PER_SECOND_SQUARED: Unit = _PHYSICS, 'radians per second squared', 'rad/s²', np.array(1.)
+    DEGREE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'degrees per second squared', '°/s²', np.array(np.pi / 180)
+
+    SI_UNIT = RADIAN_PER_SECOND_SQUARED
+
+
+class Density(UnitSet):
+    # region auto-fill DENSITY
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.DENSITY
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill DENSITY
+
+    KILOGRAM_PER_CUBIC_METRE: Unit = _PHYSICS, 'kilogram per cubic metre', 'kg/m³', np.array(1.)
+    GRAM_PER_CUBIC_CENTIMETRE: Unit = _PHYSICS, 'gram per cubic centimetre' 'g/cm³', np.array(1e3)
+    POUND_PER_CUBIC_INCH: Unit = _PHYSICS, 'pound per cubic inch', 'lb/in³', np.array(27679.9)
+    POUND_PER_CUBIC_FOOT: Unit = _PHYSICS, 'pound per cubic foot', 'lb/ft³', np.array(16.0185)
+
+    SI_UNIT = KILOGRAM_PER_CUBIC_METRE
+
+
+class Force(UnitSet):
+    # region auto-fill FORCE
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.FORCE
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill FORCE
+
+    NEWTON: Unit = _PHYSICS, 'newton', 'N', np.array(1.)
+    DECANEWTON: Unit = _PHYSICS, 'deca-newton', 'daN', np.array(10.)
+    MILLINEWTON: Unit = _PHYSICS, 'millinewton', 'mN', np.array(1e-3)
+    KILONEWTON: Unit = _PHYSICS, 'kilonewton', 'kN', np.array(1e3)
+    POUND_FORCE: Unit = _PHYSICS, 'pound force', 'lbf', np.array(4.44822)
+    KILOGRAM_FORCE: Unit = _PHYSICS, 'kilogram force', 'kgf', np.array(9.8067)
+
+    SI_UNIT = NEWTON
+
+
+class Torque(UnitSet):
+    # region auto-fill TORQUE
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.TORQUE
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill TORQUE
+
+    NEWTON_METRE: Unit = _PHYSICS, 'newton metre', 'N.m', np.array(1.)
+    NEWTON_MILLIMETRE: Unit = _PHYSICS, 'newton millimetre', 'N.mm', np.array(1e-3)
+    MILLINEWTON_METRE: Unit = _PHYSICS, 'millinewton metre', 'mN.m', np.array(1e-3)
+    POUND_FOOT: Unit = _PHYSICS, 'pound foot', 'lb.ft', np.array(1.355818)
+
+    SI_UNIT = NEWTON_METRE
+
+
+class SpringConstant(UnitSet):
+    # region auto-fill SPRING_CONSTANT
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.SPRING_CONSTANT
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+
+    # endregion auto-fill SPRING_CONSTANT
+
+    NEWTON_PER_METRE: Unit = _PHYSICS, 'newton per metre', 'N/m', np.array(1.)
+    NEWTON_PER_MILLIMETRE: Unit = _PHYSICS, 'newton per millimetre', 'N/mm', np.array(1e3)
+    POUND_FORCE_PER_INCH: Unit = _PHYSICS, 'pound force per inch', 'lbf/in', np.array(0.112985)
+
+    SI_UNIT = NEWTON_PER_METRE
+
+# this comment is a separator for automated formating
+
+
+SI_UNITS = tuple(cls.SI_UNIT for cls in UnitSet.__subclasses__())
+DEFAULT_UNITS = SI_UNITS + (
+    Length.MILLIMETRE,
+)
+
+IMPERIAL_UNITS = (
+    Time.SECOND,
+    Length.INCH,
+    Velocity.FOOT_PER_SECOND,
+    Acceleration.FOOT_PER_SECOND_SQUARED,
+    Angle.RADIAN,
+    AngularVelocity.RADIAN_PER_SECOND,
+    AngularAcceleration.RADIAN_PER_SECOND_SQUARED,
+    Density.POUND_PER_CUBIC_INCH,
+    Mass.POUND,
+    Force.POUND_FORCE,
+    Torque.POUND_FOOT,
+    SpringConstant.POUND_FORCE_PER_INCH,
+    MomentOfInertia.POUND_FORCE_FOOT_SECOND_SQUARED,
+    Dimensionless.NO_UNIT
+)
+
+GOAT_UNITS = SI_UNITS + (
+    Time.BLEAT,
+    Velocity.GOAT,
+    Dimensionless.GOAT,
+    Mass.GOAT,
+    Length.GOAT
+)
+
+
+def _identity(x):
+    return x
+
+
+def screaming_snake_to_pascal(name: str):
+    return ''.join(map(str.capitalize, name.split('_')))
+
+
+def screaming_snake_to_words(name: str):
+    return ' '.join(name.split('_')).capitalize()
+
+
+class UnitSystem:
+    _unit_values: dict[_PhysicsEnum, Unit] = {}
 
     @classmethod
     def _get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
-        return cls._unit_values[phy][0]
+        return cls._unit_values[phy][3]
 
     @classmethod
-    def set_unit(cls, phy: PhysicalQuantity, value: scalar_type, symbol: str) -> None:
-        if (phy := cls._physical_quantity_annotation(phy)) is None:
-            raise ValueError("Invalid physical quantity type")
-        cls._unit_values[phy] = np.array(value), symbol
+    def use(cls, *units: Unit, kw_units: tuple[Unit, ...] = ()) -> None:
+        """
+        Select units to use for every unit-dependant interface. Duplicates are overwritten, last matters.
+        """
+        for unit in units + kw_units:
+            cls._unit_values[unit[0]] = unit
+
+    @classmethod
+    def show(cls) -> str:
+        phys, full_names, symbols, values = zip(*cls._unit_values.values())
+
+        mn = len(max(max(phys, key=lambda x: len(x.name)).name, 'Physical quantity', key=len))
+        mf = len(max(max(full_names, key=len), 'Unit name', key=len))
+        ms = len(max(max(symbols, key=len), 'Symbol', key=len))
+
+        titles = f'\n{'Physical quantity':<{mn}} | {'Unit name':<{mf}} | {'Symbol':<{ms}} | 1 unit in SI unit\n'
+        table = '\n'.join(f'{screaming_snake_to_words(phy.name):<{mn}} | {full_name:<{mf}} | {symbol:>{ms}} | {value:>12.3e} {globals().get(screaming_snake_to_pascal(phy.name), Dimensionless).SI_UNIT[2]}' for phy, full_name, symbol, value in cls._unit_values.values())
+        return titles + table
+
+    @classmethod
+    def get_unit(cls, unit_set: type[UnitSet]):
+        return cls._unit_values[unit_set._PHYSICS]
 
     @classmethod
     def _input(cls, phy: _PhysicsEnum):
@@ -116,27 +390,34 @@ class Physics:
         return None
 
 
-def _identity(x):
-    return x
+UnitSystem.use(kw_units=DEFAULT_UNITS)
 
+print(UnitSystem.show())
 
 if __name__ == '__main__':
     """
-    Automatically writes Physical quantity types from _PhysicsEnum in Physics
+    Automatically create new UnitSet inheritors when a new _PhysicsEnum is created
     """
-
     with open(__file__, 'r') as this:
         whole_file = this.read()
 
-    top_separator = "# region PhysicsTypes\n"
-    bottom_separator = "# endregion PhysicsTypes\n"
+    # exclude this part
+    separator = "# this comment is a separator for automated formating\n"
+    module, rest = whole_file.split(separator, maxsplit=1)
+    new_class_names = tuple(phy.name for phy in _PhysicsEnum if globals().get(screaming_snake_to_pascal(phy.name), None) is None)
+    template = """class {Name}(UnitSet):
+    # region auto-fill {NAME}
+    
+    _PHYSICS: _PhysicsEnum = _PhysicsEnum.{NAME}
+    phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
 
-    top, _ = whole_file.split(top_separator, maxsplit=1)
-    _, bottom = whole_file.split(bottom_separator, maxsplit=1)
+    # endregion auto-fill {NAME}
 
-    center = '\n    '.join(f'{phy.name}: PhysicalQuantity = typing.Annotated[scalar_type, _PhysicsEnum.{phy.name}]' for phy in _PhysicsEnum)
 
-    new_file = f'{top}{top_separator}\n    {center}\n\n    {bottom_separator}{bottom}'
+"""
+
+    new_classes = ''.join(template.format(NAME=name, Name=screaming_snake_to_pascal(name)) for name in new_class_names)
+    new_file = module + new_classes + separator + rest
 
     with open(__file__, 'w') as this:
         this.write(new_file)

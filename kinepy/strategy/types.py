@@ -7,6 +7,7 @@ from kinepy.units import _PhysicsEnum
 import numpy as np
 import kinepy.math.kinematics as kin
 
+
 class JointFlags:
     SOLVED_BIT = 1 << 0
 

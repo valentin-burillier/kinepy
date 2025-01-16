@@ -100,7 +100,7 @@ def make_isomorphisms(size):
             yield _sub_iso[:position] + (size-1,) + _sub_iso[position:]
 
 
-class StrategyTests(unittest.TestCase):
+class GraphOperationsTests(unittest.TestCase):
     def test_find_isomorphism_identity(self) -> None:
         """
         Try to identify each registered graph when simply converted as user graph
@@ -125,6 +125,7 @@ class StrategyTests(unittest.TestCase):
                 iso = algo.find_isomorphism(_graph)
                 self.assertFalse(iso is None, f'{index} : {target_iso}')
                 graph_index, isomorphism = iso
+                # isomorphism cannot be compared to target_iso since some nodes can be interchanged for some graph e.g.: in RRR every node is equivalent to the other
                 self.assertEqual(graph_index, index)
 
     def test_merge(self) -> None:

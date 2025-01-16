@@ -1,13 +1,13 @@
-from kinepy.units import Physics
+import kinepy.units as u
 from kinepy.objects.system_element import SystemElement
 
 
-@Physics.class_
+@u.UnitSystem.class_
 class Solid(SystemElement):
     name: str
-    mass: Physics.MASS
-    moment_of_inertia: Physics.MOMENT_OF_INERTIA
-    g: Physics.POINT
+    mass: u.Mass.phy
+    moment_of_inertia: u.MomentOfInertia.phy
+    g: u.Length.point
 
     def __init__(self, system, name, index, mass=0., moment_of_inertia=0., g=(0., 0.)):
         SystemElement.__init__(self, system, index)
