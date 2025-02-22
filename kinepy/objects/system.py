@@ -5,6 +5,7 @@ import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.units as u
 import numpy as np
+from kinepy.math.kinematics import Geometry
 from collections.abc import Iterable
 
 
@@ -162,6 +163,7 @@ class System:
 
     def _determine_computation_order(self, input_joints, strategy_output: list[strategy.ResolutionStep]):
         h = self._hyper_statism_value(input_joints)
+        print(h)
         if h > 0:
             raise ex.OverDeterminationError(f"System has {h} constraints in excess")
         if h < 0:
@@ -171,7 +173,7 @@ class System:
     def determine_computation_order(self):
         if self._blocked:
             self._determine_computation_order(self._blocked, self._dynamic_strategy)
-        self._determine_computation_order(self._joints, self._kinematic_strategy)
+        self._determine_computation_order(self._piloted, self._kinematic_strategy)
 
     def show_input_order(self):
         # TODO: fill this
@@ -201,8 +203,6 @@ class System:
 
         for step in self._kinematic_strategy:
             step.solve_kinematics(self._solid_values, self._joint_values, self._kinematic_inputs)
-
-        # TODO: replace everything in ground's frame of reference
 
     def solve_dynamics(self, simulation_duration: u.Time.phy = 1.0) -> None:
         dynamics_strategy = self._dynamic_strategy or self._kinematic_strategy
