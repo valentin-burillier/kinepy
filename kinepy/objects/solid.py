@@ -19,6 +19,7 @@ class Solid(SystemElement):
         self._moment_of_inertia = moment_of_inertia
         self._g = g
         self._continuous_angle = None
+        self._3dof = None
 
     def get_origin(self) -> u.Length.point:
         return geo.Position.get(self._system._solid_values, self._index)
@@ -40,3 +41,18 @@ class Solid(SystemElement):
             self._continuous_angle = np.arctan2(y, x)
             geo.Orientation.make_angle_continuous(self._continuous_angle)
         return self._continuous_angle
+
+    def pilot_x(self):
+        if self._3dof is None:
+            self._3dof = self._system.add_3dof_to_ground(self)
+        self._system.pilot(self._3dof._ghost_joints[0])
+
+    def pilot_y(self):
+        if self._3dof is None:
+            self._3dof = self._system.add_3dof_to_ground(self)
+        self._system.pilot(self._3dof._ghost_joints[1])
+
+    def pilot_angle(self):
+        if self._3dof is None:
+            self._3dof = self._system.add_3dof_to_ground(self)
+        self._system.pilot(self._3dof._ghost_joints[2])
