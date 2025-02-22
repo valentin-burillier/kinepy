@@ -10,9 +10,10 @@ class Joint(SystemElement):
     s2: Solid
     index: int
 
-    def __init__(self, system, index: int, s1: Solid, s2: Solid):
+    def __init__(self, system, index: int, s1: Solid, s2: Solid, name=''):
         SystemElement.__init__(self, system, index)
         self.s1, self.s2 = s1, s2
+        self.name = name or f'{self.__class__.__name__}: {s2.name}/{s1.name}'
 
     def get_all_joints(self):
         return self,
@@ -23,8 +24,8 @@ class Revolute(Joint):
     p1: u.Length.point
     p2: u.Length.point
 
-    def __init__(self, system, index: int, s1: Solid, s2: Solid, p1=(0.0, 0.0), p2=(0.0, 0.0)):
-        Joint.__init__(self, system, index, s1, s2)
+    def __init__(self, system, index: int, s1: Solid, s2: Solid, p1=(0.0, 0.0), p2=(0.0, 0.0), name=''):
+        Joint.__init__(self, system, index, s1, s2, name)
         self._p1 = p1
         self._p2 = p2
 
@@ -43,8 +44,8 @@ class Prismatic(Joint):
     alpha2: u.Angle.phy
     distance2: u.Length.phy
 
-    def __init__(self, system, index: int, s1: Solid, s2: Solid, alpha1=0.0, distance1=0.0, alpha2=0.0, distance2=0.0):
-        Joint.__init__(self, system, index, s1, s2)
+    def __init__(self, system, index: int, s1: Solid, s2: Solid, alpha1=0.0, distance1=0.0, alpha2=0.0, distance2=0.0, name=''):
+        Joint.__init__(self, system, index, s1, s2, name)
         self._alpha1 = alpha1
         self._distance1 = distance1
         self._alpha2 = alpha2

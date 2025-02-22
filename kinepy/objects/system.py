@@ -72,8 +72,8 @@ class System:
         ghost_solid = Solid(self, f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
-            Revolute(self, len(self._joints), s1, ghost_solid, p1),
-            Prismatic(self, len(self._joints)+1, ghost_solid, s2, alpha2, 0.0, alpha2, distance2)
+            Revolute(self, len(self._joints), s1, ghost_solid, p1, name=f"<¨PinSlot: {s2.name}/{s1.name} .angle>"),
+            Prismatic(self, len(self._joints)+1, ghost_solid, s2, alpha2, 0.0, alpha2, distance2, name=f"<PinSlot: {s2.name}/{s1.name} .dist>")
         )
         self._joints.extend(ghost_joints)
         return PinSlot(self, -1, ghost_solid, ghost_joints, s1, s2)
@@ -85,8 +85,8 @@ class System:
         ghost_solid = Solid(f'GhostSolid {len(self._solids)}', len(self._solids))
         self._solids.append(ghost_solid)
         ghost_joints = (
-            Prismatic(self, len(self._joints), s1, ghost_solid, alpha1, distance1, alpha1, 0.0),
-            Prismatic(self, len(self._joints)+1, ghost_solid, s2, alpha2, 0.0, alpha2, distance2)
+            Prismatic(self, len(self._joints), s1, ghost_solid, alpha1, distance1, alpha1, 0.0, name=f"<Translation: {s2.name}/{s1.name} .x>"),
+            Prismatic(self, len(self._joints)+1, ghost_solid, s2, alpha2, 0.0, alpha2, distance2, name=f"<Translation: {s2.name}/{s1.name} .y>")
         )
         self._joints.extend(ghost_joints)
         return Translation(self, -1, ghost_solid, ghost_joints, s1, s2)
@@ -99,9 +99,9 @@ class System:
         )
         self._solids.extend(ghost_solids)
         ghost_joints = (
-            Prismatic(self, len(self._joints), self.get_ground(), ghost_solids[0]),
-            Prismatic(self, len(self._joints)+1, ghost_solids[0], ghost_solids[1], alpha1=np.pi * 0.5, alpha2=np.pi * 0.5),
-            Revolute(self, len(self._joints)+2, ghost_solids[1], s, p2=p)
+            Prismatic(self, len(self._joints), self.get_ground(), ghost_solids[0], name=f"<{s.name}.x>"),
+            Prismatic(self, len(self._joints)+1, ghost_solids[0], ghost_solids[1], alpha1=np.pi * 0.5, alpha2=np.pi * 0.5, name=f"<{s.name}.y>"),
+            Revolute(self, len(self._joints)+2, ghost_solids[1], s, p2=p, name=f"<{s.name}.alpha")
         )
         self._joints.extend(ghost_joints)
         return ThreeDOF(self, -1, ghost_solids, ghost_joints, self.get_ground(), s)
@@ -179,8 +179,8 @@ class System:
         self._determine_computation_order(self._piloted, self._kinematic_strategy)
 
     def show_input_order(self):
-        # TODO: fill this
-        pass
+        for j in (_j for joint in self._piloted for _j in joint.get_all_joints()):
+            print(j.name, j.get_input_physics().name)
 
     def solve_kinematics(self, input_values: np.ndarray) -> None:
         if not self._kinematic_strategy:
