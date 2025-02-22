@@ -174,6 +174,7 @@ class System:
         self._determine_computation_order(self._joints, self._kinematic_strategy)
 
     def show_input_order(self):
+        # TODO: fill this
         pass
 
     def solve_kinematics(self, input_values: np.ndarray) -> None:
@@ -193,7 +194,7 @@ class System:
         frame_count = self._kinematic_inputs.shape[1]
         self._solid_values.reshape((len(self._solids), 4, frame_count))
         # shapes: m, 4, n <-  1, 4, 1
-        self._solid_values[:] = ((0.,), (0., ), (1.0,), (0.,)),
+        self._solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
 
         self._joint_values.reshape((len(self._joints), frame_count))
         self._joint_values[:] = 0.0
