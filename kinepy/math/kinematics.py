@@ -97,7 +97,11 @@ class Position:
 class Geometry:
     @staticmethod
     def dot(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-        return np.sum(v1 * v2, axis=0)
+        return np.sum(v1 * v2, axis=0)[np.newaxis, ...]
+
+    @staticmethod
+    def det(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+        return v1[np.newaxis, 0, :] * v2[np.newaxis, 1, :] - v1[np.newaxis, 1, :] * v2[np.newaxis, 0, :]
 
     @staticmethod
     def inv_mag(vec: np.ndarray) -> np.ndarray:
@@ -270,3 +274,31 @@ class Graph:
         Geometry.rotate_eq(eq0, solid_values, total_rotation)
         Geometry.move_eq(eq0, solid_values, Joint.get_solid_point(solid_values, r0, True) - Joint.get_solid_point(solid_values, r0))
         Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))
+
+    @staticmethod
+    def solve_ppr(solid_values, edges, eqs, solution_index):
+        r"""
+                0
+               / \
+              P0  P1
+             /     \
+            1 - R2- 2
+        """
+        eq0, eq1, eq2 = eqs
+        p0, p1, r2 = edges
+
+        v1 = Joint.get_solid_local_point(solid_values, p0)
+        v2 = Joint.get_solid_local_point(solid_values, p1)
+
+        eq1_rotation = Orientation.sub(v1, Joint.get_solid_local_point(solid_values, p0, True))
+        Geometry.rotate_eq(eq1, solid_values, eq1_rotation * Geometry.sq_mag(eq1_rotation) ** -0.5)
+
+        eq2_rotation = Orientation.sub(v2, Joint.get_solid_local_point(solid_values, p1, True))
+        Geometry.rotate_eq(eq2, solid_values, eq2_rotation * Geometry.sq_mag(eq2_rotation) ** -0.5)
+
+        vec_1 = Joint.get_solid_point(solid_values, p0) + Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, p0, True)
+        vec_2 = Joint.get_solid_point(solid_values, p1) + Joint.get_solid_point(solid_values, r2, True) - Joint.get_solid_point(solid_values, p1, True)
+
+        target_point = vec_1 + (Geometry.dot(vec_2 - vec_1, v2) / Geometry.det(v2, v1)) * Geometry.det_z(v1)
+        Geometry.move_eq(eq1, solid_values, target_point - Joint.get_solid_point(solid_values, r2))
+        Geometry.move_eq(eq2, solid_values, target_point - Joint.get_solid_point(solid_values, r2, True))
