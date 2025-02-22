@@ -42,17 +42,21 @@ class Solid(SystemElement):
             geo.Orientation.make_angle_continuous(self._continuous_angle)
         return self._continuous_angle
 
-    def pilot_x(self):
+    @property
+    def x_joint(self):
         if self._3dof is None:
             self._3dof = self._system.add_3dof_to_ground(self)
-        self._system.pilot(self._3dof._ghost_joints[0])
+        return self._3dof._ghost_joints[0]
 
-    def pilot_y(self):
+    @property
+    def y_joint(self):
         if self._3dof is None:
             self._3dof = self._system.add_3dof_to_ground(self)
-        self._system.pilot(self._3dof._ghost_joints[1])
+        return self._3dof._ghost_joints[1]
 
-    def pilot_angle(self):
+    @property
+    def angle_joint(self):
         if self._3dof is None:
             self._3dof = self._system.add_3dof_to_ground(self)
-        self._system.pilot(self._3dof._ghost_joints[2])
+        return self._3dof._ghost_joints[2]
+
