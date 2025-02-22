@@ -93,6 +93,7 @@ class GraphStep(ResolutionStep):
 
     kinematics = (
         kin.Graph.solve_rrr,
+        kin.Graph.solve_rrp
     )
 
     def get_joints(self) -> Generator[PrimitiveJoint, None, None]:

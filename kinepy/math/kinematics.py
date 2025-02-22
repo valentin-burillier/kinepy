@@ -20,6 +20,14 @@ class Joint:
         _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
         return Position.get(solid_values, _s_index) + Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
 
+    @staticmethod
+    def get_solid_local_point(solid_values, oriented_joint, direction=False):
+        """
+        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        """
+        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
+        return Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
+
 
 class Orientation:
     @staticmethod
@@ -228,4 +236,37 @@ class Graph:
         _v1 = Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, r1)
         eq2_rotation = Orientation.sub(v2, _v1) / sq_c
         Geometry.rotate_eq(eq2, solid_values, eq2_rotation)
+        Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))
+
+    @staticmethod
+    def solve_rrp(solid_values, edges, eqs, solution_index):
+        r"""
+                0
+               / \
+              R0  R1
+             /     \
+            1 - P2- 2
+        """
+        eq0, eq1, eq2 = eqs
+        r0, r1, p2 = edges
+
+        v0 = Joint.get_solid_point(solid_values, r0) - Joint.get_solid_point(solid_values, r1)
+
+        v1 = Joint.get_solid_local_point(solid_values, p2)
+        v2 = Joint.get_solid_local_point(solid_values, p2, True)
+        eq2_rotation = Orientation.sub(v1, v2) / (Geometry.sq_mag(v1) * Geometry.sq_mag(v2)) ** 0.5
+        Geometry.rotate_eq(eq2, solid_values, eq2_rotation)
+
+        sq_v0_v1 = Geometry.sq_mag(v0) * Geometry.sq_mag(v1)
+
+        sign = (1, -1)[solution_index]
+        v1_v0_cos_angle = Geometry.dot(
+            v1,
+            Joint.get_solid_point(solid_values, p2) - Joint.get_solid_point(solid_values, r0, True) +
+            Joint.get_solid_point(solid_values, r1, True) - Joint.get_solid_point(solid_values, p2, True)
+        )
+        v1_v0_sin_angle = sign * (sq_v0_v1 - v1_v0_cos_angle * v1_v0_cos_angle) ** 0.5
+        total_rotation = Orientation.add(Orientation.sub(v1, v0), np.r_[v1_v0_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
+        Geometry.rotate_eq(eq0, solid_values, total_rotation)
+        Geometry.move_eq(eq0, solid_values, Joint.get_solid_point(solid_values, r0, True) - Joint.get_solid_point(solid_values, r0))
         Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))
