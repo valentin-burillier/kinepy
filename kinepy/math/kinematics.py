@@ -2,6 +2,25 @@ import numpy as np
 from typing import Any
 
 
+class Joint:
+    @staticmethod
+    def get_point(oriented_joint, direction=False):
+        """
+        Get the point according to the edge it represents; direction = False point is source; True point is destination
+
+        shape (2, 1)
+        """
+        return getattr(oriented_joint[0], ('_p2', '_p1')[oriented_joint[1] ^ direction])[:, np.newaxis]
+
+    @staticmethod
+    def get_solid_point(solid_values, oriented_joint, direction=False):
+        """
+        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        """
+        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
+        return Position.get(solid_values, _s_index) + Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
+
+
 class Orientation:
     @staticmethod
     def index(solid: Any):
@@ -156,3 +175,57 @@ class JointInput:
         Geometry.move_eq(eq2, solid_values, -s2_point - Position.get(solid_values, s2))
         Geometry.rotate_eq(eq2, solid_values, total_rotation)
         Geometry.move_eq(eq2, solid_values, Position.get(solid_values, s1) + s1_point + Geometry.det_z(s1_point) * Geometry.inv_mag(p1) * value[np.newaxis, ...])
+
+
+class System:
+    @staticmethod
+    def set_up(solid_values, joint_values, n_solid, n_joint, frame_count):
+        solid_values.reshape((n_solid, 4, frame_count))
+        # shapes: m, 4, n <-  1, 4, 1
+        solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
+
+        joint_values.reshape((n_joint, frame_count))
+        joint_values[:] = 0.0
+
+    @staticmethod
+    def clean_up(solid_values):
+        Geometry.move_eq(tuple(range(solid_values.shape[1])), solid_values, -Position.get(solid_values, 0))
+        Geometry.rotate_eq(tuple(range(solid_values.shape[1])), solid_values, Orientation.get(solid_values, 0) * np.array([[1], [-1]]))
+
+
+
+class Graph:
+    @staticmethod
+    def solve_rrr(solid_values, edges, eqs, solution_index):
+        r"""
+                0
+               / \
+              R0  R1
+             /     \
+            1 - R2- 2
+        """
+        eq0, eq1, eq2 = eqs
+        r0, r1, r2 = edges
+
+        # vectors in each eq
+        v0 = Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r0)
+        v1 = Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, r0, True)
+        v2 = Joint.get_solid_point(solid_values, r2, True) - Joint.get_solid_point(solid_values, r1, True)
+
+        sq_a = Geometry.sq_mag(v0)
+        sq_b = Geometry.sq_mag(v1)
+        sq_c = Geometry.sq_mag(v2)
+        inv_ab = (sq_a * sq_b) ** -0.5
+
+        sign = (1, -1)[solution_index]
+        cos_angle = 0.5 * (sq_a + sq_b - sq_c) * inv_ab
+        sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
+
+        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_[cos_angle[np.newaxis, :], sin_angle[np.newaxis, :]])
+        Geometry.rotate_eq(eq1, solid_values, total_rotation)
+        Geometry.move_eq(eq1, solid_values, Joint.get_solid_point(solid_values, r0) - Joint.get_solid_point(solid_values, r0, True))
+
+        _v1 = Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, r1)
+        eq2_rotation = Orientation.sub(v2, _v1) / sq_c
+        Geometry.rotate_eq(eq2, solid_values, eq2_rotation)
+        Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))

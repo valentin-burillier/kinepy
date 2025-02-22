@@ -5,7 +5,7 @@ import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.units as u
 import numpy as np
-from kinepy.math.kinematics import Geometry
+import  kinepy.math.kinematics as kin
 from collections.abc import Iterable
 
 
@@ -194,15 +194,13 @@ class System:
             self._kinematic_inputs[index, :] *= u.UnitSystem._get_unit_value(joint.get_input_physics())
 
         frame_count = self._kinematic_inputs.shape[1]
-        self._solid_values.reshape((len(self._solids), 4, frame_count))
-        # shapes: m, 4, n <-  1, 4, 1
-        self._solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
-
-        self._joint_values.reshape((len(self._joints), frame_count))
-        self._joint_values[:] = 0.0
+        kin.System.set_up(self._solid_values, self._joint_values, len(self._solids), len(self._joints), frame_count)
 
         for step in self._kinematic_strategy:
             step.solve_kinematics(self._solid_values, self._joint_values, self._kinematic_inputs)
+
+        kin.System.clean_up(self._solid_values)
+
 
     def solve_dynamics(self, simulation_duration: u.Time.phy = 1.0) -> None:
         dynamics_strategy = self._dynamic_strategy or self._kinematic_strategy

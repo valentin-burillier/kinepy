@@ -91,8 +91,15 @@ class GraphStep(ResolutionStep):
         self._edges = edges
         self._eqs = eqs
 
+    kinematics = (
+        kin.Graph.solve_rrr,
+    )
+
     def get_joints(self) -> Generator[PrimitiveJoint, None, None]:
         return (j for j, _ in self._edges)
+
+    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
+        self.kinematics[self._graph_index](solid_values, self._edges, self._eqs, self.solution_index)
 
 
 class JointStep(ResolutionStep):

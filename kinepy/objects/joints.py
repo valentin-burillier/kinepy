@@ -49,8 +49,8 @@ class Prismatic(Joint):
         self._distance1 = distance1
         self._alpha2 = alpha2
         self._distance2 = distance2
-        self._p1 = 0., 0.
-        self._p2 = 0., 0.
+        self._p1 = np.array((0., 0.))
+        self._p2 = np.array((0., 0.))
 
     @staticmethod
     def get_input_physics() -> u._PhysicsEnum:
