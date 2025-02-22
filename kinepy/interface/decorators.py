@@ -30,13 +30,13 @@ def joint_checker(f):
         if isinstance(j1, str):
             j1 = get_object(self.named_joints[j1])
         if isinstance(j1, int):
-            j1 = self._object.joints[j1]
+            j1 = self._object.kp_joints[j1]
         if hasattr(j1, '_object'):
             j1 = get_object(j1)
         if isinstance(j1, str):
             j2 = get_object(self.named_joints[j2])
         if isinstance(j1, int):
-            j2 = self._object.joints[j2]
+            j2 = self._object.kp_joints[j2]
         if hasattr(j2, '_object'):
             j2 = get_object(j2)
         return f(self, j1, j2, *args, **kwargs)
@@ -62,7 +62,7 @@ def multiple_joints(f):
             if isinstance(arg, str):
                 arg = get_object(self.named_joints[arg])
             if isinstance(arg, int):
-                arg = self._object.joints[arg]
+                arg = self._object.kp_joints[arg]
             if hasattr(arg, '_object'):
                 arg = get_object(arg)
             n_args.append(arg)
@@ -178,7 +178,7 @@ def physics_input_function_variable(*phy_, output=units.VARIABLE_UNIT):
 
 def add_joint(self, cls, s1, s2, *args):
     joint = cls(s1, s2, *args, f'{self._object.sols.index(s2)}/{self._object.sols.index(s1)}')
-    self._object.joints.append(get_object(joint))
+    self._object.kp_joints.append(get_object(joint))
     self._object.interactions.append(joint.interaction)
     self.named_joints[repr(joint)] = joint
     return joint

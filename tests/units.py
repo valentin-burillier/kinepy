@@ -6,7 +6,7 @@ import kinepy.units as u
 class UnitsTests(unittest.TestCase):
     def test_simple_arg(self):
 
-        u.UnitSystem.use(u.Length.MILLIMETER)
+        u.UnitSystem.use(u.Length.MILLIMETRE)
 
         @u.UnitSystem.function
         def test_f(x: u.Length.phy) -> u.scalar_type:
@@ -25,7 +25,7 @@ class UnitsTests(unittest.TestCase):
 
     def test_return_value(self):
 
-        u.UnitSystem.use(u.Length.MILLIMETER)
+        u.UnitSystem.use(u.Length.MILLIMETRE)
 
         @u.UnitSystem.function
         def test_f(x: u.scalar_type) -> u.Length.phy:
@@ -35,7 +35,7 @@ class UnitsTests(unittest.TestCase):
 
     def test_wild_args(self):
 
-        u.UnitSystem.use(u.Length.MILLIMETER)
+        u.UnitSystem.use(u.Length.MILLIMETRE)
 
         @u.UnitSystem.function
         def test_f(*values: u.Length.phy) -> tuple[u.scalar_type, ...]:
@@ -45,7 +45,7 @@ class UnitsTests(unittest.TestCase):
 
     def test_every_type_of_arg(self):
 
-        u.UnitSystem.use(u.Length.MILLIMETER)
+        u.UnitSystem.use(u.Length.MILLIMETRE)
         u.UnitSystem.use(u.Angle.DEGREE)
         u.UnitSystem.use(u.Mass.GRAM)
 

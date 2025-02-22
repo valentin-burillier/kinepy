@@ -392,7 +392,6 @@ class UnitSystem:
 
 UnitSystem.use(kw_units=DEFAULT_UNITS)
 
-print(UnitSystem.show())
 
 if __name__ == '__main__':
     """

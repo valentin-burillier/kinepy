@@ -52,7 +52,7 @@ def display_mechanical_action(key):
     """Displays the given mechanical action represented by the key returned by Solid.add_torque/Solid.add_force"""
     solid_external, index, _type, *_ = key
     force, torque, point = solid_external.externals[index]
-    _GUI_VARIABLES[f'{_type}s'].append((_get_obj(solid_external.solid), point, force if _type == 'force' else torque))
+    _GUI_VARIABLES[f'{_type}s'].append((_get_obj(solid_external.kp_solid), point, force if _type == 'force' else torque))
 
 
 def grid(value=True):

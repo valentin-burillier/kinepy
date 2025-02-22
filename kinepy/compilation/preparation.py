@@ -4,7 +4,7 @@ def make_sets(system, joint_set):
     ghosted = []
     ghost_cnt = 0
 
-    for joint in system.joints:
+    for joint in system.kp_joints:
         if joint in joint_set or joint.dof > 2:
             continue
         if joint.dof == 1:
@@ -14,7 +14,7 @@ def make_sets(system, joint_set):
         joint.ghost_j1.rep = joint.rep
         joint_dict[joint.rep] = joint.ghost_j1
 
-        joint.ghost_j2.rep = len(system.joints) + ghost_cnt
+        joint.ghost_j2.rep = len(system.kp_joints) + ghost_cnt
         joint_dict[joint.ghost_j2.rep] = joint.ghost_j2
         ghost_cnt += 1
 

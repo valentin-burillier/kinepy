@@ -45,7 +45,7 @@ set_target_properties(unit_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BI
 
 
 add_executable(test_unique
-        kinepy_src/test.c
+        kinepy_src/test.cpp
 )
 target_compile_options(
         C_Kinepy PUBLIC
@@ -57,8 +57,8 @@ target_compile_options(
 #        C_Kinepy
 #)
 
-
 target_compile_options(
         test_unique PUBLIC
         -I${CMAKE_CURRENT_SOURCE_DIR}/kinepy_src
+        -O3
 )

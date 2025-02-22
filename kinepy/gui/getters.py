@@ -32,7 +32,7 @@ def gather_points(system, points, speeds, forces):
     for s, point, *_ in forces + points:
         points_.append(s.origin + rvec(s.angle, point))
 
-    for joint in system.joints:
+    for joint in system.kp_joints:
         if joint.id_ not in get_points:
             continue
         p1, p2 = get_points[joint.id_](joint)

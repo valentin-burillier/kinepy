@@ -1,4 +1,7 @@
 import unittest
+import kinepy.objects.joints as kp_joints
+import kinepy.objects.solid as kp_solid
+import kinepy.exceptions as kp_exs
 import kinepy.strategy.algorithm as algo
 import kinepy.strategy.graph_data as graph_data
 
@@ -141,6 +144,72 @@ class GraphOperationsTests(unittest.TestCase):
         merged_graph, merged_eqs, merged_mapping = algo.merge(example_graph_merge1, example_eqs_merge1, (1, 2, 0))
         self.assertEqual(merged_mapping, (0,) * 7)
         self.assertEqual(merged_graph, [[JGN(algo.NodeType.EMPTY)]])
+
+    def test_bad_configurations(self):
+        strategy = []
+        s0, s1, s2 = (
+            kp_solid.Solid(None, "0", 0),
+            kp_solid.Solid(None, "1", 1),
+            kp_solid.Solid(None, "2", 2),
+        )
+        joints = [
+            kp_joints.Revolute(None, 0, s0, s1),
+            kp_joints.Revolute(None, 1, s0, s2),
+            kp_joints.Revolute(None, 2, s1, s2)
+        ]
+
+        # 1 solid too many
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 4, joints, [], [], strategy)
+        # input on solved joint
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 3, joints, [], [joints[0]], strategy)
+        # not enough constraints after inputs
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 3, joints[:2], [], joints[:1], strategy)
+
+    def test_std_graphs(self) -> None:
+        strategy = []
+        s0, s1, s2 = (
+            kp_solid.Solid(None, "0", 0),
+            kp_solid.Solid(None, "1", 1),
+            kp_solid.Solid(None, "2", 2),
+        )
+        joints_rrr = [
+            kp_joints.Revolute(None, 0, s0, s1),
+            kp_joints.Revolute(None, 1, s0, s2),
+            kp_joints.Revolute(None, 2, s1, s2)
+        ]
+
+        algo.determine_computation_order(3, joints_rrr, [], [], strategy)
+        self.assertEqual(len(strategy), 1)
+        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+
+        step: algo.GraphStep = strategy[0]
+        self.assertEqual(step._graph_index, graph_data.Graphs.gRRR.value)
+
+        joints_rrp = [
+            kp_joints.Revolute(None, 0, s0, s1),
+            kp_joints.Revolute(None, 1, s0, s2),
+            kp_joints.Prismatic(None, 2, s1, s2)
+        ]
+
+        algo.determine_computation_order(3, joints_rrp, [], [], strategy)
+        self.assertEqual(len(strategy), 1)
+        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+
+        step: algo.GraphStep = strategy[0]
+        self.assertEqual(step._graph_index, graph_data.Graphs.gRRP.value)
+
+        joints_ppr = [
+            kp_joints.Prismatic(None, 0, s0, s1),
+            kp_joints.Prismatic(None, 1, s0, s2),
+            kp_joints.Revolute(None, 2, s1, s2)
+        ]
+
+        algo.determine_computation_order(3, joints_ppr, [], [], strategy)
+        self.assertEqual(len(strategy), 1)
+        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+
+        step: algo.GraphStep = strategy[0]
+        self.assertEqual(step._graph_index, graph_data.Graphs.gPPR.value)
 
 
 if __name__ == '__main__':

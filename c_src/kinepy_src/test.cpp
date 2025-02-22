@@ -1,3 +1,4 @@
+/*
 //#include "kinematics/kinematics.h"
 //#include "interface/interface.h"
 //#include "graph/graph_interface.h"
@@ -67,14 +68,17 @@
 //    kp_free_result_f32(&results);
 //    kp_free_system_f32(&system);
 //}
+*/
 
-
-#include "stdio.h"
-#include "stdlib.h"
-#include "stdint.h"
-#include "time.h"
+#include <tuple>
+#include <iostream>
 
 int main(int argc, char ** argv) {
-    for (int i = 0; i < 1000000000; i++) {
-    }
+    std::tuple<int, char, char> a{};
+    std::tuple<int, std::tuple<char, char>> b{};
+
+    auto c = std::get<1>(a);
+    std::cout << c;
+    c = std::get<0>(std::get<1>(b));
+    std::cout << c;
 }

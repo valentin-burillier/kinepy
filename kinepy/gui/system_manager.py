@@ -20,7 +20,7 @@ class SystemManager:
         for relation in system.relations:
             self.get_relation_data(relation)
 
-        for joint in system.joints:
+        for joint in system.kp_joints:
             self.get_joint_data(joint)
 
         self.traces = []

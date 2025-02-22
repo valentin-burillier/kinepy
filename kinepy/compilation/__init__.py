@@ -58,7 +58,7 @@ class Compiler:
         self.joint_graph, self.relation_graph = [], []
 
     def _hyperstatism(self, joints, configuration):
-        static_variables = sum(3 - j.dof for j in self.system.joints) + len(self.system.relations)
+        static_variables = sum(3 - j.dof for j in self.system.kp_joints) + len(self.system.relations)
         h = static_variables - 3 * len(self.system.sols) + 3 + sum(j.dof for j in joints)
         if h > 0:
             raise CompilationError(HYPERSTATIC_MESSAGE.format(configuration, h))
@@ -69,7 +69,7 @@ class Compiler:
         """gives its rep to each main object (not ghosts), returns rep of piloted and blocked joints"""
         for index, sol in enumerate(self.system.sols):
             sol.rep = index
-        for index, joint in enumerate(self.system.joints):
+        for index, joint in enumerate(self.system.kp_joints):
             joint.rep = index
         return tuple(j.rep for j in self.system.piloted), tuple(j.rep for j in self.system.blocked)
 
@@ -77,7 +77,7 @@ class Compiler:
         solids_with_ghosts = list(self.system.sols)
         joint_dict, uses_ghosts = {}, []
 
-        for joint in self.system.joints:
+        for joint in self.system.kp_joints:
             # piloted/blocked joints don't use ghosts and are not used to find graphs
             if joint in piloted_or_blocked or joint.dof > 2:
                 continue
@@ -87,7 +87,7 @@ class Compiler:
             joint.ghost_j1.rep = joint.rep
             joint_dict[joint.rep] = joint.ghost_j1
 
-            joint.ghost_j2.rep = len(self.system.joints) + len(uses_ghosts)
+            joint.ghost_j2.rep = len(self.system.kp_joints) + len(uses_ghosts)
             joint_dict[joint.ghost_j2.rep] = joint.ghost_j2
 
             joint.ghost_sol.rep = len(solids_with_ghosts)
