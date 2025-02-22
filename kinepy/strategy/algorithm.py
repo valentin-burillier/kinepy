@@ -366,10 +366,10 @@ def register_relation_step(relation_node: RelationGraphNode, eqs: Eq, solid_to_e
     return merge(joint_graph, eqs, (solid_to_eq[relation_node.get_target_joint().s1._index], solid_to_eq[relation_node.get_target_joint().s2._index]))
 
 
-def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
+def determine_computation_order(solid_count: int, joints: list[PrimitiveJoint], relations: list[Relation], joint_states: list[int], input_joints: list[Joint], strategy_output: list[ResolutionStep]) -> None:
     strategy_output.clear()
 
-    joint_states: list[int] = [0] * len(joints)
+    joint_states[:] = [0] * len(joints)
     joint_queue: list[PrimitiveJoint] = []
     gear_queue: list[RelationGraphNode] = []
 

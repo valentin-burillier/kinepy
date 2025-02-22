@@ -13,7 +13,10 @@ from collections.abc import Iterable
 class System:
     def __init__(self):
         self._solids: list[Solid] = [Solid(self, 'Ground', 0)]
+        self._solid_states = []
         self._joints: list[PrimitiveJoint] = []
+        self._final_joint_states: list[int] = []
+        self._joint_states: list[int] = []
         self._relations: list[Relation] = []
         self._blocked = []
         self._piloted = []
@@ -168,7 +171,7 @@ class System:
             raise ex.OverDeterminationError(f"System has {h} constraints in excess")
         if h < 0:
             raise ex.UnderDeterminationError(f"System is lacking {-h} constraints")
-        strategy.determine_computation_order(len(self._solids), self._joints, self._relations, input_joints, strategy_output)
+        strategy.determine_computation_order(len(self._solids), self._joints, self._relations, self._final_joint_states, input_joints, strategy_output)
 
     def determine_computation_order(self):
         if self._blocked:
@@ -192,6 +195,8 @@ class System:
         for index, joint in enumerate(j for joint in self._joints for j in joint.get_all_joints()):
             joint: PrimitiveJoint
             self._kinematic_inputs[index, :] *= u.UnitSystem._get_unit_value(joint.get_input_physics())
+        self._joint_states[:] = self._final_joint_states
+        self._solid_states[:] = [False] * len(self._solids)
 
         frame_count = self._kinematic_inputs.shape[1]
         kin.System.set_up(self._solid_values, self._joint_values, len(self._solids), len(self._joints), frame_count)

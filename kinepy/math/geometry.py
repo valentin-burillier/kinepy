@@ -1,68 +1,134 @@
 import numpy as np
-
-ZERO_POINT = np.zeros((2,))
-ZERO_21 = np.zeros((2, 1))
-ZERO_F = (lambda: 0)
-ZERO_ARRAY_F = (lambda: ZERO_21)
+from typing import Any
 
 
-def rot(theta):  # rotation matrix
-    return np.array([[(c := np.cos(theta)), (s := -np.sin(theta))], [-s, c]])
+class Joint:
+    @staticmethod
+    def get_point(oriented_joint, direction=False):
+        """
+        Get the point according to the edge it represents; direction = False point is source; True point is destination
+
+        shape (2, 1)
+        """
+        return getattr(oriented_joint[0], ('_p2', '_p1')[oriented_joint[1] ^ direction])[:, np.newaxis]
+
+    @staticmethod
+    def get_solid_point(solid_values, oriented_joint, direction=False):
+        """
+        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        """
+        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
+        return Position.get(solid_values, _s_index) + Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
+
+    @staticmethod
+    def get_solid_local_point(solid_values, oriented_joint, direction=False):
+        """
+        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        """
+        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
+        return Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
 
 
-def unit(theta):  # (n,) -> (2, n)
-    return np.array([np.cos(theta), np.sin(theta)])
+class Orientation:
+    @staticmethod
+    def index(solid: Any):
+        return solid, slice(2, 4), Ellipsis
+
+    @staticmethod
+    def get(solid_values: np.ndarray, solid: Any) -> np.ndarray:
+        return solid_values[Orientation.index(solid)]
+
+    @staticmethod
+    def add(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        complex product
+        Shapes (2, n) * (2, n) -> (2, n)
+        """
+        out = np.zeros(x.shape, dtype=x.dtype)
+        out[0, ...] = x[0, ...] * y[0, ...] - x[1, ...] * y[1, ...]
+        out[1, ...] = x[0, ...] * y[1, ...] + x[1, ...] * y[0, ...]
+        return out
+
+    @staticmethod
+    def add_m(xm: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        complex product
+        Shapes (m, 2, n) * (2, n) -> (m, 2, n)
+        """
+        out = np.zeros(xm.shape, dtype=xm.dtype)
+        out[:, 0, ...] = xm[:, 0, ...] * y[np.newaxis, 0, ...] - xm[:, 1, ...] * y[np.newaxis, 1, ...]
+        out[:, 1, ...] = xm[:, 0, ...] * y[np.newaxis, 1, ...] + xm[:, 1, ...] * y[np.newaxis, 0, ...]
+        return out
+
+    @staticmethod
+    def sub(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        out = np.zeros(x.shape, dtype=x.dtype)
+        out[0, ...] = x[0, ...] * y[0, ...] + x[1, ...] * y[1, ...]
+        out[1, ...] = x[1, ...] * y[0, ...] - x[0, ...] * y[1, ...]
+        return out
+
+    @staticmethod
+    def from_angle(angle: np.ndarray) -> np.ndarray:
+        out = np.zeros((2, *angle.shape), dtype=angle.dtype)
+        out[0, ...] = np.cos(angle)
+        out[1, ...] = np.sin(angle)
+        return out
+
+    @staticmethod
+    def make_angle_continuous(angle):
+        indices = ~np.isnan(angle)
+        angle[indices & (indices.cumsum() > 1)] += ((np.diff(angle[indices]) + np.pi) // (2 * np.pi)).cumsum() * (2 * np.pi)
 
 
-def z_cross(vec):  # (2, ...) -> (2, ...), z ^ v
-    return np.array((-vec[1], vec[0]))
+class Position:
+    @staticmethod
+    def index(solid: Any):
+        return solid, slice(0, 2), Ellipsis
+
+    @staticmethod
+    def get(solid_values: np.ndarray, solid: Any) -> np.ndarray:
+        return solid_values[Position.index(solid)]
+
+    @staticmethod
+    def local_point(solid_values: np.ndarray, solid: int, point: np.ndarray) -> np.ndarray:
+        ori = Orientation.get(solid_values, solid)
+        return Orientation.add(ori, point)
+
+    @staticmethod
+    def point(solid_values: np.ndarray, solid: int, point: np.ndarray) -> np.ndarray:
+        return Position.local_point(solid_values, solid, point).__iadd__(Position.get(solid_values, solid))
 
 
-def det(v1, v2):  # (2, n) x (2, n) -> (n,)
-    return v1[0] * v2[1] - v2[0] * v1[1]
+class Geometry:
+    @staticmethod
+    def dot(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+        return np.sum(v1 * v2, axis=0)[np.newaxis, ...]
 
+    @staticmethod
+    def det(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+        return v1[np.newaxis, 0, :] * v2[np.newaxis, 1, :] - v1[np.newaxis, 1, :] * v2[np.newaxis, 0, :]
 
-def dot(v1, v2):
-    return np.sum(v1 * v2, axis=0)
+    @staticmethod
+    def inv_mag(vec: np.ndarray) -> np.ndarray:
+        return Geometry.sq_mag(vec) ** -0.5
 
+    @staticmethod
+    def sq_mag(vec: np.ndarray) -> np.ndarray:
+        return Geometry.dot(vec, vec)
 
-def sq_mag(vec):  # (2, n) -> (n,)
-    return np.sum(vec * vec, axis=0)
+    @staticmethod
+    def move_eq(eq: tuple[int, ...], solid_values: np.ndarray, vec: np.ndarray):
+        # shape: (m, 2, n) + (1, 2, n)
+        Position.get(solid_values, eq).__iadd__(vec[np.newaxis, ...])
 
+    @staticmethod
+    def rotate_eq(eq: tuple[int, ...], solid_values: np.ndarray, rot: np.ndarray):
+        solid_values[Position.index(eq)] = Orientation.add_m(Position.get(solid_values, eq), rot)
+        solid_values[Orientation.index(eq)] = Orientation.add_m(Orientation.get(solid_values, eq), rot)
 
-def angle2(vec, im):
-    return np.arccos(np.maximum(np.minimum(vec[0] * im, 1.), -1)) * (2 * (vec[1] > 0) - 1)
-
-
-def rvec(angle_, vec):
-    return np.einsum('ikl,k->il', rot(angle_), vec)
-
-
-def mat_mul_r(mat, vec):  # (2, 2, n) x (2, n) -> (2, n), Replace array
-    np.einsum('ikl,kl->il', mat, vec, out=vec)
-
-
-def get_angle(pri, index):
-    return (pri.s1, pri.s2)[index].angle + (pri.a1, pri.a2)[index]
-
-
-def get_zero(pri, index, u):
-    s = (pri.s1, pri.s2)[index]
-    return s.origin + (pri.d1, pri.d2)[index] * z_cross(u)
-
-
-def get_point(rev, index):
-    s = (rev.s1, rev.s2)[index]
-    return s.origin + rvec(s.angle, (rev.p1, rev.p2)[index])
-
-
-def rotate_eq(eq, theta):
-    r = rot(theta)
-    for s in eq:
-        s.angle += theta
-        mat_mul_r(r, s.origin)
-
-
-def move_eq(eq, vec):
-    for s in eq:
-        s.origin += vec
+    @staticmethod
+    def det_z(vec: np.ndarray) -> np.ndarray:
+        out = np.zeros(vec.shape, vec.dtype)
+        out[0, ...] = vec[1, ...]
+        out[1, ...] = -vec[0, ...]
+        return out
