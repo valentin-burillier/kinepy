@@ -126,7 +126,7 @@ class JointStep(ResolutionStep):
         s1 = self.joint.s1._index
         s2 = self.joint.s2._index
 
-        self.function(solid_values, value, s1, s2, self.joint._p1, self.joint._p2, self.eq1, self.eq2)
+        self.function(solid_values, value, s1, s2, np.array(self.joint._p1), np.array(self.joint._p2), self.eq1, self.eq2)
 
 
 class RelationStep(ResolutionStep):

@@ -63,18 +63,17 @@ class JointInput:
 class System:
     @staticmethod
     def set_up(solid_values, joint_values, n_solid, n_joint, frame_count):
-        solid_values.reshape((n_solid, 4, frame_count))
+        solid_values.resize((n_solid, 4, frame_count), refcheck=False)
         # shapes: m, 4, n <-  1, 4, 1
         solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
 
-        joint_values.reshape((n_joint, frame_count))
+        joint_values.resize((n_joint, frame_count), refcheck=False)
         joint_values[:] = 0.0
 
     @staticmethod
     def clean_up(solid_values):
-        Geometry.move_eq(tuple(range(solid_values.shape[1])), solid_values, -Position.get(solid_values, 0))
-        Geometry.rotate_eq(tuple(range(solid_values.shape[1])), solid_values, Orientation.get(solid_values, 0) * np.array([[1], [-1]]))
-
+        Geometry.move_eq(tuple(range(solid_values.shape[0])), solid_values, -Position.get(solid_values, 0))
+        Geometry.rotate_eq(tuple(range(solid_values.shape[0])), solid_values, Orientation.get(solid_values, 0) * np.array([[1], [-1]]))
 
 
 class Graph:
