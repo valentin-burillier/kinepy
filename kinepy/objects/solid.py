@@ -27,14 +27,7 @@ class Solid(SystemElement):
     def get_point(self, point: u.Length.point) -> u.Length.point:
         geo.Position.get(self._system._solid_values, self._index) + geo.Orientation.add(geo.Orientation.get(self._system._solid_values, self._index), point[:, np.newaxis])
 
-    def get_orientation(self) -> u.Dimensionless.phy:
-        return geo.Orientation.get(self._system._solid_values, self._index)
-
     def get_angle(self) -> u.Angle.phy:
-        x, y = geo.Orientation.get(self._system._solid_values, self._index)
-        return np.arctan2(y, x)
-
-    def get_continuous_angle(self) -> u.Angle.phy:
         if not self._system._solid_states[self._index]:
             self._system._solid_states[self._index] = True
             x, y = geo.Orientation.get(self._system._solid_values, self._index)
