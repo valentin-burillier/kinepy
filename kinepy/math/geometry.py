@@ -77,7 +77,7 @@ class Orientation:
     @staticmethod
     def make_angle_continuous(angle):
         indices = ~np.isnan(angle)
-        angle[indices & (indices.cumsum() > 1)] += ((np.diff(angle[indices]) + np.pi) // (2 * np.pi)).cumsum() * (2 * np.pi)
+        angle[indices & (indices.cumsum() > 1)] -= ((np.diff(angle[indices]) + np.pi) // (2 * np.pi)).cumsum() * (2 * np.pi)
 
 
 class Position:
