@@ -151,3 +151,10 @@ class Geometry:
         out[0, ...] = vec[1, ...]
         out[1, ...] = -vec[0, ...]
         return out
+
+    @staticmethod
+    def z_det(vec: np.ndarray) -> np.ndarray:
+        out = np.zeros(vec.shape, vec.dtype)
+        out[0, ...] = -vec[1, ...]
+        out[1, ...] = vec[0, ...]
+        return out

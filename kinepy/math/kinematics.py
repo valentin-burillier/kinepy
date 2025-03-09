@@ -137,13 +137,13 @@ class Graph:
         sq_v0_v1 = Geometry.sq_mag(v0)  # * Geometry.sq_mag(v1) = 1
 
         sign = (1, -1)[solution_index]
-        v0_v1_cos_angle = Geometry.dot(
+        v0_v1_cos_angle = Geometry.det(
             v1,
             Joint.get_solid_position(config, p2) - Joint.get_solid_point(config, r0, True) +
             Joint.get_solid_point(config, r1, True) - Joint.get_solid_position(config, p2, True)
         ) + (_distance21 - _distance22)
         v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
-        total_rotation = Orientation.add(Orientation.sub(v1, v0), np.r_[v0_v1_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
+        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_[v0_v1_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
 
         Geometry.rotate_eq(eq0, config, total_rotation)
         Geometry.move_eq(eq0, config, Joint.get_solid_point(config, r0, True) - Joint.get_solid_point(config, r0))
@@ -175,9 +175,9 @@ class Graph:
         eq2_rotation = Orientation.sub(v2, Orientation.add(Joint.get_solid_orientation(config, p1, True), Orientation.from_angle(_angle21)))
         Geometry.rotate_eq(eq2, config, eq2_rotation)
 
-        vec_1 = Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * v1 + Joint.get_solid_point(config, r2) - Joint.get_solid_position(config, p0, True)
-        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * v2 + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
+        vec_1 = Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * Geometry.z_det(v1) + Joint.get_solid_point(config, r2) - Joint.get_solid_position(config, p0, True)
+        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * Geometry.z_det(v1) + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
 
-        target_point = vec_1 + (Geometry.dot(vec_2 - vec_1, v2) / Geometry.det(v2, v1)) * Geometry.det_z(v1)
+        target_point = vec_1 + (Geometry.det(vec_2 - vec_1, v2) / Geometry.det(v1, v2)) * v1
         Geometry.move_eq(eq1, config, target_point - Joint.get_solid_point(config, r2))
         Geometry.move_eq(eq2, config, target_point - Joint.get_solid_point(config, r2, True))
