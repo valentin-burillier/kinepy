@@ -1,7 +1,8 @@
 from kinepy.objects.config import *
 import kinepy.units as u
 from kinepy.strategy.graph_data import JointType
-
+import kinepy.math.geometry as geo
+import kinepy.strategy.types as strategy
 
 @u.UnitSystem.class_
 class Solid(ConfigView):
@@ -47,8 +48,21 @@ class Solid(ConfigView):
     def angle(self) -> "J3DOF.Angle":
         return self._get_3dof().angle
 
+    def get_origin(self) -> u.Length.point:
+        return geo.Position.get(self._config, self._index)
+
+    def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
+        return geo.Position.point(self._config, self._index, p)
+
+    def get_angle(self):
+        _x, _y = geo.Orientation.get(self._config, self._index)
+        _angle = np.atan2(_y, _x)
+        geo.Orientation.make_angle_continuous(_angle)
+        return _angle
+
 
 class PrimitiveJoint(ConfigView):
+    _type = JointType.EMPTY
     _s1_slice = slice(0, 2)
     _s2_slice = slice(2, 4)
 
@@ -70,12 +84,16 @@ class PrimitiveJoint(ConfigView):
         self._config.results.joint_values[self._index, :] = value
 
     def get_value(self):
+        if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
+            strategy.JointValueComputationStep(self._index, self._type, self._config.joint_states[self._index], self.s1._index, self.s2._index).solve_kinematics(self._config)
+            self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
         return self._config.results.joint_values[self._index, :]
 
 
 @u.UnitSystem.class_
 class Revolute(PrimitiveJoint):
     __slots__ = ()
+    _type = JointType.REVOLUTE
 
     p1: u.Length.point = ConfigView.physics_view(Config.JOINT, PrimitiveJoint._s1_slice, u.Length.point, scalar=False)
     p2: u.Length.point = ConfigView.physics_view(Config.JOINT, PrimitiveJoint._s2_slice, u.Length.point, scalar=False)
@@ -91,6 +109,7 @@ class Revolute(PrimitiveJoint):
 class Prismatic(PrimitiveJoint):
     _a1, _d1, _a2, _d2 = range(4)
     __slots__ = ()
+    _type = JointType.PRISMATIC
 
     distance1: u.Length.phy = ConfigView.physics_view(Config.JOINT, _d1, u.Length.phy)
     distance2: u.Length.phy = ConfigView.physics_view(Config.JOINT, _d2, u.Length.phy)

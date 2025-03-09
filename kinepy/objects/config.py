@@ -28,6 +28,9 @@ class Config:
         # r, v0, pressure_angle
         self.relation_physics = np.zeros((0, 3), float)
 
+        self.joint_states = []
+        self.final_joint_states = []
+
         self.results = Result()
 
     def allocate_results(self, frame_count):

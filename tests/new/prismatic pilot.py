@@ -6,24 +6,26 @@ import matplotlib.pyplot as plt
 
 sys = kp.System()
 
-s0 = sys.get_ground()
+s0 = sys.ground
 s1 = sys.add_solid()
 
 p1 = sys.add_prismatic(s0, s1)
 
-sys.pilot(p1)
+p1.pilot()
 
 sys.determine_computation_order()
-
+n = 101
+sys.set_frame_count(n)
 #%%
 
-dist = np.linspace(0, 4, 101).reshape(1, 101)
+p1.set_input(np.linspace(0, 4, n))
 
-sys.solve_kinematics(dist)
+sys.solve_kinematics()
 
 #%%
 
 plt.plot(s1.get_origin()[0])
+plt.show()
 
 """
 D:\KINEPY\new 22.02.2025\kinepy-dev\kinepy-dev\kinepy\math\geometry.py:113: RuntimeWarning: divide by zero encountered in power

@@ -21,21 +21,18 @@ class JointValueComputation:
 
     @staticmethod
     def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
-        pass
-        # Geometry.det()
-        # normal = Position.local_point(solid_values, s1, p1)
-        # s1_point = normal + Position.get(solid_values, s1)
-        # s2_point = Position.point(solid_values, s2, p2)
-#
-        # return Geometry.dot(normal, s2_point - s1_point) * Geometry.inv_mag(normal)
+        angle = config.joint_physics[joint, :1]
+        director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
+
+        config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))
 
     @staticmethod
-    def do_not_compute_continuity(value: np.ndarray):
+    def do_not_compute_continuity(config: Config, joint: int):
         pass
 
     @staticmethod
-    def compute_revolute_continuity(value: np.ndarray):
-        Orientation.make_angle_continuous(value)
+    def compute_revolute_continuity(config: Config, joint: int):
+        Orientation.make_angle_continuous(config.results.joint_values[joint])
 
 
 class JointInput:
@@ -70,18 +67,16 @@ class JointInput:
 
 class System:
     @staticmethod
-    def set_up(solid_values, joint_values, n_solid, n_joint, frame_count):
-        solid_values.resize((n_solid, 4, frame_count), refcheck=False)
+    def set_up(config: Config):
         # shapes: m, 4, n <-  1, 4, 1
-        solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
-
-        joint_values.resize((n_joint, frame_count), refcheck=False)
-        joint_values[:] = 0.0
+        config.results.solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
+        config.joint_states[:] = config.final_joint_states
 
     @staticmethod
-    def clean_up(solid_values):
-        Geometry.move_eq(tuple(range(solid_values.shape[0])), solid_values, -Position.get(solid_values, 0))
-        Geometry.rotate_eq(tuple(range(solid_values.shape[0])), solid_values, Orientation.get(solid_values, 0) * np.array([[1], [-1]]))
+    def clean_up(config: Config):
+        eq = tuple(range(config.solid_physics.shape[0]))
+        Geometry.move_eq(eq, config, -Position.get(config, 0))
+        Geometry.rotate_eq(eq, config, Orientation.get(config, 0) * np.array([[1], [-1]]))
 
 
 class Graph:

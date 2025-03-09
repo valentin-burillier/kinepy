@@ -337,13 +337,13 @@ def register_relation_step(config: Config, relation_node: RelationGraphNode, eqs
     _type, j1, j2 = config.relation_config[relation_node.relation, :3]
 
     source, target = (j1, j2) if relation_node.is_1_to_2 else (j2, j1)
+    relation = relation_node.relation
+    (stype, s1, s2), (ttype, t1, t2) = config.joint_config[[source, target], 0:3]
 
     if not joint_states[source] & JointFlags.COMPUTED_BIT or not joint_states[source] & JointFlags.CONTINUOUS_BIT:
-        strategy_output.append(JointValueComputationStep(source, joint_states[source] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT)))
+        strategy_output.append(JointValueComputationStep(source, stype, joint_states[source] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT), s1, s2))
         joint_states[source] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
 
-    relation = relation_node.relation
-    (s1, s2), (t1, t2) = config.joint_config[[source, target], 1:3]
     eq1, eq2 = eqs[solid_to_eq[t1]], eqs[solid_to_eq[t2]]
 
     src_g, dst_g = (3, 4) if relation_node.is_1_to_2 else (4, 3)
@@ -370,9 +370,10 @@ def register_relation_step(config: Config, relation_node: RelationGraphNode, eqs
     return merge(joint_graph, eqs, (solid_to_eq[t1], solid_to_eq[t2]))
 
 
-def determine_computation_order(config: Config, input_joints: np.ndarray[int], joint_states: list[int], strategy_output: list[ResolutionStep]) -> None:
+def determine_computation_order(config: Config, input_joints: np.ndarray[int], strategy_output: list[ResolutionStep]) -> None:
     strategy_output.clear()
 
+    joint_states = config.final_joint_states
     joint_states[:] = [0] * config.joint_config.shape[0]
     joint_queue: list[int] = []
     gear_queue: list[RelationGraphNode] = []

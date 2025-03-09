@@ -20,6 +20,8 @@ class JointFlags:
     # when driven by a revolute joint, relations may have to compute the continuous version of its angle if not already available
     CONTINUOUS_BIT = 1 << 2
 
+    READY_FOR_USER = SOLVED_BIT | COMPUTED_BIT | CONTINUOUS_BIT
+
 
 class JointGraphNode:
 

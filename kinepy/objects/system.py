@@ -4,6 +4,8 @@ from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Tra
 from kinepy.strategy.graph_data import JointType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
+import kinepy.math.kinematics as kin
+
 
 @u.UnitSystem.class_
 class System:
@@ -11,9 +13,8 @@ class System:
         self.__config = Config()
         self._ground = CompositeJoint.GSolid(self.__config, 0, 'Ground')
 
-        self._kinematic_strategy = []
-        self._dynamic_strategy = []
-        self._final_joint_states = []
+        self._kinematic_strategy: list[strategy.ResolutionStep] = []
+        self._dynamic_strategy: list[strategy.ResolutionStep] = []
 
     @property
     def ground(self) -> Solid:
@@ -98,7 +99,18 @@ class System:
             raise ex.OverDeterminationError(f"System has {h} constraints in excess")
         if h < 0:
             raise ex.UnderDeterminationError(f"System is lacking {-h} constraints")
-        strategy.determine_computation_order(self.__config, input_joints, self._final_joint_states, strategy_output)
+        strategy.determine_computation_order(self.__config, input_joints, strategy_output)
 
     def _hyper_statism_value(self, joint_input: np.ndarray[int]) -> int:
         return 2 * self.__config.joint_config.shape[0] - 3 * (self.__config.solid_physics.shape[0] - 1) + len(joint_input) + self.__config.relation_config.shape[0]
+
+    def set_frame_count(self, frame_cnt: int):
+        self.__config.allocate_results(frame_cnt)
+
+    def solve_kinematics(self):
+        kin.System.set_up(self.__config)
+
+        for step in self._kinematic_strategy:
+            step.solve_kinematics(self.__config)
+
+        kin.System.clean_up(self.__config)
