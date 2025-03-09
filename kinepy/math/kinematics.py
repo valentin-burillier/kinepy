@@ -1,5 +1,3 @@
-import numpy as np
-
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 
@@ -60,7 +58,7 @@ class JointInput:
 
         total_rotation = Orientation.sub(s1_point, s2_point)
 
-        Geometry.move_eq(eq2, config, -s2_point * distance2 - Position.get(config, s2))
+        Geometry.move_eq(eq2, config, -Geometry.det_z(s2_point) * distance2 - Position.get(config, s2))
         Geometry.rotate_eq(eq2, config, total_rotation)
         Geometry.move_eq(eq2, config, Position.get(config, s1) + Geometry.det_z(s1_point) * distance1 + s1_point * config.results.joint_values[np.newaxis, joint, :])
 

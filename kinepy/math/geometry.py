@@ -138,7 +138,7 @@ class Geometry:
     @staticmethod
     def move_eq(eq: tuple[int, ...], config: Config, vec: np.ndarray):
         # shape: (m, 2, n) + (1, 2, n)
-        Position.get(config, eq).__iadd__(vec[np.newaxis, ...])
+        config.results.solid_values[Position.index(eq)] += vec[np.newaxis, ...]
 
     @staticmethod
     def rotate_eq(eq: tuple[int, ...], config: Config, rot: np.ndarray):

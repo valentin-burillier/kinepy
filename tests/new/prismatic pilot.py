@@ -23,7 +23,8 @@ p1.set_input(np.linspace(0, 4, n))
 sys.solve_kinematics()
 
 #%%
-
+print(sys._System__config.results.solid_values)
+print(sys._System__config.results.joint_values)
 plt.plot(s1.get_origin()[0])
 plt.show()
 
