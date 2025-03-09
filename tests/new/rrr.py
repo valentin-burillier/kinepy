@@ -13,15 +13,17 @@ s3 = sys.add_solid()
 
 r1 = sys.add_revolute(s0, s1, p1=(7, 0))
 r2 = sys.add_revolute(s1, s2, p1=(2, 0))
-r3 = sys.add_revolute(s2, s3, p1=(6, 0))
-r4 = sys.add_revolute(s0, s3, p1=(0, 3), p2=(5, 0))
+r3 = sys.add_revolute(s2, s3, p1=(6, 0), p2=(5, 0))
+r4 = sys.add_revolute(s0, s3, p1=(0, 3))
 
 r1.pilot()
 
 sys.determine_computation_order()
 n = 101
 sys.set_frame_count(n)
+
 """
+Faire tourner le point C :
 https://www.geogebra.org/calculator/h9pm9rs9
 """
 
@@ -34,8 +36,20 @@ sys.solve_kinematics()
 
 #%%
 
-plt.plot(s1.get_angle())
+plt.plot(r4.get_value())
+plt.plot(s3.get_angle())
+
 plt.show()
+
+#%%
+
+plt.plot(s1.get_origin()[0], s1.get_origin()[1], '.-')
+plt.plot(s2.get_origin()[0], s2.get_origin()[1], '.-')
+plt.plot(s3.get_origin()[0], s3.get_origin()[1], '.-')
+
+plt.axis('equal')
+
+
 
 
 
