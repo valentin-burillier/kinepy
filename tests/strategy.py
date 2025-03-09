@@ -159,7 +159,7 @@ class GraphOperationsTests(unittest.TestCase):
         )
 
         # not enough constraints after inputs
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, [], strategy)
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
 
         # input on solved joint
         conf.add_joints(
@@ -168,11 +168,11 @@ class GraphOperationsTests(unittest.TestCase):
             ]),
             np.zeros((1, 4))
         )
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), [], strategy)
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), strategy)
 
         # 1 solid too many
         conf.add_solids(np.zeros([1, 4]))
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, [], strategy)
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
 
     def test_std_graphs(self) -> None:
         strategy = []
@@ -188,7 +188,7 @@ class GraphOperationsTests(unittest.TestCase):
             np.zeros((3, 4))
         )
 
-        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
@@ -206,7 +206,7 @@ class GraphOperationsTests(unittest.TestCase):
             np.zeros((3, 4))
         )
 
-        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
@@ -224,7 +224,7 @@ class GraphOperationsTests(unittest.TestCase):
             np.zeros((3, 4))
         )
 
-        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
