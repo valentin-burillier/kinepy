@@ -36,18 +36,24 @@ sys.solve_kinematics()
 
 #%%
 
-plt.plot(r4.get_value())
-plt.plot(s3.get_angle())
-
+plt.plot(r4.get_value(), label='r4')
+plt.plot(s3.get_angle(), label='s3')
+plt.legend()
 plt.show()
 
 #%%
 
-plt.plot(s1.get_origin()[0], s1.get_origin()[1], '.-')
-plt.plot(s2.get_origin()[0], s2.get_origin()[1], '.-')
-plt.plot(s3.get_origin()[0], s3.get_origin()[1], '.-')
-
+plt.plot(s1.get_origin()[0], s1.get_origin()[1], '.-', label='s1.O')
+plt.plot(*s1.get_point(r2.p1), '.-', label='s1.r2.p1')
+plt.plot(s2.get_origin()[0], s2.get_origin()[1], '.-', label='s2.O')
+plt.plot(*s2.get_point(r3.p1), '.-', label='s2.r3.p1')
+plt.plot(s3.get_origin()[0], s3.get_origin()[1], '.-', label='s3.O')
+plt.plot(*s3.get_point(r3.p2), '.-', label='s3.r3.p2')
+plt.legend()
 plt.axis('equal')
+plt.show()
+
+
 
 
 

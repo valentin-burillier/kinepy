@@ -13,7 +13,7 @@ class JointValueComputation:
         s1_orientation = Orientation.get(config, s1)
         s2_orientation = Orientation.get(config, s2)
 
-        diff = Orientation.sub(s1_orientation, s2_orientation)
+        diff = Orientation.sub(s2_orientation, s1_orientation)
 
         config.results.joint_values[joint] = np.arctan2(diff[1, ...], diff[0, ...])
 
@@ -100,7 +100,7 @@ class Graph:
         sq_c = Geometry.sq_mag(v2)
         inv_ab = (sq_a * sq_b) ** -0.5
 
-        sign = (1, -1)[solution_index]
+        sign = (1, -1)[not solution_index]
         cos_angle = 0.5 * (sq_a + sq_b - sq_c) * inv_ab
         sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
 
@@ -109,7 +109,7 @@ class Graph:
         Geometry.move_eq(eq1, config, Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r0, True))
 
         _v1 = Joint.get_solid_point(config, r2) - Joint.get_solid_point(config, r1)
-        eq2_rotation = Orientation.sub(v2, _v1) / sq_c
+        eq2_rotation = Orientation.sub(_v1, v2) / sq_c
         Geometry.rotate_eq(eq2, config, eq2_rotation)
         Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
 

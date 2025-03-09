@@ -172,7 +172,7 @@ class JointValueComputationStep(ResolutionStep):
     }
 
     continuity_chooser = {
-        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_value,
+        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_continuity,
         JointType.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
     }
 
