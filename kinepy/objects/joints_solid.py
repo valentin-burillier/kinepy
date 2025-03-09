@@ -56,7 +56,7 @@ class Solid(ConfigView):
 
     def get_angle(self):
         _x, _y = geo.Orientation.get(self._config, self._index)
-        _angle = np.atan2(_y, _x)
+        _angle = np.arctan2(_y, _x)
         geo.Orientation.make_angle_continuous(_angle)
         return _angle
 

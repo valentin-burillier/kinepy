@@ -15,7 +15,7 @@ class JointValueComputation:
 
         diff = Orientation.sub(s1_orientation, s2_orientation)
 
-        config.results.joint_values[joint] = np.atan2(diff[1, ...], diff[0, ...])
+        config.results.joint_values[joint] = np.arctan2(diff[1, ...], diff[0, ...])
 
     @staticmethod
     def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
