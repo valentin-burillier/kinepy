@@ -1,32 +1,51 @@
 import numpy as np
 from typing import Any
+from kinepy.objects.config import Config
+
+OrientedJoint = tuple[int, bool]
 
 
 class Joint:
     @staticmethod
-    def get_point(oriented_joint, direction=False):
+    def get_point(config: Config, oriented_joint: OrientedJoint, direction=False):
         """
         Get the point according to the edge it represents; direction = False point is source; True point is destination
 
         shape (2, 1)
         """
-        return getattr(oriented_joint[0], ('_p2', '_p1')[oriented_joint[1] ^ direction])[:, np.newaxis]
+        j_index, orientation = oriented_joint
+        start_index = 2 - 2 * (orientation ^ direction)
+        return config.joint_physics[j_index, start_index:start_index+2, np.newaxis]
 
     @staticmethod
-    def get_solid_point(solid_values, oriented_joint, direction=False):
+    def get_solid_point(config: Config, oriented_joint: OrientedJoint, direction=False):
         """
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
-        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
-        return Position.get(solid_values, _s_index) + Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
+        j_index, orientation = oriented_joint
+        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        return Position.get(config, _s_index) + Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
-    def get_solid_local_point(solid_values, oriented_joint, direction=False):
+    def get_solid_local_point(config: Config, oriented_joint: OrientedJoint, direction=False):
         """
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
-        _s_index = getattr(oriented_joint[0], ('_s2', '_s1')[oriented_joint[1] ^ direction])._index
-        return Orientation.add(Orientation.get(solid_values, _s_index), Joint.get_point(oriented_joint, direction))
+        j_index, orientation = oriented_joint
+        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        return Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
+
+    @staticmethod
+    def get_solid_orientation(config: Config, oriented_joint: OrientedJoint, direction=False):
+        j_index, orientation = oriented_joint
+        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        return Orientation.get(config, _s_index)
+
+    @staticmethod
+    def get_solid_position(config: Config, oriented_joint: OrientedJoint, direction=False):
+        j_index, orientation = oriented_joint
+        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        return Position.get(config, _s_index)
 
 
 class Orientation:
@@ -35,8 +54,8 @@ class Orientation:
         return solid, slice(2, 4), Ellipsis
 
     @staticmethod
-    def get(solid_values: np.ndarray, solid: Any) -> np.ndarray:
-        return solid_values[Orientation.index(solid)]
+    def get(config: Config, solid: Any) -> np.ndarray:
+        return config.results.solid_values[Orientation.index(solid)]
 
     @staticmethod
     def add(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -86,17 +105,17 @@ class Position:
         return solid, slice(0, 2), Ellipsis
 
     @staticmethod
-    def get(solid_values: np.ndarray, solid: Any) -> np.ndarray:
-        return solid_values[Position.index(solid)]
+    def get(config: Config, solid: Any) -> np.ndarray:
+        return config.results.solid_values[Position.index(solid)]
 
     @staticmethod
-    def local_point(solid_values: np.ndarray, solid: int, point: np.ndarray) -> np.ndarray:
-        ori = Orientation.get(solid_values, solid)
+    def local_point(config: Config, solid: int, point: np.ndarray) -> np.ndarray:
+        ori = Orientation.get(config, solid)
         return Orientation.add(ori, point)
 
     @staticmethod
-    def point(solid_values: np.ndarray, solid: int, point: np.ndarray) -> np.ndarray:
-        return Position.local_point(solid_values, solid, point).__iadd__(Position.get(solid_values, solid))
+    def point(config: Config, solid: int, point: np.ndarray) -> np.ndarray:
+        return Position.local_point(config, solid, point).__iadd__(Position.get(config, solid))
 
 
 class Geometry:
@@ -117,14 +136,14 @@ class Geometry:
         return Geometry.dot(vec, vec)
 
     @staticmethod
-    def move_eq(eq: tuple[int, ...], solid_values: np.ndarray, vec: np.ndarray):
+    def move_eq(eq: tuple[int, ...], config: Config, vec: np.ndarray):
         # shape: (m, 2, n) + (1, 2, n)
-        Position.get(solid_values, eq).__iadd__(vec[np.newaxis, ...])
+        Position.get(config.results.solid_values, eq).__iadd__(vec[np.newaxis, ...])
 
     @staticmethod
-    def rotate_eq(eq: tuple[int, ...], solid_values: np.ndarray, rot: np.ndarray):
-        solid_values[Position.index(eq)] = Orientation.add_m(Position.get(solid_values, eq), rot)
-        solid_values[Orientation.index(eq)] = Orientation.add_m(Orientation.get(solid_values, eq), rot)
+    def rotate_eq(eq: tuple[int, ...], config: Config, rot: np.ndarray):
+        config.results.solid_values[Position.index(eq)] = Orientation.add_m(Position.get(config, eq), rot)
+        config.results.solid_values[Orientation.index(eq)] = Orientation.add_m(Orientation.get(config, eq), rot)
 
     @staticmethod
     def det_z(vec: np.ndarray) -> np.ndarray:

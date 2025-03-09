@@ -1,12 +1,13 @@
-from kinepy.objects.joints import Revolute, PrimitiveJoint, Prismatic
-from kinepy.objects.relations import Relation
 from typing import TypeAlias, Self
 from collections.abc import Generator, Callable
-from kinepy.strategy.graph_data import NodeType
+from kinepy.strategy.graph_data import JointType, Graphs
 from kinepy.units import _PhysicsEnum
 import numpy as np
 import kinepy.math.kinematics as kin
+from kinepy.objects.config import Config
 
+
+# region Strategy Internal types
 
 class JointFlags:
     SOLVED_BIT = 1 << 0
@@ -22,19 +23,16 @@ class JointFlags:
 
 class JointGraphNode:
 
-    node_type: NodeType
+    node_type: JointType
     joint_index: int = -1
 
-    def __init__(self, joint_type: NodeType, joint_index: int = -1):
+    def __init__(self, joint_type: JointType, joint_index: int = -1):
         self.node_type = joint_type
         self.joint_index = joint_index
 
-    def set_node_type(self, joint: PrimitiveJoint | None):
-        if joint is not None:
-            self.joint_index = joint.index
-        else:
-            self.joint_index = -1
-        self.node_type = NodeType.EMPTY if joint is None else NodeType.REVOLUTE if isinstance(joint, Revolute) else NodeType.PRISMATIC
+    def set(self, joint_index: int, joint_type: JointType):
+        self.node_type = joint_type
+        self.joint_index = joint_index
 
     def __repr__(self):
         return self.node_type.__repr__()
@@ -45,26 +43,13 @@ class JointGraphNode:
 
 class RelationGraphNode:
     is_1_to_2: bool
-    relation: Relation
+    relation: int
     solved = False
     pair: None | Self = None
     common_eq = -1
 
-    def __init__(self, is_1_to_2: bool, relation: Relation):
+    def __init__(self, is_1_to_2: bool, relation: int):
         self.is_1_to_2, self.relation = is_1_to_2, relation
-
-    def yield_target_joint(self) -> Generator[PrimitiveJoint, None, None]:
-        yield self.get_target_joint()
-
-    def get_source_joint(self) -> PrimitiveJoint:
-        if self.is_1_to_2:
-            return self.relation.j1
-        return self.relation.j2
-
-    def get_target_joint(self) -> PrimitiveJoint:
-        if self.is_1_to_2:
-            return self.relation.j2
-        return self.relation.j1
 
 
 JointGraph: TypeAlias = list[list[JointGraphNode]]
@@ -74,20 +59,22 @@ Eq: TypeAlias = tuple[tuple[int, ...], ...]
 EqMapping: TypeAlias = tuple[int, ...]
 Isomorphism: TypeAlias = tuple[int, ...]
 
+# endregion Strategy Internal types
+
 
 class ResolutionStep:
-    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
+    def solve_kinematics(self, config: Config):
         pass
 
-    def solve_dynamics(self):
+    def solve_dynamics(self, config: Config):
         pass
 
 
 class GraphStep(ResolutionStep):
-    def __init__(self, graph_index: int, edges: tuple[tuple[PrimitiveJoint, bool], ...], eqs: Eq):
+    def __init__(self, graph: Graphs, edges: tuple[tuple[int, bool], ...], eqs: Eq):
         ResolutionStep.__init__(self)
         self.solution_index = 0
-        self._graph_index = graph_index
+        self._graph_index = graph.value
         self._edges = edges
         self._eqs = eqs
 
@@ -97,45 +84,39 @@ class GraphStep(ResolutionStep):
         kin.Graph.solve_ppr
     )
 
-    def get_joints(self) -> Generator[PrimitiveJoint, None, None]:
+    def get_joints(self) -> Generator[int, None, None]:
         return (j for j, _ in self._edges)
 
-    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
-        self.kinematics[self._graph_index](solid_values, self._edges, self._eqs, self.solution_index)
+    def solve_kinematics(self, config: Config):
+        self.kinematics[self._graph_index](config, self._edges, self._eqs, self.solution_index)
 
 
 class JointStep(ResolutionStep):
     function: Callable[[np.ndarray, np.ndarray, int, int, np.ndarray, np.ndarray, tuple[int, ...], tuple[int, ...]], None]
 
-    def __init__(self, input_index: int, joint: PrimitiveJoint, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+    def __init__(self, joint_type: JointType, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
         ResolutionStep.__init__(self)
-        self.input_index = input_index
         self.joint = joint
         self.eq1, self.eq2 = eq1, eq2
-        self.function = self.function_chooser[joint.get_input_physics()]
+        self.joint_type = joint_type
+        self.s1, self.s2 = s1, s2
 
     function_chooser = {
-        _PhysicsEnum.ANGLE: kin.JointInput.solve_revolute,
-        _PhysicsEnum.LENGTH: kin.JointInput.solve_prismatic
+        JointType.REVOLUTE: kin.JointInput.solve_revolute,
+        JointType.PRISMATIC: kin.JointInput.solve_prismatic
     }
 
-    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
-        value = kinematic_inputs[self.input_index, ...]
-        joint_values[self.joint._index, ...] = value
-
-        s1 = self.joint.s1._index
-        s2 = self.joint.s2._index
-
-        self.function(solid_values, value, s1, s2, np.array(self.joint._p1), np.array(self.joint._p2), self.eq1, self.eq2)
+    def solve_kinematics(self, config):
+        self.function_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
 
 
 class RelationStep(ResolutionStep):
-    relation: Relation
+    relation: int
     is_1_to_2: bool
     eq1: tuple[int]
     eq2: tuple[int]
 
-    def __init__(self, relation: Relation, is_1_to_2: bool, eq1: tuple[int], eq2: tuple[int]):
+    def __init__(self, relation: int, is_1_to_2: bool, eq1: tuple[int], eq2: tuple[int]):
         self.relation = relation
         self.is_1_to_2 = is_1_to_2
         self.eq1 = eq1
@@ -163,35 +144,36 @@ class RelationStep(ResolutionStep):
 
 
 class JointValueComputationStep(ResolutionStep):
-    joint: PrimitiveJoint
+    joint: int
     flags: int
-    value_function: Callable[[np.ndarray, int, int, np.ndarray, np.ndarray], np.ndarray]
-    continuity_function: Callable[[np.ndarray], None]
+    value_function: Callable[[Config, int, int, int], None]
+    continuity_function: Callable[[Config, int], None]
 
-    def __init__(self, joint: PrimitiveJoint, flags: int):
+    def __init__(self, joint: int, _type: JointType, flags: int, s1: int, s2: int):
+        self.s1, self.s2 = s1, s2
         self.joint = joint
         self.flags = flags
 
         if self.flags & JointFlags.COMPUTED_BIT:
             self.value_function = kin.JointValueComputation.do_not_compute_value
         else:
-            self.value_function = self.value_chooser[self.joint.get_input_physics()]
+            self.value_function = self.value_chooser[_type]
 
         if self.flags & JointFlags.CONTINUOUS_BIT:
             self.continuity_function = kin.JointValueComputation.do_not_compute_continuity
         else:
-            self.continuity_function = self.continuity_chooser[self.joint.get_input_physics()]
+            self.continuity_function = self.continuity_chooser[_type]
 
     value_chooser = {
-        _PhysicsEnum.ANGLE: kin.JointValueComputation.compute_revolute_value,
-        _PhysicsEnum.LENGTH: kin.JointValueComputation.compute_prismatic_value
+        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_value,
+        JointType.PRISMATIC: kin.JointValueComputation.compute_prismatic_value
     }
 
     continuity_chooser = {
-        _PhysicsEnum.ANGLE: kin.JointValueComputation.compute_revolute_value,
-        _PhysicsEnum.LENGTH: kin.JointValueComputation.do_not_compute_continuity
+        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_value,
+        JointType.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
     }
 
-    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
-        joint_values[self.joint._index, ...] = self.value_function(solid_values, self.joint.s1, self.joint.s2, self.joint._p1, self.joint._p2)
-        self.continuity_function(joint_values[self.joint._index, ...])
+    def solve_kinematics(self, config: Config):
+        self.value_function(config, self.joint, self.s1, self.s2)
+        self.continuity_function(config, self.joint)

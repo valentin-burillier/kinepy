@@ -341,18 +341,21 @@ class UnitSystem:
         """
         Function decorator that manages all arguments annotated with a PhysicalQuantity and the return value
         """
+        phy_annotations = {
+            name: phy for name, annotation in func.__annotations__.items() if (phy := cls._physical_quantity_annotation(annotation)) is not None
+        }
+        if not phy_annotations:
+            return func
+
         arguments = func.__code__.co_varnames[:func.__code__.co_argcount + func.__code__.co_kwonlyargcount]
 
         # all parameters that are annotated with a physical quantity including *args
         named_transforms = {
-            name: cls._input(phy)
-            for name, annotation in func.__annotations__.items() if (phy := cls._physical_quantity_annotation(annotation)) is not None and name != 'return'
+            name: cls._input(phy) for name, phy in phy_annotations.items() if name != 'return'
         }
         # *args
         variadic_transform = named_transforms.pop(func.__code__.co_varnames[len(arguments)], _identity) if len(arguments) < len(func.__code__.co_varnames) else _identity
-
-        return_annotation = func.__annotations__.get('return', None)
-        return_transform = cls._output(phy) if (phy := cls._physical_quantity_annotation(return_annotation)) is not None else _identity
+        return_transform = cls._output(phy) if (phy := phy_annotations.get('return', None)) is not None else _identity
 
         @wraps(func)
         def new_function(*args, **kwargs):
@@ -369,13 +372,18 @@ class UnitSystem:
         Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity"""
         # Retrieve all method definitions
         for method_name, method in target_class.__dict__.items():
-            if not isinstance(method, types.FunctionType) or (method_name != '__init__' and str.startswith(method_name, '__')):
+            if isinstance(method, property):
+                fget = None if method.fget is None else cls.function(method.fget)
+                fset = None if method.fset is None else cls.function(method.fset)
+                setattr(target_class, method_name, property(fget, fset))
+                continue
+            if not isinstance(method, types.FunctionType):
                 continue
             setattr(target_class, method_name, cls.function(method))
 
         # Retrieve all attributes that are annotated with physical quantities to place getters and setters on them
         for attr, annotation in target_class.__annotations__.items():
-            if (phy := cls._physical_quantity_annotation(annotation)) is None:
+            if attr in target_class.__dict__ or (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
             setattr(target_class, attr, property(
                 lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
@@ -397,14 +405,14 @@ if __name__ == '__main__':
     """
     Automatically create new UnitSet inheritors when a new _PhysicsEnum is created
     """
-    with open(__file__, 'r') as this:
-        whole_file = this.read()
+    with open(__file__, 'r') as _this:
+        _whole_file = _this.read()
 
     # exclude this part
-    separator = "# this comment is a separator for automated formating\n"
-    module, rest = whole_file.split(separator, maxsplit=1)
-    new_class_names = tuple(phy.name for phy in _PhysicsEnum if globals().get(screaming_snake_to_pascal(phy.name), None) is None)
-    template = """class {Name}(UnitSet):
+    _separator = "# this comment is a separator for automated formating\n"
+    _module, _rest = _whole_file.split(_separator, maxsplit=1)
+    _new_class_names = tuple(phy.name for phy in _PhysicsEnum if globals().get(screaming_snake_to_pascal(phy.name), None) is None)
+    _template = """class {Name}(UnitSet):
     # region auto-fill {NAME}
     
     _PHYSICS: _PhysicsEnum = _PhysicsEnum.{NAME}
@@ -413,10 +421,10 @@ if __name__ == '__main__':
     # endregion auto-fill {NAME}
 
 
-"""
+    """
 
-    new_classes = ''.join(template.format(NAME=name, Name=screaming_snake_to_pascal(name)) for name in new_class_names)
-    new_file = module + new_classes + separator + rest
+    _new_classes = ''.join(_template.format(NAME=name, Name=screaming_snake_to_pascal(name)) for name in _new_class_names)
+    _new_file = _module + _new_classes + _separator + _rest
 
     with open(__file__, 'w') as this:
-        this.write(new_file)
+        this.write(_new_file)

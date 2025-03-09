@@ -1,9 +1,9 @@
 import unittest
-import kinepy.objects.joints as kp_joints
-import kinepy.objects.solid as kp_solid
+from kinepy.objects.config import Config
 import kinepy.exceptions as kp_exs
 import kinepy.strategy.algorithm as algo
 import kinepy.strategy.graph_data as graph_data
+import numpy as np
 
 
 def data_graph_to_user_graph(adj: graph_data.Adjacency) -> algo.JointGraph:
@@ -12,7 +12,7 @@ def data_graph_to_user_graph(adj: graph_data.Adjacency) -> algo.JointGraph:
 
 
 def apply_isomorphism(graph: algo.JointGraph, iso: algo.Isomorphism) -> algo.JointGraph:
-    result = [[algo.JointGraphNode(algo.NodeType.EMPTY) for _ in graph] for _ in graph]
+    result = [[algo.JointGraphNode(algo.JointType.EMPTY) for _ in graph] for _ in graph]
 
     for x, line in enumerate(graph):
         new_x = iso[x]
@@ -25,13 +25,13 @@ def apply_isomorphism(graph: algo.JointGraph, iso: algo.Isomorphism) -> algo.Joi
 JGN = algo.JointGraphNode
 
 example_graph: algo.JointGraph = [
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.REVOLUTE, 1), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 2), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 3), JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.REVOLUTE, 1), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 4), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 2), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 5), JGN(algo.NodeType.REVOLUTE, 7)],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 4), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 8), JGN(algo.NodeType.REVOLUTE, 6)],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 3), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 5), JGN(algo.NodeType.REVOLUTE, 8), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 7), JGN(algo.NodeType.REVOLUTE, 6), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY)      ]
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 2), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 3), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 2), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 5), JGN(algo.JointType.REVOLUTE, 7)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 6)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 3), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 5), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 7), JGN(algo.JointType.REVOLUTE, 6), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)]
 ]
 r"""
         0     
@@ -55,11 +55,11 @@ r"""
 
 
 example_graph_merge0: algo.JointGraph = [
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.REVOLUTE, 1), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 8), JGN(algo.NodeType.REVOLUTE, 7)],
-    [JGN(algo.NodeType.REVOLUTE, 1), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 4), JGN(algo.NodeType.EMPTY)      ],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 8), JGN(algo.NodeType.REVOLUTE, 4), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 6)],
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 7), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 6), JGN(algo.NodeType.EMPTY)      ]
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 7)],
+    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 6)],
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 7), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 6), JGN(algo.JointType.EMPTY)]
 ]
 r"""
             0
@@ -77,9 +77,9 @@ example_eqs_merge0: algo.Eq = (0,), (1, 5, 3), (2,), (4,), (6,)
 example_solid_to_eq_merge0: algo.EqMapping = 0, 1, 2, 1, 3, 1, 4
 
 example_graph_merge1: algo.JointGraph = [
-    [JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.REVOLUTE, 1)],
-    [JGN(algo.NodeType.REVOLUTE, 0), JGN(algo.NodeType.EMPTY),       JGN(algo.NodeType.REVOLUTE, 4)],
-    [JGN(algo.NodeType.REVOLUTE, 1), JGN(algo.NodeType.REVOLUTE, 4), JGN(algo.NodeType.EMPTY),     ]
+    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1)],
+    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4)],
+    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), ]
 ]
 r"""
         0
@@ -108,12 +108,12 @@ class GraphOperationsTests(unittest.TestCase):
         """
         Try to identify each registered graph when simply converted as user graph
         """
-        for index, adj in enumerate(graph_data.ADJACENCY):
-            graph = data_graph_to_user_graph(adj)
+        for g in graph_data.Graphs:
+            graph = data_graph_to_user_graph(g.adjacency)
             iso = algo.find_isomorphism(graph)
-            self.assertFalse(iso is None, f'{index}')
+            self.assertFalse(iso is None, f'{g}')
             graph_index, isomorphism = iso
-            self.assertEqual(graph_index, index)
+            self.assertEqual(graph_index, g)
 
     def test_find_isomorphism_shuffled(self) -> None:
         """
@@ -121,15 +121,15 @@ class GraphOperationsTests(unittest.TestCase):
         """
         graph_isomorphisms: tuple[algo.Isomorphism, ...] = 3 * (tuple(make_isomorphisms(3)),) + 10 * (tuple(make_isomorphisms(5)),)
 
-        for index, (adj, iso_group) in enumerate(zip(graph_data.ADJACENCY, graph_isomorphisms)):
-            graph = data_graph_to_user_graph(adj)
+        for g, iso_group in zip(graph_data.Graphs, graph_isomorphisms):
+            graph = data_graph_to_user_graph(g.adjacency)
             for target_iso in iso_group:
                 _graph = apply_isomorphism(graph, target_iso)
                 iso = algo.find_isomorphism(_graph)
-                self.assertFalse(iso is None, f'{index} : {target_iso}')
+                self.assertFalse(iso is None, f'{g} : {target_iso}')
                 graph_index, isomorphism = iso
                 # isomorphism cannot be compared to target_iso since some nodes can be interchanged for some graph e.g.: in RRR every node is equivalent to the other
-                self.assertEqual(graph_index, index)
+                self.assertEqual(graph_index, g)
 
     def test_merge(self) -> None:
         eqs0 = tuple((i,) for i in range(len(example_graph)))
@@ -143,73 +143,93 @@ class GraphOperationsTests(unittest.TestCase):
 
         merged_graph, merged_eqs, merged_mapping = algo.merge(example_graph_merge1, example_eqs_merge1, (1, 2, 0))
         self.assertEqual(merged_mapping, (0,) * 7)
-        self.assertEqual(merged_graph, [[JGN(algo.NodeType.EMPTY)]])
+        self.assertEqual(merged_graph, [[JGN(algo.JointType.EMPTY)]])
 
     def test_bad_configurations(self):
         strategy = []
-        s0, s1, s2 = (
-            kp_solid.Solid(None, "0", 0),
-            kp_solid.Solid(None, "1", 1),
-            kp_solid.Solid(None, "2", 2),
+
+        conf = Config()
+        conf.add_solids(np.zeros([2, 4]))
+        conf.add_joints(
+            np.array([
+                [graph_data.R.value, 0, 1],
+                [graph_data.R.value, 0, 2],
+            ]),
+            np.zeros((2, 4))
         )
-        joints = [
-            kp_joints.Revolute(None, 0, s0, s1),
-            kp_joints.Revolute(None, 1, s0, s2),
-            kp_joints.Revolute(None, 2, s1, s2)
-        ]
+
+        # not enough constraints after inputs
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, [], strategy)
+
+        # input on solved joint
+        conf.add_joints(
+            np.array([
+                [graph_data.R.value, 1, 2],
+            ]),
+            np.zeros((1, 4))
+        )
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), [], strategy)
 
         # 1 solid too many
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 4, joints, [], [], strategy)
-        # input on solved joint
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 3, joints, [], [joints[0]], strategy)
-        # not enough constraints after inputs
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, 3, joints[:2], [], joints[:1], strategy)
+        conf.add_solids(np.zeros([1, 4]))
+        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, [], strategy)
 
     def test_std_graphs(self) -> None:
         strategy = []
-        s0, s1, s2 = (
-            kp_solid.Solid(None, "0", 0),
-            kp_solid.Solid(None, "1", 1),
-            kp_solid.Solid(None, "2", 2),
+
+        conf = Config()
+        conf.add_solids(np.zeros([2, 4]))
+        conf.add_joints(
+            np.array([
+                [graph_data.R.value, 0, 1],
+                [graph_data.R.value, 0, 2],
+                [graph_data.R.value, 1, 2],
+            ]),
+            np.zeros((3, 4))
         )
-        joints_rrr = [
-            kp_joints.Revolute(None, 0, s0, s1),
-            kp_joints.Revolute(None, 1, s0, s2),
-            kp_joints.Revolute(None, 2, s1, s2)
-        ]
 
-        algo.determine_computation_order(3, joints_rrr, [], [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
         step: algo.GraphStep = strategy[0]
-        self.assertEqual(step._graph_index, graph_data.Graphs.gRRR.value)
+        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRR)
 
-        joints_rrp = [
-            kp_joints.Revolute(None, 0, s0, s1),
-            kp_joints.Revolute(None, 1, s0, s2),
-            kp_joints.Prismatic(None, 2, s1, s2)
-        ]
+        conf = Config()
+        conf.add_solids(np.zeros([2, 4]))
+        conf.add_joints(
+            np.array([
+                [graph_data.R.value, 0, 1],
+                [graph_data.R.value, 0, 2],
+                [graph_data.P.value, 1, 2],
+            ]),
+            np.zeros((3, 4))
+        )
 
-        algo.determine_computation_order(3, joints_rrp, [], [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
         step: algo.GraphStep = strategy[0]
-        self.assertEqual(step._graph_index, graph_data.Graphs.gRRP.value)
+        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRP)
 
-        joints_ppr = [
-            kp_joints.Prismatic(None, 0, s0, s1),
-            kp_joints.Prismatic(None, 1, s0, s2),
-            kp_joints.Revolute(None, 2, s1, s2)
-        ]
+        conf = Config()
+        conf.add_solids(np.zeros([2, 4]))
+        conf.add_joints(
+            np.array([
+                [graph_data.P.value, 0, 1],
+                [graph_data.P.value, 0, 2],
+                [graph_data.R.value, 1, 2],
+            ]),
+            np.zeros((3, 4))
+        )
 
-        algo.determine_computation_order(3, joints_ppr, [], [], strategy)
+        algo.determine_computation_order(conf, conf.piloted_joints, [], strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], algo.GraphStep))
 
         step: algo.GraphStep = strategy[0]
-        self.assertEqual(step._graph_index, graph_data.Graphs.gPPR.value)
+        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gPPR)
 
 
 if __name__ == '__main__':

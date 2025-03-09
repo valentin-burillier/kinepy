@@ -1,27 +1,33 @@
+import numpy as np
+
 from kinepy.math.geometry import *
+from kinepy.objects.config import Config
 
 
 class JointValueComputation:
     @staticmethod
-    def do_not_compute_value(solid_values: np.ndarray, s1: int, s2: int, p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
+    def do_not_compute_value(config: Config, joint: int, s1: int, s2: int) -> None:
         pass
 
     @staticmethod
-    def compute_revolute_value(solid_values: np.ndarray, s1: int, s2: int, p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
-        s1_orientation = Orientation.get(solid_values, s1)
-        s2_orientation = Orientation.get(solid_values, s2)
+    def compute_revolute_value(config: Config, joint: int, s1: int, s2: int) -> None:
+
+        s1_orientation = Orientation.get(config, s1)
+        s2_orientation = Orientation.get(config, s2)
 
         diff = Orientation.sub(s1_orientation, s2_orientation)
 
-        return np.arccos(diff[0, ...]) * np.sign(diff[1, ...])
+        config.results.joint_values[joint] = np.atan2(diff[1, ...], diff[0, ...])
 
     @staticmethod
-    def compute_prismatic_value(solid_values: np.ndarray, s1: int, s2: int, p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
-        normal = Position.local_point(solid_values, s1, p1)
-        s1_point = normal + Position.get(solid_values, s1)
-        s2_point = Position.point(solid_values, s2, p2)
-
-        return Geometry.dot(normal, s2_point - s1_point) * Geometry.inv_mag(normal)
+    def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
+        pass
+        # Geometry.det()
+        # normal = Position.local_point(solid_values, s1, p1)
+        # s1_point = normal + Position.get(solid_values, s1)
+        # s2_point = Position.point(solid_values, s2, p2)
+#
+        # return Geometry.dot(normal, s2_point - s1_point) * Geometry.inv_mag(normal)
 
     @staticmethod
     def do_not_compute_continuity(value: np.ndarray):
@@ -34,30 +40,32 @@ class JointValueComputation:
 
 class JointInput:
     @staticmethod
-    def solve_revolute(solid_values: np.ndarray, value: np.ndarray, s1: int, s2: int, p1: np.ndarray, p2: np.ndarray, eq1: tuple[int, ...], eq2: tuple[int, ...]):
-        s1_point = Position.point(solid_values, s1, p1)
-        s2_point = Position.point(solid_values, s2, p2)
+    def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_ori = Orientation.get(solid_values, s1)
-        s2_ori = Orientation.get(solid_values, s2)
+        s1_point = Position.point(config, s1, config.joint_physics[joint, :2])
+        s2_point = Position.point(config, s2, config.joint_physics[joint, 2:])
+
+        s1_ori = Orientation.get(config, s1)
+        s2_ori = Orientation.get(config, s2)
 
         rotation = Orientation.sub(s1_ori, s2_ori)
-        total_rotation = Orientation.add(rotation, Orientation.from_angle(value))
+        total_rotation = Orientation.add(rotation, Orientation.from_angle(config.results.joint_values[joint]))
 
-        Geometry.move_eq(eq2, solid_values, -s2_point)
-        Geometry.rotate_eq(eq2, solid_values, total_rotation)
-        Geometry.move_eq(eq2, solid_values, s1_point)
+        Geometry.move_eq(eq2, config, -s2_point)
+        Geometry.rotate_eq(eq2, config, total_rotation)
+        Geometry.move_eq(eq2, config, s1_point)
 
     @staticmethod
-    def solve_prismatic(solid_values: np.ndarray, value: np.ndarray, s1: int, s2: int, p1: np.ndarray, p2: np.ndarray, eq1: tuple[int, ...], eq2: tuple[int, ...]):
-        s1_point = Position.local_point(solid_values, s1, p1)
-        s2_point = Position.local_point(solid_values, s2, p2)
+    def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+        angle1, distance1, angle2, distance2 = config.joint_physics[joint][:, np.newaxis]
+        s1_point = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle1))
+        s2_point = Orientation.add(Orientation.get(config, s2), Orientation.from_angle(angle2))
 
-        total_rotation = Orientation.sub(s1_point, s2_point) * (Geometry.inv_mag(p1) * Geometry.inv_mag(p2))
+        total_rotation = Orientation.sub(s1_point, s2_point)
 
-        Geometry.move_eq(eq2, solid_values, -s2_point - Position.get(solid_values, s2))
-        Geometry.rotate_eq(eq2, solid_values, total_rotation)
-        Geometry.move_eq(eq2, solid_values, Position.get(solid_values, s1) + s1_point + Geometry.det_z(s1_point) * Geometry.inv_mag(p1) * value[np.newaxis, ...])
+        Geometry.move_eq(eq2, config, -s2_point * distance2 - Position.get(config, s2))
+        Geometry.rotate_eq(eq2, config, total_rotation)
+        Geometry.move_eq(eq2, config, Position.get(config, s1) + Geometry.det_z(s1_point) * distance1 + s1_point * config.results.joint_values[np.newaxis, joint, :])
 
 
 class System:
@@ -78,7 +86,7 @@ class System:
 
 class Graph:
     @staticmethod
-    def solve_rrr(solid_values, edges, eqs, solution_index):
+    def solve_rrr(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -90,9 +98,9 @@ class Graph:
         r0, r1, r2 = edges
 
         # vectors in each eq
-        v0 = Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r0)
-        v1 = Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, r0, True)
-        v2 = Joint.get_solid_point(solid_values, r2, True) - Joint.get_solid_point(solid_values, r1, True)
+        v0 = Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r0)
+        v1 = Joint.get_solid_point(config, r2) - Joint.get_solid_point(config, r0, True)
+        v2 = Joint.get_solid_point(config, r2, True) - Joint.get_solid_point(config, r1, True)
 
         sq_a = Geometry.sq_mag(v0)
         sq_b = Geometry.sq_mag(v1)
@@ -104,16 +112,16 @@ class Graph:
         sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
 
         total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_[cos_angle[np.newaxis, :], sin_angle[np.newaxis, :]])
-        Geometry.rotate_eq(eq1, solid_values, total_rotation)
-        Geometry.move_eq(eq1, solid_values, Joint.get_solid_point(solid_values, r0) - Joint.get_solid_point(solid_values, r0, True))
+        Geometry.rotate_eq(eq1, config, total_rotation)
+        Geometry.move_eq(eq1, config, Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r0, True))
 
-        _v1 = Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, r1)
+        _v1 = Joint.get_solid_point(config, r2) - Joint.get_solid_point(config, r1)
         eq2_rotation = Orientation.sub(v2, _v1) / sq_c
-        Geometry.rotate_eq(eq2, solid_values, eq2_rotation)
-        Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))
+        Geometry.rotate_eq(eq2, config, eq2_rotation)
+        Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
 
     @staticmethod
-    def solve_rrp(solid_values, edges, eqs, solution_index):
+    def solve_rrp(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -124,29 +132,32 @@ class Graph:
         eq0, eq1, eq2 = eqs
         r0, r1, p2 = edges
 
-        v0 = Joint.get_solid_point(solid_values, r0) - Joint.get_solid_point(solid_values, r1)
+        v0 = Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r1)
 
-        v1 = Joint.get_solid_local_point(solid_values, p2)
-        v2 = Joint.get_solid_local_point(solid_values, p2, True)
-        eq2_rotation = Orientation.sub(v1, v2) / (Geometry.sq_mag(v1) * Geometry.sq_mag(v2)) ** 0.5
-        Geometry.rotate_eq(eq2, solid_values, eq2_rotation)
+        _angle21, _distance21 = Joint.get_point(config, p2)
+        _angle22, _distance22 = Joint.get_point(config, p2, True)
+        v1 = Orientation.add(Joint.get_solid_orientation(config, p2), Orientation.from_angle(_angle21))
 
-        sq_v0_v1 = Geometry.sq_mag(v0) * Geometry.sq_mag(v1)
+        eq2_rotation = Orientation.sub(v1, Orientation.add(Joint.get_solid_orientation(config, p2, True), Orientation.from_angle(_angle22)))
+        Geometry.rotate_eq(eq2, config, eq2_rotation)
+
+        sq_v0_v1 = Geometry.sq_mag(v0)  # * Geometry.sq_mag(v1) = 1
 
         sign = (1, -1)[solution_index]
-        v1_v0_cos_angle = Geometry.dot(
+        v0_v1_cos_angle = Geometry.dot(
             v1,
-            Joint.get_solid_point(solid_values, p2) - Joint.get_solid_point(solid_values, r0, True) +
-            Joint.get_solid_point(solid_values, r1, True) - Joint.get_solid_point(solid_values, p2, True)
-        )
-        v1_v0_sin_angle = sign * (sq_v0_v1 - v1_v0_cos_angle * v1_v0_cos_angle) ** 0.5
-        total_rotation = Orientation.add(Orientation.sub(v1, v0), np.r_[v1_v0_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
-        Geometry.rotate_eq(eq0, solid_values, total_rotation)
-        Geometry.move_eq(eq0, solid_values, Joint.get_solid_point(solid_values, r0, True) - Joint.get_solid_point(solid_values, r0))
-        Geometry.move_eq(eq2, solid_values, Joint.get_solid_point(solid_values, r1) - Joint.get_solid_point(solid_values, r1, True))
+            Joint.get_solid_position(config, p2) - Joint.get_solid_point(config, r0, True) +
+            Joint.get_solid_point(config, r1, True) - Joint.get_solid_position(config, p2, True)
+        ) + (_distance21 - _distance22)
+        v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
+        total_rotation = Orientation.add(Orientation.sub(v1, v0), np.r_[v0_v1_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
+
+        Geometry.rotate_eq(eq0, config, total_rotation)
+        Geometry.move_eq(eq0, config, Joint.get_solid_point(config, r0, True) - Joint.get_solid_point(config, r0))
+        Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
 
     @staticmethod
-    def solve_ppr(solid_values, edges, eqs, solution_index):
+    def solve_ppr(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -157,18 +168,23 @@ class Graph:
         eq0, eq1, eq2 = eqs
         p0, p1, r2 = edges
 
-        v1 = Joint.get_solid_local_point(solid_values, p0)
-        v2 = Joint.get_solid_local_point(solid_values, p1)
+        _angle10, _distance10 = Joint.get_point(config, p0)
+        _angle20, _distance20 = Joint.get_point(config, p0, True)
+        v1 = Orientation.add(Joint.get_solid_orientation(config, p0), Orientation.from_angle(_angle10))
 
-        eq1_rotation = Orientation.sub(v1, Joint.get_solid_local_point(solid_values, p0, True))
-        Geometry.rotate_eq(eq1, solid_values, eq1_rotation * Geometry.sq_mag(eq1_rotation) ** -0.5)
+        _angle11, _distance11 = Joint.get_point(config, p1)
+        _angle21, _distance21 = Joint.get_point(config, p1, True)
+        v2 = Orientation.add(Joint.get_solid_orientation(config, p1), Orientation.from_angle(_angle11))
 
-        eq2_rotation = Orientation.sub(v2, Joint.get_solid_local_point(solid_values, p1, True))
-        Geometry.rotate_eq(eq2, solid_values, eq2_rotation * Geometry.sq_mag(eq2_rotation) ** -0.5)
+        eq1_rotation = Orientation.sub(v1, Orientation.add(Joint.get_solid_orientation(config, p0, True), Orientation.from_angle(_angle20)))
+        Geometry.rotate_eq(eq1, config, eq1_rotation)
 
-        vec_1 = Joint.get_solid_point(solid_values, p0) + Joint.get_solid_point(solid_values, r2) - Joint.get_solid_point(solid_values, p0, True)
-        vec_2 = Joint.get_solid_point(solid_values, p1) + Joint.get_solid_point(solid_values, r2, True) - Joint.get_solid_point(solid_values, p1, True)
+        eq2_rotation = Orientation.sub(v2, Orientation.add(Joint.get_solid_orientation(config, p1, True), Orientation.from_angle(_angle21)))
+        Geometry.rotate_eq(eq2, config, eq2_rotation)
+
+        vec_1 = Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * v1 + Joint.get_solid_point(config, r2) - Joint.get_solid_position(config, p0, True)
+        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * v2 + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
 
         target_point = vec_1 + (Geometry.dot(vec_2 - vec_1, v2) / Geometry.det(v2, v1)) * Geometry.det_z(v1)
-        Geometry.move_eq(eq1, solid_values, target_point - Joint.get_solid_point(solid_values, r2))
-        Geometry.move_eq(eq2, solid_values, target_point - Joint.get_solid_point(solid_values, r2, True))
+        Geometry.move_eq(eq1, config, target_point - Joint.get_solid_point(config, r2))
+        Geometry.move_eq(eq2, config, target_point - Joint.get_solid_point(config, r2, True))

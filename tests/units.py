@@ -57,6 +57,13 @@ class UnitsTests(unittest.TestCase):
         self.assertEqual(test_f(1000., z=1000., y=180.), (1., math.pi, 1.))
         self.assertRaises(TypeError, test_f, x=1000., z=1000., y=180.)
 
+    def test_do_nothing(self):
+
+        def test_f(a: int, b) -> None:
+            return
+
+        self.assertIs(u.UnitSystem.function(test_f), test_f)
+
 
 if __name__ == '__main__':
     unittest.main()
