@@ -76,7 +76,7 @@ class GraphStep(ResolutionStep):
     def __init__(self, graph: Graphs, edges: tuple[tuple[int, bool], ...], eqs: Eq):
         ResolutionStep.__init__(self)
         self.solution_index = 0
-        self._graph_index = graph.value
+        self._graph_index = graph
         self._edges = edges
         self._eqs = eqs
 
@@ -86,11 +86,15 @@ class GraphStep(ResolutionStep):
         kin.Graph.solve_ppr
     )
 
+    @property
+    def solution_count(self) -> int:
+        return self._graph_index.solutions
+
     def get_joints(self) -> Generator[int, None, None]:
         return (j for j, _ in self._edges)
 
     def solve_kinematics(self, config: Config):
-        self.kinematics[self._graph_index](config, self._edges, self._eqs, self.solution_index)
+        self.kinematics[self._graph_index.value](config, self._edges, self._eqs, self.solution_index)
 
 
 class JointStep(ResolutionStep):

@@ -114,3 +114,6 @@ class System:
             step.solve_kinematics(self.__config)
 
         kin.System.clean_up(self.__config)
+
+    def get_steps_with_multiple_solutions(self) -> tuple[strategy.GraphStep, ...]:
+        return tuple(step for step in self._kinematic_strategy if isinstance(step, strategy.GraphStep) and step.solution_count > 1)
