@@ -3,8 +3,10 @@ import numpy as np
 
 class Result:
     solid_values: np.ndarray
+    solid_dynamics: np.ndarray
 
     joint_values: np.ndarray
+    joint_dynamics: np.ndarray
 
 
 class Config:
@@ -32,13 +34,26 @@ class Config:
         self.joint_states = []
         self.final_joint_states = []
 
+        self.frame_time = 0.0
+
         self.results = Result()
 
-    def allocate_results(self, frame_count):
+    def allocate_results(self, frame_count, frame_time=0.0):
+        # x, y, cos(a), sin(a)
         self.results.solid_values = np.zeros((self.solid_physics.shape[0], 4, frame_count), float)
         self.results.solid_values[:, 2, :] = 1.
 
         self.results.joint_values = np.zeros((self.joint_config.shape[0], frame_count), float)
+
+        if frame_time > 0.0:
+            self.allocated_results_dyn(frame_count, frame_time)
+
+    def allocated_results_dyn(self, frame_count, frame_time):
+        self.frame_time = frame_time
+        # force x, force y, torque(g)
+        self.results.solid_dynamics = np.zeros((self.solid_physics.shape[0], 3, frame_count))
+        # force x, force y, torque
+        self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], 3, frame_count))
 
     def add_solids(self, physics: np.ndarray):
         self.solid_physics = np.r_[self.solid_physics, physics]

@@ -104,8 +104,8 @@ class System:
     def _hyper_statism_value(self, joint_input: np.ndarray[int]) -> int:
         return 2 * self.__config.joint_config.shape[0] - 3 * (self.__config.solid_physics.shape[0] - 1) + len(joint_input) + self.__config.relation_config.shape[0]
 
-    def set_frame_count(self, frame_cnt: int):
-        self.__config.allocate_results(frame_cnt)
+    def set_frame_count(self, frame_cnt: int, frame_time: u.Time.phy = 0.0):
+        self.__config.allocate_results(frame_cnt, frame_time)
 
     def solve_kinematics(self):
         kin.System.set_up(self.__config)
