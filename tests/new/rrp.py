@@ -17,6 +17,7 @@ ps = sys.add_pin_slot(s1, s2, p1=(3, 0), distance2=1)
 r1.pilot()
 
 sys.determine_computation_order()
+sys._kinematic_strategy[1].solution_index = 1
 n = 101
 sys.set_frame_count(n)
 
@@ -49,3 +50,4 @@ plt.show()
 # décalage de pi ? distance inversé dans le paramétrage de ps ? s2 a l'envers ?
 plt.plot(r1.get_value(), s2.get_angle(), label='s2')
 plt.plot(r1.get_value(), r2.get_value(), label='r2')
+plt.show()
