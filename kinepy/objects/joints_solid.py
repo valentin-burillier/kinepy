@@ -3,6 +3,8 @@ import kinepy.units as u
 from kinepy.strategy.graph_data import JointType
 import kinepy.math.geometry as geo
 import kinepy.strategy.types as strategy
+from typing import Self
+
 
 @u.UnitSystem.class_
 class Solid(ConfigView):
@@ -35,6 +37,9 @@ class Solid(ConfigView):
             )
             self.__3dof.append(J3DOF(ghost_joints, ghost_solids))
         return self.__3dof[0]
+
+    def __eq__(self, other: Self):
+        return isinstance(other, Solid) and self._config is other._config and self._index == other._index
 
     @property
     def x(self) -> "J3DOF.Axle":
@@ -89,6 +94,8 @@ class PrimitiveJoint(ConfigView):
             self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
         return self._config.results.joint_values[self._index, :]
 
+    def __eq__(self, other: Self):
+        return isinstance(other, PrimitiveJoint) and self._config is other._config and self._index == other._index
 
 @u.UnitSystem.class_
 class Revolute(PrimitiveJoint):

@@ -32,7 +32,7 @@ class System:
 
     def add_prismatic(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> Prismatic:
         self._check_solids(s1, s2)
-        if s1 is s2:
+        if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         index = self.__config.joint_config.shape[0]
         self.__config.add_joints(np.array([[JointType.PRISMATIC.value, s1._index, s2._index]], int), np.array([[np.cos(alpha1) * distance1, np.sin(alpha1) * distance1, np.cos(alpha2) * distance2, np.sin(alpha2) * distance2]]))
@@ -40,7 +40,7 @@ class System:
 
     def add_revolute(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0)) -> Revolute:
         self._check_solids(s1, s2)
-        if s1 is s2:
+        if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         index = self.__config.joint_config.shape[0]
         self.__config.add_joints(np.array([[JointType.REVOLUTE.value, s1._index, s2._index]], int), np.r_[p1, p2][np.newaxis, :])
@@ -48,7 +48,7 @@ class System:
 
     def add_pin_slot(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> PinSlot:
         self._check_solids(s1, s2)
-        if s1 is s2:
+        if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
 
         s_ghost_index = self.__config.solid_physics.shape[0]
@@ -69,7 +69,7 @@ class System:
 
     def add_translation(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0, diff_angle: u.Angle.phy = 0.0) -> Translation:
         self._check_solids(s1, s2)
-        if s1 is s2:
+        if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
 
         s_ghost_index = self.__config.solid_physics.shape[0]

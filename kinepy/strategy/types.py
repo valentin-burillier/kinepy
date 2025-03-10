@@ -108,7 +108,7 @@ class JointStep(ResolutionStep):
         JointType.PRISMATIC: kin.JointInput.solve_prismatic
     }
 
-    def solve_kinematics(self, config):
+    def solve_kinematics(self, config: Config):
         self.function_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
 
 
@@ -135,14 +135,8 @@ class RelationStep(ResolutionStep):
         lambda value, r, v0: value * r + v0
     )
 
-    def solve_kinematics(self, solid_values: np.ndarray, joint_values: np.ndarray, kinematic_inputs: np.ndarray):
-        value = self.formula(joint_values[self.source._index, ...], self.relation._r, self.relation._v0)
-        joint_values[self.target._index, ...] = value
-
-        s1 = self.target.s1._index
-        s2 = self.target.s2._index
-
-        self.function(solid_values, value, s1, s2, self.target._p1, self.target._p2, self.eq1, self.eq2)
+    def solve_kinematics(self, config: Config):
+        pass
 
 
 class JointValueComputationStep(ResolutionStep):
@@ -179,3 +173,6 @@ class JointValueComputationStep(ResolutionStep):
     def solve_kinematics(self, config: Config):
         self.value_function(config, self.joint, self.s1, self.s2)
         self.continuity_function(config, self.joint)
+
+    def solve_dynamics(self, config: Config):
+        """Nothing to do"""

@@ -50,8 +50,8 @@ class Config:
 
     def allocated_results_dyn(self, frame_count, frame_time):
         self.frame_time = frame_time
-        # force x, force y, torque(g)
-        self.results.solid_dynamics = np.zeros((self.solid_physics.shape[0], 3, frame_count))
+        # force x, force y, gx, gy, torque(g)
+        self.results.solid_dynamics = np.zeros((self.solid_physics.shape[0], 5, frame_count))
         # force x, force y, torque
         self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], 3, frame_count))
 
