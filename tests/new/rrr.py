@@ -43,6 +43,19 @@ plt.show()
 
 #%%
 
+plt.plot(r1.get_value(), s2.get_angle(), label='s2')
+plt.plot(r1.get_value(), r2.get_value() + r1.get_value(), label='r1+r2')
+plt.legend()
+plt.show()
+
+#%%
+
+plt.plot(r1.get_value(), r3.get_value(), label='r3')
+plt.legend()
+plt.show()
+
+#%%
+
 plt.plot(s1.get_origin()[0], s1.get_origin()[1], '.-', label='s1.O')
 plt.plot(*s1.get_point(r2.p1), '.-', label='s1.r2.p1')
 plt.plot(s2.get_origin()[0], s2.get_origin()[1], '.-', label='s2.O')
