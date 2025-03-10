@@ -17,7 +17,7 @@ ps = sys.add_pin_slot(s1, s2, p1=(3, 0), distance2=1)
 r1.pilot()
 
 sys.determine_computation_order()
-sys._kinematic_strategy[1].solution_index = 1
+sys._kinematic_strategy[1].solution_index = 0  # ou 1
 n = 101
 sys.set_frame_count(n)
 

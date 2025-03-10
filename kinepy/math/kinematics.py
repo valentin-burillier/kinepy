@@ -125,7 +125,7 @@ class Graph:
         eq0, eq1, eq2 = eqs
         r0, r1, p2 = edges
 
-        v0 = Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r1)
+        v0 = Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r0)
 
         _angle21, _distance21 = Joint.get_point(config, p2)
         _angle22, _distance22 = Joint.get_point(config, p2, True)
