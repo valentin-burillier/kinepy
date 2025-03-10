@@ -3,6 +3,7 @@ import typing
 import numpy as np
 import enum
 from functools import wraps
+from dataclasses import dataclass
 
 
 PhysicalQuantity = typing._AnnotatedAlias
@@ -15,7 +16,13 @@ class _PhysicsEnum(enum.Enum):
 scalar_type = float | np.ndarray
 point_type = tuple[float, float] | list[float, float] | np.ndarray
 
-Unit = tuple[_PhysicsEnum, str, str, np.ndarray]
+
+@dataclass(frozen=True)
+class Unit:
+    _physics: _PhysicsEnum
+    fullname: str
+    symbol: str
+    value: np.ndarray
 
 
 class UnitSet:
@@ -25,7 +32,7 @@ class UnitSet:
 
     @classmethod
     def new_unit(cls, fullname: str, symbol: str, value: scalar_type) -> Unit:
-        return cls._PHYSICS, fullname, symbol, np.ndarray(value)
+        return Unit(cls._PHYSICS, fullname, symbol, np.ndarray(value))
 
 
 class Length(UnitSet):
@@ -37,13 +44,13 @@ class Length(UnitSet):
     # endregion auto-fill LENGTH
     point: PhysicalQuantity = typing.Annotated[point_type, _PHYSICS]
 
-    METRE: Unit = _PHYSICS, 'metre', 'm', np.array(1.0)
-    MILLIMETRE: Unit = _PHYSICS, 'millimetre', 'mm', np.array(1e-3)
-    CENTIMETRE: Unit = _PHYSICS, 'centimetre', 'cm', np.array(1e-2)
-    INCH: Unit = _PHYSICS, 'inch', 'in', np.array(2.54e-2)
-    FOOT: Unit = _PHYSICS, 'foot', 'ft', np.array(0.3048)
-    YARD: Unit = _PHYSICS, 'yard', 'yd', np.array(0.9144)
-    GOAT: Unit = _PHYSICS, 'goat height', 'gt', np.array(.673)
+    METRE: Unit = Unit(_PHYSICS, 'metre', 'm', np.array(1.0))
+    MILLIMETRE: Unit = Unit(_PHYSICS, 'millimetre', 'mm', np.array(1e-3))
+    CENTIMETRE: Unit = Unit(_PHYSICS, 'centimetre', 'cm', np.array(1e-2))
+    INCH: Unit = Unit(_PHYSICS, 'inch', 'in', np.array(2.54e-2))
+    FOOT: Unit = Unit(_PHYSICS, 'foot', 'ft', np.array(0.3048))
+    YARD: Unit = Unit(_PHYSICS, 'yard', 'yd', np.array(0.9144))
+    GOAT: Unit = Unit(_PHYSICS, 'goat height', 'gt', np.array(.673))
 
     SI_UNIT = METRE
 
@@ -56,10 +63,10 @@ class Mass(UnitSet):
 
     # endregion auto-fill MASS
 
-    KILOGRAM: Unit = _PHYSICS, 'kilograms', 'kg', np.array(1.)
-    GRAM: Unit = _PHYSICS, 'grams', 'g', np.array(1e-3)
-    POUND: Unit = _PHYSICS, 'pounds', 'lb', np.array(0.453592)
-    GOAT: Unit = _PHYSICS, 'goats', 'gt', np.array(60.)
+    KILOGRAM: Unit = Unit(_PHYSICS, 'kilograms', 'kg', np.array(1.))
+    GRAM: Unit = Unit(_PHYSICS, 'grams', 'g', np.array(1e-3))
+    POUND: Unit = Unit(_PHYSICS, 'pounds', 'lb', np.array(0.453592))
+    GOAT: Unit = Unit(_PHYSICS, 'goats', 'gt', np.array(60.))
 
     SI_UNIT = KILOGRAM
 
@@ -72,8 +79,8 @@ class MomentOfInertia(UnitSet):
 
     # endregion auto-fill MOMENT_OF_INERTIA
 
-    KILOGRAM_METRE_SQUARED: Unit = _PHYSICS, 'kilogram metre squared', 'kg.m²', np.array(1.)
-    POUND_FORCE_FOOT_SECOND_SQUARED: Unit = _PHYSICS, 'pound-force foot second squared', 'lbf.ft.s2', np.array(1.3423)
+    KILOGRAM_METRE_SQUARED: Unit = Unit(_PHYSICS, 'kilogram metre squared', 'kg.m²', np.array(1.))
+    POUND_FORCE_FOOT_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'pound-force foot second squared', 'lbf.ft.s2', np.array(1.3423))
 
     SI_UNIT = KILOGRAM_METRE_SQUARED
 
@@ -86,9 +93,9 @@ class Angle(UnitSet):
 
     # endregion auto-fill ANGLE
 
-    RADIAN: Unit = _PHYSICS, 'radians', 'rad', np.array(1.)
-    DEGREE: Unit = _PHYSICS, 'degrees', '°', np.array(np.pi / 180)
-    REVOLUTION: Unit = _PHYSICS, 'revolutions', 'r', np.array(2*np.pi)
+    RADIAN: Unit = Unit(_PHYSICS, 'radians', 'rad', np.array(1.))
+    DEGREE: Unit = Unit(_PHYSICS, 'degrees', '°', np.array(np.pi / 180))
+    REVOLUTION: Unit = Unit(_PHYSICS, 'revolutions', 'r', np.array(2*np.pi))
 
     SI_UNIT = RADIAN
 
@@ -101,9 +108,9 @@ class Dimensionless(UnitSet):
 
     # endregion auto-fill DIMENSIONLESS
 
-    NO_UNIT: Unit = _PHYSICS, 'no unit', '', np.array(1.)
-    PERCENT: Unit = _PHYSICS, 'percents', '%', np.array(.01)
-    GOAT: Unit = _PHYSICS, 'goats', 'gt', np.array(1.)  # simply count your goats
+    NO_UNIT: Unit = Unit(_PHYSICS, 'no unit', '', np.array(1.))
+    PERCENT: Unit = Unit(_PHYSICS, 'percents', '%', np.array(.01))
+    GOAT: Unit = Unit(_PHYSICS, 'goats', 'gt', np.array(1.))  # simply count your goats
 
     SI_UNIT = NO_UNIT
 
@@ -116,10 +123,10 @@ class Time(UnitSet):
 
     # endregion auto-fill TIME
 
-    SECOND: Unit = _PHYSICS, 'seconds', 's', np.array(1.)
-    MILLISECOND: Unit = _PHYSICS, 'milliseconds', 'ms', np.array(1e-3)
-    MINUTE: Unit = _PHYSICS, 'minutes', 'min', np.array(60.)
-    BLEAT: Unit = _PHYSICS, 'goat bleats', 'baa', np.array(1.534)  # measured one bleat that took this long
+    SECOND: Unit = Unit(_PHYSICS, 'seconds', 's', np.array(1.))
+    MILLISECOND: Unit = Unit(_PHYSICS, 'milliseconds', 'ms', np.array(1e-3))
+    MINUTE: Unit = Unit(_PHYSICS, 'minutes', 'min', np.array(60.))
+    BLEAT: Unit = Unit(_PHYSICS, 'goat bleats', 'baa', np.array(1.534))  # measured one bleat that took this long
     SI_UNIT = SECOND
 
 
@@ -131,12 +138,12 @@ class Velocity(UnitSet):
 
     # endregion auto-fill VELOCITY
 
-    METRE_PER_SECOND: Unit = _PHYSICS, 'metres per second', 'm/s', np.array(1.)
-    MILLIMETRE_PER_SECOND: Unit = _PHYSICS, 'millimetres per second', 'mm/s', np.array(1e-3)
-    KILOMETRE_PER_HOUR: Unit = _PHYSICS, 'kilometres per hour', 'km/h', np.array(1/3.6)
-    FOOT_PER_SECOND: Unit = _PHYSICS, 'feet per second', 'ft/s', np.array(0.3048)
-    MILE_PER_HOUR: Unit = _PHYSICS, 'miles per hour', 'mph', np.array(0.44704)
-    GOAT: Unit = _PHYSICS, 'goat speed', 'gt', np.array(16 / 3.6)
+    METRE_PER_SECOND: Unit = Unit(_PHYSICS, 'metres per second', 'm/s', np.array(1.))
+    MILLIMETRE_PER_SECOND: Unit = Unit(_PHYSICS, 'millimetres per second', 'mm/s', np.array(1e-3))
+    KILOMETRE_PER_HOUR: Unit = Unit(_PHYSICS, 'kilometres per hour', 'km/h', np.array(1/3.6))
+    FOOT_PER_SECOND: Unit = Unit(_PHYSICS, 'feet per second', 'ft/s', np.array(0.3048))
+    MILE_PER_HOUR: Unit = Unit(_PHYSICS, 'miles per hour', 'mph', np.array(0.44704))
+    GOAT: Unit = Unit(_PHYSICS, 'goat speed', 'gt', np.array(16 / 3.6))
 
     SI_UNIT = METRE_PER_SECOND
 
@@ -149,10 +156,10 @@ class Acceleration(UnitSet):
 
     # endregion auto-fill ACCELERATION
 
-    METRE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'metres per second squared', 'm/s²', np.array(1.)
-    MILLIMETRE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'millimetres per second squared', 'mm/s²', np.array(1e-3)
-    FOOT_PER_SECOND_SQUARED: Unit = _PHYSICS, 'feet per second squared', 'ft/s²', np.array(0.3048)
-    G: Unit = _PHYSICS, 'earth gravitation', 'G', np.array(9.8067)
+    METRE_PER_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'metres per second squared', 'm/s²', np.array(1.))
+    MILLIMETRE_PER_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'millimetres per second squared', 'mm/s²', np.array(1e-3))
+    FOOT_PER_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'feet per second squared', 'ft/s²', np.array(0.3048))
+    G: Unit = Unit(_PHYSICS, 'earth gravitation', 'G', np.array(9.8067))
 
     SI_UNIT = METRE_PER_SECOND_SQUARED
 
@@ -165,10 +172,10 @@ class AngularVelocity(UnitSet):
 
     # endregion auto-fill ANGULAR_VELOCITY
 
-    RADIAN_PER_SECOND: Unit = _PHYSICS, 'radians per second', 'rad/s', np.array(1.)
-    REVOLUTION_PER_MINUTE: Unit = _PHYSICS, 'revolutions pêr minute', 'rpm', np.array(np.pi/30)
-    HERTZ: Unit = _PHYSICS, 'hertz', 'Hz', np.array(2*np.pi)
-    DEGREE_PER_SECOND: Unit = _PHYSICS, 'degrees per second', '°/s', np.array(np.pi / 180)
+    RADIAN_PER_SECOND: Unit = Unit(_PHYSICS, 'radians per second', 'rad/s', np.array(1.))
+    REVOLUTION_PER_MINUTE: Unit = Unit(_PHYSICS, 'revolutions pêr minute', 'rpm', np.array(np.pi/30))
+    HERTZ: Unit = Unit(_PHYSICS, 'hertz', 'Hz', np.array(2*np.pi))
+    DEGREE_PER_SECOND: Unit = Unit(_PHYSICS, 'degrees per second', '°/s', np.array(np.pi / 180))
 
     SI_UNIT = RADIAN_PER_SECOND
 
@@ -181,8 +188,8 @@ class AngularAcceleration(UnitSet):
 
     # endregion auto-fill ANGULAR_ACCELERATION
 
-    RADIAN_PER_SECOND_SQUARED: Unit = _PHYSICS, 'radians per second squared', 'rad/s²', np.array(1.)
-    DEGREE_PER_SECOND_SQUARED: Unit = _PHYSICS, 'degrees per second squared', '°/s²', np.array(np.pi / 180)
+    RADIAN_PER_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'radians per second squared', 'rad/s²', np.array(1.))
+    DEGREE_PER_SECOND_SQUARED: Unit = Unit(_PHYSICS, 'degrees per second squared', '°/s²', np.array(np.pi / 180))
 
     SI_UNIT = RADIAN_PER_SECOND_SQUARED
 
@@ -195,10 +202,10 @@ class Density(UnitSet):
 
     # endregion auto-fill DENSITY
 
-    KILOGRAM_PER_CUBIC_METRE: Unit = _PHYSICS, 'kilogram per cubic metre', 'kg/m³', np.array(1.)
-    GRAM_PER_CUBIC_CENTIMETRE: Unit = _PHYSICS, 'gram per cubic centimetre' 'g/cm³', np.array(1e3)
-    POUND_PER_CUBIC_INCH: Unit = _PHYSICS, 'pound per cubic inch', 'lb/in³', np.array(27679.9)
-    POUND_PER_CUBIC_FOOT: Unit = _PHYSICS, 'pound per cubic foot', 'lb/ft³', np.array(16.0185)
+    KILOGRAM_PER_CUBIC_METRE: Unit = Unit(_PHYSICS, 'kilogram per cubic metre', 'kg/m³', np.array(1.))
+    GRAM_PER_CUBIC_CENTIMETRE: Unit = Unit(_PHYSICS, 'gram per cubic centimetre', 'g/cm³', np.array(1e3))
+    POUND_PER_CUBIC_INCH: Unit = Unit(_PHYSICS, 'pound per cubic inch', 'lb/in³', np.array(27679.9))
+    POUND_PER_CUBIC_FOOT: Unit = Unit(_PHYSICS, 'pound per cubic foot', 'lb/ft³', np.array(16.0185))
 
     SI_UNIT = KILOGRAM_PER_CUBIC_METRE
 
@@ -211,12 +218,12 @@ class Force(UnitSet):
 
     # endregion auto-fill FORCE
 
-    NEWTON: Unit = _PHYSICS, 'newton', 'N', np.array(1.)
-    DECANEWTON: Unit = _PHYSICS, 'deca-newton', 'daN', np.array(10.)
-    MILLINEWTON: Unit = _PHYSICS, 'millinewton', 'mN', np.array(1e-3)
-    KILONEWTON: Unit = _PHYSICS, 'kilonewton', 'kN', np.array(1e3)
-    POUND_FORCE: Unit = _PHYSICS, 'pound force', 'lbf', np.array(4.44822)
-    KILOGRAM_FORCE: Unit = _PHYSICS, 'kilogram force', 'kgf', np.array(9.8067)
+    NEWTON: Unit = Unit(_PHYSICS, 'newton', 'N', np.array(1.))
+    DECANEWTON: Unit = Unit(_PHYSICS, 'deca-newton', 'daN', np.array(10.))
+    MILLINEWTON: Unit = Unit(_PHYSICS, 'millinewton', 'mN', np.array(1e-3))
+    KILONEWTON: Unit = Unit(_PHYSICS, 'kilonewton', 'kN', np.array(1e3))
+    POUND_FORCE: Unit = Unit(_PHYSICS, 'pound force', 'lbf', np.array(4.44822))
+    KILOGRAM_FORCE: Unit = Unit(_PHYSICS, 'kilogram force', 'kgf', np.array(9.8067))
 
     SI_UNIT = NEWTON
 
@@ -229,10 +236,10 @@ class Torque(UnitSet):
 
     # endregion auto-fill TORQUE
 
-    NEWTON_METRE: Unit = _PHYSICS, 'newton metre', 'N.m', np.array(1.)
-    NEWTON_MILLIMETRE: Unit = _PHYSICS, 'newton millimetre', 'N.mm', np.array(1e-3)
-    MILLINEWTON_METRE: Unit = _PHYSICS, 'millinewton metre', 'mN.m', np.array(1e-3)
-    POUND_FOOT: Unit = _PHYSICS, 'pound foot', 'lb.ft', np.array(1.355818)
+    NEWTON_METRE: Unit = Unit(_PHYSICS, 'newton metre', 'N.m', np.array(1.))
+    NEWTON_MILLIMETRE: Unit = Unit(_PHYSICS, 'newton millimetre', 'N.mm', np.array(1e-3))
+    MILLINEWTON_METRE: Unit = Unit(_PHYSICS, 'millinewton metre', 'mN.m', np.array(1e-3))
+    POUND_FOOT: Unit = Unit(_PHYSICS, 'pound foot', 'lb.ft', np.array(1.355818))
 
     SI_UNIT = NEWTON_METRE
 
@@ -245,9 +252,9 @@ class SpringConstant(UnitSet):
 
     # endregion auto-fill SPRING_CONSTANT
 
-    NEWTON_PER_METRE: Unit = _PHYSICS, 'newton per metre', 'N/m', np.array(1.)
-    NEWTON_PER_MILLIMETRE: Unit = _PHYSICS, 'newton per millimetre', 'N/mm', np.array(1e3)
-    POUND_FORCE_PER_INCH: Unit = _PHYSICS, 'pound force per inch', 'lbf/in', np.array(0.112985)
+    NEWTON_PER_METRE: Unit = Unit(_PHYSICS, 'newton per metre', 'N/m', np.array(1.))
+    NEWTON_PER_MILLIMETRE: Unit = Unit(_PHYSICS, 'newton per millimetre', 'N/mm', np.array(1e3))
+    POUND_FORCE_PER_INCH: Unit = Unit(_PHYSICS, 'pound force per inch', 'lbf/in', np.array(0.112985))
 
     SI_UNIT = NEWTON_PER_METRE
 
@@ -302,7 +309,7 @@ class UnitSystem:
 
     @classmethod
     def _get_unit_value(cls, phy: _PhysicsEnum) -> np.ndarray:
-        return cls._unit_values[phy][3]
+        return cls._unit_values[phy].value
 
     @classmethod
     def use(cls, *units: Unit, kw_units: tuple[Unit, ...] = ()) -> None:
@@ -310,7 +317,7 @@ class UnitSystem:
         Select units to use for every unit-dependant interface. Duplicates are overwritten, last matters.
         """
         for unit in units + kw_units:
-            cls._unit_values[unit[0]] = unit
+            cls._unit_values[unit._physics] = unit
 
     @classmethod
     def show(cls) -> str:
@@ -337,7 +344,7 @@ class UnitSystem:
         return lambda value: value / cls._get_unit_value(phy)
 
     @classmethod
-    def function(cls, func: types.FunctionType):
+    def function(cls, func: types.FunctionType) -> types.FunctionType:
         """
         Function decorator that manages all arguments annotated with a PhysicalQuantity and the return value
         """

@@ -3,6 +3,7 @@ import numpy as np
 
 class Result:
     solid_values: np.ndarray
+
     joint_values: np.ndarray
 
 
