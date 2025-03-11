@@ -47,10 +47,14 @@ plt.show()
 #%%
 
 plt.plot(ps.angle.get_value())
+plt.show()
+
 
 #%%
 
 plt.plot(ps.sliding.get_value())
+plt.show()
+
 
 #%%
 

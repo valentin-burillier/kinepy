@@ -9,7 +9,6 @@ class JointValueComputation:
 
     @staticmethod
     def compute_revolute_value(config: Config, joint: int, s1: int, s2: int) -> None:
-
         s1_orientation = Orientation.get(config, s1)
         s2_orientation = Orientation.get(config, s2)
 
@@ -21,7 +20,6 @@ class JointValueComputation:
     def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
         angle = config.joint_physics[joint, :1]
         director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
-
         config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))
 
     @staticmethod

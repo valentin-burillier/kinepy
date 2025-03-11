@@ -62,8 +62,8 @@ class System:
 
         ghost_solid = GhostSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
         ghost_joints = (
-            PinSlotSliding(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<PinSlot: {s2.name}/{s1.name} .sliding>"),
-            PinSlotAngle(self.__config, j_ghost_index, s1, ghost_solid, f"<¨PinSlot: {s2.name}/{s1.name} .angle>")
+            PinSlotSliding(self.__config, j_ghost_index, s1, ghost_solid, f"<PinSlot: {s2.name}/{s1.name} .sliding>"),
+            PinSlotAngle(self.__config, j_ghost_index+1, ghost_solid, s2, f"<¨PinSlot: {s2.name}/{s1.name} .angle>")
         )
         return PinSlot(ghost_joints, (ghost_solid,))
 
