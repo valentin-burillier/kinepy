@@ -45,10 +45,15 @@ plt.show()
 
 
 #%%
-ps.sliding.get_value()
 
-# la cinématique est bonne mais
-# décalage de pi ? distance inversé dans le paramétrage de ps ? s2 a l'envers ?
+plt.plot(ps.angle.get_value())
+
+#%%
+
+plt.plot(ps.sliding.get_value())
+
+#%%
+
 plt.plot(r1.get_value(), s2.get_angle(), label='s2')
 plt.plot(r1.get_value(), r2.get_value(), label='r2')
 plt.show()
