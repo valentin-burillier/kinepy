@@ -12,7 +12,7 @@ s2 = sys.add_solid()
 
 r1 = sys.add_revolute(s0, s1, p1=(-1, 2))
 r2 = sys.add_revolute(s0, s2, p1=(6, 4))
-ps = sys.add_pin_slot(s1, s2, p1=(3, 0), distance2=1)
+ps = sys.add_pin_slot(s2, s1, p2=(3, 0), distance1=1)
 
 r1.pilot()
 

@@ -1,6 +1,6 @@
 from kinepy.objects.config import Config, np
 import kinepy.units as u
-from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, CompositeJoint
+from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, CompositeJoint, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
 from kinepy.strategy.graph_data import JointType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
@@ -11,7 +11,7 @@ import kinepy.math.kinematics as kin
 class System:
     def __init__(self):
         self.__config = Config()
-        self._ground = CompositeJoint.GSolid(self.__config, 0, 'Ground')
+        self._ground = GhostSolid(self.__config, 0, 'Ground')
 
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
         self._dynamic_strategy: list[strategy.ResolutionStep] = []
@@ -46,7 +46,7 @@ class System:
         self.__config.add_joints(np.array([[JointType.REVOLUTE.value, s1._index, s2._index]], int), np.r_[p1, p2][np.newaxis, :])
         return Revolute(self.__config, index, s1, s2)
 
-    def add_pin_slot(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> PinSlot:
+    def add_pin_slot(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, p2: u.Length.point = (0.0, 0.0)) -> PinSlot:
         self._check_solids(s1, s2)
         if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
@@ -56,14 +56,14 @@ class System:
 
         j_ghost_index = self.__config.joint_config.shape[0]
         self.__config.add_joints(
-            np.array([[JointType.REVOLUTE.value, s1._index, s_ghost_index], [JointType.PRISMATIC.value, s_ghost_index, s2._index]]),
-            np.array((np.r_[p1, 0, 0], [alpha2, 0, alpha2, distance2]))
+            np.array([[JointType.PRISMATIC.value, s1._index, s_ghost_index], [JointType.REVOLUTE.value, s_ghost_index, s2._index]]),
+            np.array(([alpha1, distance1, alpha1, 0], np.r_[0, 0, p2]))
         )
 
-        ghost_solid = CompositeJoint.GSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
+        ghost_solid = GhostSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
         ghost_joints = (
-            PinSlot.Angle(self.__config, j_ghost_index, s1, ghost_solid, f"<¨PinSlot: {s2.name}/{s1.name} .angle>"),
-            PinSlot.Sliding(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<PinSlot: {s2.name}/{s1.name} .sliding>")
+            PinSlotSliding(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<PinSlot: {s2.name}/{s1.name} .sliding>"),
+            PinSlotAngle(self.__config, j_ghost_index, s1, ghost_solid, f"<¨PinSlot: {s2.name}/{s1.name} .angle>")
         )
         return PinSlot(ghost_joints, (ghost_solid,))
 
@@ -81,10 +81,10 @@ class System:
             np.array(([alpha1, distance1, alpha1, 0], [alpha2, 0, alpha2 + diff_angle, distance2]))
         )
 
-        ghost_solid = CompositeJoint.GSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
+        ghost_solid = GhostSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
         ghost_joints = (
-            Translation.AxleX(self.__config, j_ghost_index, s1, ghost_solid, f"<¨Translation: {s2.name}/{s1.name} .angle>"),
-            Translation.AxleY(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<Translation: {s2.name}/{s1.name} .sliding>")
+            TranslationAxleX(self.__config, j_ghost_index, s1, ghost_solid, f"<¨Translation: {s2.name}/{s1.name} .angle>"),
+            TranslationAxleY(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<Translation: {s2.name}/{s1.name} .sliding>")
         )
         return Translation(ghost_joints, (ghost_solid,))
 

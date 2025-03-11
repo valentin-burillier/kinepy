@@ -23,7 +23,7 @@ class Solid(ConfigView):
         if not self.__3dof:
             s_ghost_index = self._config.solid_physics.shape[0]
             self._config.add_solids(np.zeros((2, 4)))
-            ghost_solids = CompositeJoint.GSolid(self._config, s_ghost_index, f'GhostSolid {s_ghost_index}'), CompositeJoint.GSolid(self._config, s_ghost_index+1, f'GhostSolid {s_ghost_index+1}')
+            ghost_solids = GhostSolid(self._config, s_ghost_index, f'GhostSolid {s_ghost_index}'), GhostSolid(self._config, s_ghost_index + 1, f'GhostSolid {s_ghost_index + 1}')
 
             j_ghost_index = self._config.joint_config.shape[0]
             self._config.add_joints(
@@ -31,9 +31,9 @@ class Solid(ConfigView):
                 np.array([[0, 0, 0, 0], [np.pi * 0.5, 0, np.pi * 0.5, 0], [0, 0, 0, 0]])
             )
             ghost_joints = (
-                J3DOF.Axle(self._config, j_ghost_index, CompositeJoint.GSolid(self._config, 0, 'Ground'), ghost_solids[0], f"<{self.name}.x>"),
-                J3DOF.Axle(self._config, j_ghost_index+1, ghost_solids[0], ghost_solids[1], f"<{self.name}.y>"),
-                J3DOF.Angle(self._config, j_ghost_index+1, ghost_solids[1], self, f"<{self.name}.angle>")
+                J3DOFAxle(self._config, j_ghost_index, CompositeJoint.GhostSolid(self._config, 0, 'Ground'), ghost_solids[0], f"<{self.name}.x>"),
+                J3DOFAxle(self._config, j_ghost_index+1, ghost_solids[0], ghost_solids[1], f"<{self.name}.y>"),
+                J3DOFAngle(self._config, j_ghost_index+1, ghost_solids[1], self, f"<{self.name}.angle>")
             )
             self.__3dof.append(J3DOF(ghost_joints, ghost_solids))
         return self.__3dof[0]
@@ -42,15 +42,15 @@ class Solid(ConfigView):
         return isinstance(other, Solid) and self._config is other._config and self._index == other._index
 
     @property
-    def x(self) -> "J3DOF.Axle":
+    def x(self) -> "J3DOFAxle":
         return self._get_3dof().x
 
     @property
-    def y(self) -> "J3DOF.Axle":
+    def y(self) -> "J3DOFAxle":
         return self._get_3dof().y
 
     @property
-    def angle(self) -> "J3DOF.Angle":
+    def angle(self) -> "J3DOFAngle":
         return self._get_3dof().angle
 
     def get_origin(self) -> u.Length.point:
@@ -96,6 +96,7 @@ class PrimitiveJoint(ConfigView):
 
     def __eq__(self, other: Self):
         return isinstance(other, PrimitiveJoint) and self._config is other._config and self._index == other._index
+
 
 @u.UnitSystem.class_
 class Revolute(PrimitiveJoint):
@@ -143,19 +144,20 @@ def _mirror_other(prop: property, other: property) -> property:
     return property(prop.fget, setter)
 
 
+class GhostSolid(Solid):
+    __slots__ = ()
+
+    mass: u.Mass.phy = _disable_set(Solid.mass)
+    moment_of_inertia: u.MomentOfInertia.phy = _disable_set(Solid.moment_of_inertia)
+    g: u.Length.point = _disable_set(Solid.g)
+
+
 class CompositeJoint:
     __slots__ = '_joints', '_solids', '_initialized'
 
-    class GSolid(Solid):
-        __slots__ = ()
-
-        mass: u.Mass.phy = _disable_set(Solid.mass)
-        moment_of_inertia: u.MomentOfInertia.phy = _disable_set(Solid.moment_of_inertia)
-        g: u.Length.point = _disable_set(Solid.g)
-
-    def __init__(self, joints: tuple[PrimitiveJoint, ...], solids: tuple[GSolid, ...]):
+    def __init__(self, joints: tuple[PrimitiveJoint, ...], solids: tuple[GhostSolid, ...]):
         self._joints: tuple[PrimitiveJoint, ...] = joints
-        self._solids: tuple[CompositeJoint.GSolid, ...] = solids
+        self._solids: tuple[GhostSolid, ...] = solids
         self._initialized = None
 
     def __setattr__(self, key, value):
@@ -175,29 +177,44 @@ class CompositeJoint:
         return self._joints[-1].s2
 
 
+class PinSlotSliding(Prismatic):
+    __slots__ = ()
+
+    angle1: u.Angle.phy = _mirror_other(Prismatic.angle1, Prismatic.angle2)
+    angle2: u.Angle.phy = _mirror_other(Prismatic.angle2, Prismatic.angle1)
+
+    distance2 = _disable_set(Prismatic.distance2)
+
+
+class PinSlotAngle(Revolute):
+    __slots__ = ()
+    p1 = _disable_set(Revolute.p1)
+
+
 class PinSlot(CompositeJoint):
     _sliding, _angle = range(2)
     __slots__ = ()
 
-    class Sliding(Prismatic):
-        __slots__ = ()
-
-        angle1: u.Angle.phy = _mirror_other(Prismatic.angle1, Prismatic.angle2)
-        angle2: u.Angle.phy = _mirror_other(Prismatic.angle2, Prismatic.angle1)
-
-        distance1 = _disable_set(Prismatic.distance1)
-
-    class Angle(Revolute):
-        __slots__ = ()
-        p2 = _disable_set(Revolute.p2)
-
     @property
-    def sliding(self) -> Sliding:
+    def sliding(self) -> PinSlotSliding:
         return self._joints[self._sliding]
 
     @property
-    def angle(self) -> Angle:
+    def angle(self) -> PinSlotAngle:
         return self._joints[self._angle]
+
+
+class TranslationAxleX(Prismatic):
+    __slots__ = ()
+    angle1: u.Angle.phy = _mirror_other(Prismatic.angle1, Prismatic.angle2)
+    angle2: u.Angle.phy = _mirror_other(Prismatic.angle2, Prismatic.angle1)
+
+    distance2 = _disable_set(Prismatic.distance2)
+
+
+class TranslationAxleY(Prismatic):
+    __slots__ = ()
+    distance1 = _disable_set(Prismatic.distance1)
 
 
 @u.UnitSystem.class_
@@ -205,23 +222,12 @@ class Translation(CompositeJoint):
     _x, _y = range(2)
     __slots__ = ()
 
-    class AxleX(Prismatic):
-        __slots__ = ()
-        angle1: u.Angle.phy = _mirror_other(Prismatic.angle1, Prismatic.angle2)
-        angle2: u.Angle.phy = _mirror_other(Prismatic.angle2, Prismatic.angle1)
-
-        distance2 = _disable_set(Prismatic.distance2)
-
-    class AxleY(Prismatic):
-        __slots__ = ()
-        distance1 = _disable_set(Prismatic.distance1)
-
     @property
-    def x(self) -> AxleX:
+    def x(self) -> TranslationAxleX:
         return self._joints[self._x]
 
     @property
-    def y(self) -> AxleY:
+    def y(self) -> TranslationAxleY:
         return self._joints[self._y]
 
     @property
@@ -235,29 +241,31 @@ class Translation(CompositeJoint):
         _y._config.joint_physics[_y._index, Prismatic._a2] = _y._config.joint_physics[_y._index, Prismatic._a1] + value
 
 
+class J3DOFAxle(Prismatic):
+    __slots__ = ()
+    angle1 = _disable_set(Prismatic.angle1)
+    angle2 = _disable_set(Prismatic.angle2)
+    distance1 = _disable_set(Prismatic.distance1)
+    distance2 = _disable_set(Prismatic.distance2)
+
+
+class J3DOFAngle(Revolute):
+    __slots__ = ()
+    p1 = _disable_set(Revolute.p1)
+
+
 class J3DOF(CompositeJoint):
     _x, _y, _angle = range(3)
     __slots__ = ()
 
-    class Axle(Prismatic):
-        __slots__ = ()
-        angle1 = _disable_set(Prismatic.angle1)
-        angle2 = _disable_set(Prismatic.angle2)
-        distance1 = _disable_set(Prismatic.distance1)
-        distance2 = _disable_set(Prismatic.distance2)
-
-    class Angle(Revolute):
-        __slots__ = ()
-        p1 = _disable_set(Revolute.p1)
-
     @property
-    def x(self) -> Axle:
+    def x(self) -> J3DOFAxle:
         return self._joints[self._x]
 
     @property
-    def y(self) -> Axle:
+    def y(self) -> J3DOFAxle:
         return self._joints[self._y]
 
     @property
-    def angle(self) -> Angle:
+    def angle(self) -> J3DOFAngle:
         return self._joints[self._angle]
