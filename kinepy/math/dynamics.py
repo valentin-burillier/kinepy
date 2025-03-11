@@ -19,6 +19,15 @@ class Newtons2ndLaw:
         # np.cross: shape ((eq, 2, n) - (1, 2, n)) x (eq, 2, n) -> (eq, n)
         return -np.sum(config.results.solid_dynamics[eq, 4, :] + np.cross(config.results.solid_dynamics[eq, 2:4, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, 0:2, :], axis=1), axis=0)
 
+    @staticmethod
+    def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int], ground_eq: int) -> tuple[tuple[int, ...], float]:
+        target_mask = sum(1 << eq_index for eq_index in target_indices)
+        sign = 1.0
+        if (target_mask >> ground_eq) & 1:
+            target_mask ^= (1 << len(all_eqs)) - 1
+            sign = -1.0
+        return sum((eq for i, eq in enumerate(all_eqs) if (i >> target_mask) & 1), ()), sign
+
 
 class JointInput:
     @staticmethod
