@@ -36,9 +36,14 @@ sys.solve_kinematics()
 #%%
 
 plt.plot(r1.get_value(), p1.get_value())
+plt.show()
 plt.plot(r1.get_value(), s1.get_origin()[0])
 plt.plot(r1.get_value(), s3.get_origin()[0])
-
-plt.plot(r1.get_value(), p2.get_value())
 plt.plot(r1.get_value(), s2.get_origin()[1])
-plt.plot(r1.get_value(), s3.get_point(np.array([5, 0])))
+plt.show()
+
+# plt.plot(r1.get_value(), p2.get_value())
+plt.plot(*s2.get_origin())
+plt.show()
+plt.plot(*s3.get_point((1, 1)))
+plt.show()

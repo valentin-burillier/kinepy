@@ -176,7 +176,7 @@ class Graph:
         Geometry.rotate_eq(eq2, config, eq2_rotation)
 
         vec_1 = Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * Geometry.z_det(v1) + Joint.get_solid_point(config, r2) - Joint.get_solid_position(config, p0, True)
-        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * Geometry.z_det(v1) + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
+        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * Geometry.z_det(v2) + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
 
         target_point = vec_1 + (Geometry.det(vec_2 - vec_1, v2) / Geometry.det(v1, v2)) * v1
         Geometry.move_eq(eq1, config, target_point - Joint.get_solid_point(config, r2))

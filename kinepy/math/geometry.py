@@ -115,7 +115,7 @@ class Position:
 
     @staticmethod
     def point(config: Config, solid: int, point: np.ndarray) -> np.ndarray:
-        return Position.local_point(config, solid, point).__iadd__(Position.get(config, solid))
+        return Position.local_point(config, solid, point) + Position.get(config, solid)
 
 
 class Geometry:

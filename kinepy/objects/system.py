@@ -1,6 +1,6 @@
 from kinepy.objects.config import Config, np
 import kinepy.units as u
-from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, CompositeJoint, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
+from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
 from kinepy.strategy.graph_data import JointType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
@@ -35,7 +35,7 @@ class System:
         if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         index = self.__config.joint_config.shape[0]
-        self.__config.add_joints(np.array([[JointType.PRISMATIC.value, s1._index, s2._index]], int), np.array([[np.cos(alpha1) * distance1, np.sin(alpha1) * distance1, np.cos(alpha2) * distance2, np.sin(alpha2) * distance2]]))
+        self.__config.add_joints(np.array([[JointType.PRISMATIC.value, s1._index, s2._index]], int), np.array([[alpha1, distance1, alpha2,  distance2]]))
         return Prismatic(self.__config, index, s1, s2)
 
     def add_revolute(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0)) -> Revolute:
