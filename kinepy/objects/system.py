@@ -5,6 +5,7 @@ from kinepy.strategy.graph_data import JointType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.math.kinematics as kin
+import kinepy.math.dynamics as dyn
 
 
 @u.UnitSystem.class_
@@ -117,3 +118,12 @@ class System:
 
     def get_steps_with_multiple_solutions(self) -> tuple[strategy.GraphStep, ...]:
         return tuple(step for step in self._kinematic_strategy if isinstance(step, strategy.GraphStep) and step.solution_count > 1)
+
+    def solve_dynamics(self):
+        dyn.System.set_up(self.__config)
+
+        _strategy = self._dynamic_strategy or self._kinematic_strategy
+        for step in _strategy[::-1]:
+            step.solve_dynamics(self.__config)
+
+        dyn.System.clean_up(self.__config)
