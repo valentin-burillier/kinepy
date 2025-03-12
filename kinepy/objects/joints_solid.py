@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.objects.config import *
 import kinepy.units as u
 from kinepy.strategy.graph_data import JointType
@@ -57,7 +59,7 @@ class Solid(ConfigView):
         return geo.Position.get(self._config, self._index)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
-        return geo.Position.point(self._config, self._index, p)
+        return geo.Position.point(self._config, self._index, p[:, np.newaxis])
 
     def get_angle(self):
         _x, _y = geo.Orientation.get(self._config, self._index)

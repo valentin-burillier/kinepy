@@ -4,6 +4,7 @@ from kinepy.strategy.graph_data import JointType, Graphs
 from kinepy.units import _PhysicsEnum
 import numpy as np
 import kinepy.math.kinematics as kin
+import kinepy.math.dynamics as dyn
 from kinepy.objects.config import Config
 
 
@@ -79,6 +80,10 @@ class GraphStep(ResolutionStep):
         self._graph_index = graph
         self._edges = edges
         self._eqs = eqs
+        self._zero_holder = 0
+        for i, eq in enumerate(eqs):
+            if 0 in eq:
+                self._zero_holder = i
 
     kinematics = (
         kin.Graph.solve_rrr,
@@ -98,7 +103,6 @@ class GraphStep(ResolutionStep):
 
 
 class JointStep(ResolutionStep):
-    function: Callable[[np.ndarray, np.ndarray, int, int, np.ndarray, np.ndarray, tuple[int, ...], tuple[int, ...]], None]
 
     def __init__(self, joint_type: JointType, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
         ResolutionStep.__init__(self)
@@ -106,14 +110,23 @@ class JointStep(ResolutionStep):
         self.eq1, self.eq2 = eq1, eq2
         self.joint_type = joint_type
         self.s1, self.s2 = s1, s2
+        self.zero_holder = 0 in eq2
 
-    function_chooser = {
+    kinematics_chooser = {
         JointType.REVOLUTE: kin.JointInput.solve_revolute,
         JointType.PRISMATIC: kin.JointInput.solve_prismatic
     }
 
+    dynamics_chooser = {
+        JointType.REVOLUTE: dyn.JointInput.solve_revolute,
+        JointType.PRISMATIC: dyn.JointInput.solve_prismatic
+    }
+
     def solve_kinematics(self, config: Config):
-        self.function_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
+        self.kinematics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
+
+    def solve_dynamics(self, config: Config):
+        self.dynamics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2, self.zero_holder)
 
 
 class RelationStep(ResolutionStep):
@@ -129,7 +142,7 @@ class RelationStep(ResolutionStep):
         self.eq2 = eq2
 
         self.formula = self.relation_formulae[is_1_to_2]
-        self.function = JointStep.function_chooser[(relation.j2 if is_1_to_2 else relation.j1).get_input_physics()]
+        self.function = JointStep.kinematics_chooser[(relation.j2 if is_1_to_2 else relation.j1).get_input_physics()]
 
         self.target = relation.j2 if is_1_to_2 else relation.j1
         self.source = relation.j1 if is_1_to_2 else relation.j2

@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 
@@ -35,8 +37,8 @@ class JointInput:
     @staticmethod
     def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_point = Position.point(config, s1, config.joint_physics[joint, :2])
-        s2_point = Position.point(config, s2, config.joint_physics[joint, 2:])
+        s1_point = Position.point(config, s1, config.joint_physics[joint, :2, np.newaxis])
+        s2_point = Position.point(config, s2, config.joint_physics[joint, 2:, np.newaxis])
 
         s1_ori = Orientation.get(config, s1)
         s2_ori = Orientation.get(config, s2)
@@ -102,7 +104,7 @@ class Graph:
         cos_angle = 0.5 * (sq_a + sq_b - sq_c) * inv_ab
         sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
 
-        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_[cos_angle[np.newaxis, :], sin_angle[np.newaxis, :]])
+        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_[cos_angle, sin_angle])
         Geometry.rotate_eq(eq1, config, total_rotation)
         Geometry.move_eq(eq1, config, Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r0, True))
 
@@ -141,7 +143,7 @@ class Graph:
             Joint.get_solid_point(config, r1, True) - Joint.get_solid_position(config, p2, True)
         ) + (_distance21 - _distance22)
         v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
-        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_[v0_v1_cos_angle[np.newaxis, :], v1_v0_sin_angle[np.newaxis, :]]) / sq_v0_v1
+        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_[v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
 
         Geometry.rotate_eq(eq0, config, total_rotation)
         Geometry.move_eq(eq0, config, Joint.get_solid_point(config, r0, True) - Joint.get_solid_point(config, r0))

@@ -61,11 +61,11 @@ class Orientation:
     def add(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         complex product
-        Shapes (2, n) * (2, n) -> (2, n)
+        Shapes (..., 2, n) * (..., 2, n) -> (..., 2, n)
         """
         out = np.zeros(x.shape, dtype=x.dtype)
-        out[0, ...] = x[0, ...] * y[0, ...] - x[1, ...] * y[1, ...]
-        out[1, ...] = x[0, ...] * y[1, ...] + x[1, ...] * y[0, ...]
+        out[..., 0, :] = x[..., 0, :] * y[..., 0, :] - x[..., 1, :] * y[..., 1, :]
+        out[..., 1, :] = x[..., 0, :] * y[..., 1, :] + x[..., 1, :] * y[..., 0, :]
         return out
 
     @staticmethod

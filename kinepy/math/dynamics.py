@@ -4,6 +4,20 @@ from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 
 
+class System:
+    @staticmethod
+    def set_up(config: Config):
+        # OG
+        config.results.solid_dynamics[:] = 0.0
+        config.results.solid_dynamics[:, 2:4, :] = Position.point(config, slice(None), config.solid_physics[:, 2:4])
+
+        config.results.joint_dynamics[:] = 0.0
+
+    @staticmethod
+    def clean_up(config: Config):
+        """Nothing to do"""
+
+
 class Newtons2ndLaw:
     _ground_is_not_a_free_body = "Clearly, zero does not belong here, yet there it is anyway !?"
 
@@ -35,7 +49,7 @@ class Solid:
     @staticmethod
     def add_action(config: Config, solid: int, force: np.ndarray, torque: np.ndarray, point: np.ndarray):
         config.results.solid_dynamics[solid, :2, :] += force
-        config.results.solid_dynamics[solid, 4, :] += torque + np.cross(point - config.results[solid, 2:4, :], force, axis=0)
+        config.results.solid_dynamics[solid, 4, :] += torque + np.cross(point - config.results[solid, 2:4, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
 
 class Joint:
@@ -64,9 +78,21 @@ class JointInput:
 
     @staticmethod
     def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, :2])
+        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, :2, np.newaxis])
 
     @staticmethod
     def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        angle, dist = config.joint_physics[joint, :2]
+        angle, dist = config.joint_physics[joint, :2, np.newaxis]
         JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, dist * Orientation.from_angle(angle + np.pi * 0.5))
+
+
+class Graph:
+    @staticmethod
+    def solve_rrr(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], zero_holder: int):
+        r"""
+                0
+               / \
+              R0  R1
+             /     \
+            1 - R2- 2
+        """
