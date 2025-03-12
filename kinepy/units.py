@@ -135,6 +135,7 @@ class Velocity(UnitSet):
     
     _PHYSICS: _PhysicsEnum = _PhysicsEnum.VELOCITY
     phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+    point: PhysicalQuantity = typing.Annotated[point_type, _PHYSICS]
 
     # endregion auto-fill VELOCITY
 
@@ -153,6 +154,7 @@ class Acceleration(UnitSet):
     
     _PHYSICS: _PhysicsEnum = _PhysicsEnum.ACCELERATION
     phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+    point: PhysicalQuantity = typing.Annotated[point_type, _PHYSICS]
 
     # endregion auto-fill ACCELERATION
 
@@ -215,6 +217,7 @@ class Force(UnitSet):
     
     _PHYSICS: _PhysicsEnum = _PhysicsEnum.FORCE
     phy: PhysicalQuantity = typing.Annotated[scalar_type, _PHYSICS]
+    point: PhysicalQuantity = typing.Annotated[point_type, _PHYSICS]
 
     # endregion auto-fill FORCE
 
@@ -376,7 +379,8 @@ class UnitSystem:
     @classmethod
     def class_(cls, target_class: type) -> type:
         """
-        Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity"""
+        Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity
+        """
         # Retrieve all method definitions
         for method_name, method in target_class.__dict__.items():
             if isinstance(method, property):
