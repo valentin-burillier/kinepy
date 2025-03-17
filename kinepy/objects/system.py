@@ -6,6 +6,7 @@ import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
+from kinepy.objects.interaction import Interaction
 
 
 @u.UnitSystem.class_
@@ -17,6 +18,8 @@ class System:
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
         self._dynamic_strategy: list[strategy.ResolutionStep] = []
 
+        self._interactions: list[Interaction] = []
+
     @property
     def ground(self) -> Solid:
         return self._ground
@@ -26,31 +29,30 @@ class System:
         self.__config.add_solids(np.r_[mass, moment_of_inertia, g][np.newaxis, :])
         return Solid(self.__config, index, name)
 
-    def _check_solids(self, *solids: Solid, kw_solids: tuple[Solid, ...] = ()):
+    def _check_solids_ownership(self, *solids: Solid, kw_solids: tuple[Solid, ...] = ()):
         for solid in solids + kw_solids:
             if not solid.check_against(self.__config, self.__config.solid_physics):
                 raise ex.UnrelatedObjectsError(f"Solid \"{solid}\" does not belong to this system")
 
-    def add_prismatic(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> Prismatic:
-        self._check_solids(s1, s2)
+    def _check_solids(self, s1: Solid, s2: Solid):
+        self._check_solids_ownership(s1, s2)
         if s1 == s2:
             raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
+
+    def add_prismatic(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0) -> Prismatic:
+        self._check_solids(s1, s2)
         index = self.__config.joint_config.shape[0]
         self.__config.add_joints(np.array([[JointType.PRISMATIC.value, s1._index, s2._index]], int), np.array([[alpha1, distance1, alpha2,  distance2]]))
         return Prismatic(self.__config, index, s1, s2)
 
     def add_revolute(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0)) -> Revolute:
         self._check_solids(s1, s2)
-        if s1 == s2:
-            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
         index = self.__config.joint_config.shape[0]
         self.__config.add_joints(np.array([[JointType.REVOLUTE.value, s1._index, s2._index]], int), np.r_[p1, p2][np.newaxis, :])
         return Revolute(self.__config, index, s1, s2)
 
     def add_pin_slot(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, p2: u.Length.point = (0.0, 0.0)) -> PinSlot:
         self._check_solids(s1, s2)
-        if s1 == s2:
-            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
 
         s_ghost_index = self.__config.solid_physics.shape[0]
         self.__config.add_solids(np.zeros((1, 4)))
@@ -70,8 +72,6 @@ class System:
 
     def add_translation(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0, diff_angle: u.Angle.phy = 0.0) -> Translation:
         self._check_solids(s1, s2)
-        if s1 == s2:
-            raise ex.ConstraintOnSameObjectError(f"Solid arguments are identical ({s1})")
 
         s_ghost_index = self.__config.solid_physics.shape[0]
         self.__config.add_solids(np.zeros((1, 4)))
@@ -122,8 +122,14 @@ class System:
     def solve_dynamics(self):
         dyn.System.set_up(self.__config)
 
+        for inter in self._interactions:
+            inter.register_actions()
         _strategy = self._dynamic_strategy or self._kinematic_strategy
         for step in _strategy[::-1]:
             step.solve_dynamics(self.__config)
 
         dyn.System.clean_up(self.__config)
+
+    def add_interaction(self, interaction: Interaction):
+        self._interactions.append(interaction)
+        interaction._config = self.__config

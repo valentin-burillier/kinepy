@@ -34,4 +34,20 @@ class Gravity(Interaction):
         self._g = g
 
     def register_actions(self):
-        self._config.results.solid_dynamics[:, [0, 1], :] += np.einsum('m,i->mi', self._config.solid_physics[:, 0], self._g)[..., np.newaxis]
+        self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE, :] += np.einsum('m,i->mi', self._config.solid_physics[:, Config.SOLID_MASS], self._g)[..., np.newaxis]
+
+
+class Inertia(Interaction):
+    def register_actions(self):
+        # shape (m, 2, n)
+        solid_ori = geo.Orientation.get(self._config, slice(None))
+        # shape (m, n)
+        solid_angles = np.arctan2(solid_ori[:, 1, :], solid_ori[:, 0, :])
+        # shape (m, n)
+        inertia = self._config.solid_physics[:, (Config.SOLID_MOMENT_OF_INERTIA,)] * np.diff(solid_angles, n=2, axis=-1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.solid_dynamics[:, Config.JOINT_DYN_TORQUE] -= inertia
+
+        # shape (m, 2, n)
+        solid_g = self._config.results.solid_dynamics[:, Config.SOLID_DYN_G, :]
+        inertia = self._config.solid_physics[:, (Config.SOLID_MASS,)] * np.diff(solid_g, n=2, axis=-1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE] -= inertia
