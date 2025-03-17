@@ -6,6 +6,8 @@ OrientedJoint = tuple[int, bool]
 
 
 class Joint:
+    solid_indices = Config.JOINT_S2, Config.JOINT_S1
+
     @staticmethod
     def get_point(config: Config, oriented_joint: OrientedJoint, direction=False):
         """
@@ -14,8 +16,8 @@ class Joint:
         shape (2, 1)
         """
         j_index, orientation = oriented_joint
-        start_index = 2 - 2 * (orientation ^ direction)
-        return config.joint_physics[j_index, start_index:start_index+2, np.newaxis]
+        point_slice = Config.JOINT_P2, Config.JOINT_P1
+        return config.joint_physics[j_index, point_slice[orientation ^ direction], np.newaxis]
 
     @staticmethod
     def get_solid_point(config: Config, oriented_joint: OrientedJoint, direction=False):
@@ -23,7 +25,7 @@ class Joint:
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
         j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
         return Position.get(config, _s_index) + Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
@@ -32,19 +34,19 @@ class Joint:
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
         j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
         return Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
     def get_solid_orientation(config: Config, oriented_joint: OrientedJoint, direction=False):
         j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
         return Orientation.get(config, _s_index)
 
     @staticmethod
     def get_solid_position(config: Config, oriented_joint: OrientedJoint, direction=False):
         j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, 2 - (orientation ^ direction)]
+        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
         return Position.get(config, _s_index)
 
 

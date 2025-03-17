@@ -9,7 +9,7 @@ class System:
     def set_up(config: Config):
         # OG
         config.results.solid_dynamics[:] = 0.0
-        config.results.solid_dynamics[:, 2:4, :] = Position.point(config, slice(None), config.solid_physics[:, 2:4])
+        config.results.solid_dynamics[:, Config.SOLID_DYN_G, :] = Position.point(config, slice(None), config.solid_physics[:,  Config.SOLID_CFG_G])
 
         config.results.joint_dynamics[:] = 0.0
 
@@ -25,7 +25,7 @@ class Newtons2ndLaw:
     def force(config: Config, eq: tuple[int, ...]) -> np.ndarray:
         # -(sum(known_forces) - m.a) = sum(unknown_forces(Ext/eq))
         assert 0 not in eq, Newtons2ndLaw._ground_is_not_a_free_body
-        return -np.sum(config.results.solid_dynamics[eq, 0:2, :], axis=0)
+        return -np.sum(config.results.solid_dynamics[eq, Config.SOLID_DYN_FORCE, :], axis=0)
 
     @staticmethod
     def torque(config: Config, eq: tuple[int, ...], point: np.ndarray) -> np.ndarray:
@@ -33,7 +33,7 @@ class Newtons2ndLaw:
         assert 0 not in eq, Newtons2ndLaw._ground_is_not_a_free_body
         # babar
         # np.cross: shape ((eq, 2, n) - (1, 2, n)) x (eq, 2, n) -> (eq, n)
-        return -np.sum(config.results.solid_dynamics[eq, 4, :] + np.cross(config.results.solid_dynamics[eq, 2:4, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, 0:2, :], axis=1), axis=0)
+        return -np.sum(config.results.solid_dynamics[eq, Config.SOLID_MOMENT_OF_INERTIA, :] + np.cross(config.results.solid_dynamics[eq, Config.SOLID_DYN_G, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, Config.SOLID_DYN_FORCE, :], axis=1), axis=0)
 
     @staticmethod
     def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int], ground_eq: int) -> tuple[tuple[int, ...], float]:
@@ -48,18 +48,18 @@ class Newtons2ndLaw:
 class Solid:
     @staticmethod
     def add_action(config: Config, solid: int, force: np.ndarray, torque: np.ndarray, point: np.ndarray):
-        config.results.solid_dynamics[solid, :2, :] += force
-        config.results.solid_dynamics[solid, 4, :] += torque + np.cross(point - config.results[solid, 2:4, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_FORCE, :] += force
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += torque + np.cross(point - config.results[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
 
 class Joint:
     @staticmethod
     def set_force(config: Config, joint: int, force_1_2: np.ndarray):
-        config.results.joint_dynamics[joint, :2, :] = force_1_2
+        config.results.joint_dynamics[joint, Config.JOINT_DYN_FORCE, :] = force_1_2
 
     @staticmethod
     def set_torque(config: Config, joint: int, torque_1_2: np.ndarray):
-        config.results.joint_dynamics[joint, 2, :] = torque_1_2
+        config.results.joint_dynamics[joint, Config.JOINT_DYN_TORQUE, :] = torque_1_2
 
 
 class JointInput:
@@ -78,11 +78,11 @@ class JointInput:
 
     @staticmethod
     def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, :2, np.newaxis])
+        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, Config.JOINT_P1, np.newaxis])
 
     @staticmethod
     def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        angle, dist = config.joint_physics[joint, :2, np.newaxis]
+        angle, dist = config.joint_physics[joint, (Config.JOINT_A1, Config.JOINT_D1), np.newaxis]
         JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, dist * Orientation.from_angle(angle + np.pi * 0.5))
 
 

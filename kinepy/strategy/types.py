@@ -1,8 +1,6 @@
 from typing import TypeAlias, Self
 from collections.abc import Generator, Callable
 from kinepy.strategy.graph_data import JointType, Graphs
-from kinepy.units import _PhysicsEnum
-import numpy as np
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 from kinepy.objects.config import Config

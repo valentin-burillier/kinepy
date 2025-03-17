@@ -9,6 +9,8 @@ import kinepy.units as u
 
 @u.UnitSystem.class_
 class Interaction:
+    _config: None | Config
+
     def __init__(self):
         self._config: None | Config = None
 
@@ -20,7 +22,7 @@ class Interaction:
         dyn.Solid.add_action(self._config, solid._index, force, torque, point)
 
     def register_actions(self):
-        pass
+        """Override this method to apply your actions"""""
 
 
 @u.UnitSystem.class_
@@ -32,4 +34,4 @@ class Gravity(Interaction):
         self._g = g
 
     def register_actions(self):
-        dyn.Solid.add_action(self._config, slice(None), np.einsum('m,i->mi', self._config.solid_physics[:, 0], self._g)[..., np.newaxis], 0.0, self._config.results.solid_dynamics[:, 2:4, :])
+        self._config.results.solid_dynamics[:, [0, 1], :] += np.einsum('m,i->mi', self._config.solid_physics[:, 0], self._g)[..., np.newaxis]

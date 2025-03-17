@@ -13,6 +13,32 @@ class Config:
     SOLID = 'solid_physics'
     JOINT = 'joint_physics'
 
+    SOLID_MASS = 0
+    SOLID_MOMENT_OF_INERTIA = 1
+    SOLID_CFG_G = slice(2, 4)
+
+    SOLID_DYN_FORCE = slice(0, 2)
+    SOLID_DYN_G = slice(2, 4)
+    SOLID_DYN_TORQUE = 4
+
+    JOINT_TYPE = 0
+    JOINT_S1 = 1
+    JOINT_S2 = 2
+    JOINT_SOLIDS = slice(1, 3)
+
+    JOINT_P1 = slice(0, 2)
+    JOINT_P2 = slice(2, 4)
+    JOINT_A1, JOINT_D1, JOINT_A2, JOINT_D2 = range(4)
+
+    JOINT_DYN_FORCE = slice(0, 2)
+    JOINT_DYN_TORQUE = 2
+
+    RELATION_TYPE = 0
+    RELATION_JOINTS = slice(1, 3)
+    RELATION_TYPE_JOINTS = slice(0, 3)
+    RELATION_G1 = 3
+    RELATION_G2 = 4
+
     def __init__(self):
         # mass, moment_of_inertia, g.x, g.y
         self.solid_physics = np.zeros((1, 4), float)
@@ -67,12 +93,10 @@ class Config:
         self.relation_physics = np.r_[self.relation_physics, physics]
 
 
-class ConfigView:
-    __slots__ = '_config', '_index', '_initialized'
+class Immutable:
+    __slots__ = '_initialized'
 
-    def __init__(self, config: Config, index: int):
-        self._config: Config = config
-        self._index: int = index
+    def __init__(self):
         self._initialized: None = None
 
     def __setattr__(self, key, value):
@@ -82,6 +106,15 @@ class ConfigView:
             prop: property = self.__class__.__dict__[key]
             return prop.__set__(self, value)
         raise ValueError(f'You should not be internally modifying {self.__class__.__name__} objects')
+
+
+class ConfigView(Immutable):
+    __slots__ = '_config', '_index'
+
+    def __init__(self, config: Config, index: int):
+        self._config: Config = config
+        self._index: int = index
+        Immutable.__init__(self)
 
     @classmethod
     def physics_view(cls, array_name: str, sub_index, phy, scalar=True) -> property:

@@ -300,7 +300,7 @@ def _identity(x):
 
 
 def screaming_snake_to_pascal(name: str):
-    return ''.join(map(str.capitalize, name.split('_')))
+    return ''.join(w.capitalize() for w in name.split('_'))
 
 
 def screaming_snake_to_words(name: str):
@@ -331,7 +331,7 @@ class UnitSystem:
         ms = len(max(max(symbols, key=len), 'Symbol', key=len))
 
         titles = f'\n{'Physical quantity':<{mn}} | {'Unit name':<{mf}} | {'Symbol':<{ms}} | 1 unit in SI unit\n'
-        table = '\n'.join(f'{screaming_snake_to_words(phy.name):<{mn}} | {full_name:<{mf}} | {symbol:>{ms}} | {value:>12.3e} {globals().get(screaming_snake_to_pascal(phy.name), Dimensionless).SI_UNIT[2]}' for phy, full_name, symbol, value in cls._unit_values.values())
+        table = '\n'.join(f'{screaming_snake_to_words(phy.name):<{mn}} | {full_name:<{mf}} | {symbol:>{ms}} | {value:>12.3e} {globals().get(screaming_snake_to_pascal(phy.name), Dimensionless).SI_UNIT.symbol}' for phy, full_name, symbol, value in cls._unit_values.values())
         return titles + table
 
     @classmethod
@@ -377,30 +377,35 @@ class UnitSystem:
         return new_function
 
     @classmethod
-    def class_(cls, target_class: type) -> type:
+    def class_[T: type](cls, target_class: T) -> T:
         """
         Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity
         """
+        _dict = dict(target_class.__dict__)
+        for member in _dict.get('__slots__', ()):
+            member: str = f'_{target_class.__name__}{member}' if member.startswith('__') and not member.endswith('__') else member
+            _dict.pop(member)
+
         # Retrieve all method definitions
         for method_name, method in target_class.__dict__.items():
             if isinstance(method, property):
-                fget = None if method.fget is None else cls.function(method.fget)
-                fset = None if method.fset is None else cls.function(method.fset)
-                setattr(target_class, method_name, property(fget, fset))
+                f_get = None if method.fget is None else cls.function(method.fget)
+                f_set = None if method.fset is None else cls.function(method.fset)
+                _dict[method_name] = property(f_get, f_set)
                 continue
             if not isinstance(method, types.FunctionType):
                 continue
-            setattr(target_class, method_name, cls.function(method))
+            _dict[method_name] = cls.function(method)
 
         # Retrieve all attributes that are annotated with physical quantities to place getters and setters on them
         for attr, annotation in target_class.__annotations__.items():
             if attr in target_class.__dict__ or (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
-            setattr(target_class, attr, property(
+            _dict[attr] = property(
                 lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
                 lambda self, value: setattr(self, f'_{attr}', value * cls._get_unit_value(phy))
-            ))
-        return target_class
+            )
+        return type(target_class.__name__, target_class.__bases__, _dict)
 
     @staticmethod
     def _physical_quantity_annotation(annotation: typing.Any) -> None | _PhysicsEnum:

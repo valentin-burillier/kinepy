@@ -1,5 +1,3 @@
-import numpy as np
-
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 
@@ -20,7 +18,7 @@ class JointValueComputation:
 
     @staticmethod
     def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
-        angle = config.joint_physics[joint, :1]
+        angle = config.joint_physics[joint, (Config.JOINT_A1,)]
         director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
         config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))
 
@@ -37,8 +35,8 @@ class JointInput:
     @staticmethod
     def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_point = Position.point(config, s1, config.joint_physics[joint, :2, np.newaxis])
-        s2_point = Position.point(config, s2, config.joint_physics[joint, 2:, np.newaxis])
+        s1_point = Position.point(config, s1, config.joint_physics[joint, Config.JOINT_P1, np.newaxis])
+        s2_point = Position.point(config, s2, config.joint_physics[joint, Config.JOINT_P2, np.newaxis])
 
         s1_ori = Orientation.get(config, s1)
         s2_ori = Orientation.get(config, s2)
