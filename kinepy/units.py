@@ -1,3 +1,8 @@
+"""
+Currently deactivated
+"""
+
+
 import types
 import typing
 import numpy as np
@@ -387,7 +392,6 @@ class UnitSystem:
         """
         Currently deactivated
         """
-        return target_class
 
         """
         Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity

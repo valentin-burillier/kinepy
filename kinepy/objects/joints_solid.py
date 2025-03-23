@@ -57,7 +57,7 @@ class Solid(ConfigView):
         return geo.Position.get(self._config, self._index)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
-        return geo.Position.point(self._config, self._index, p[:, np.newaxis])
+        return geo.Position.point(self._config, self._index, np.array(p)[:, np.newaxis])
 
     def get_angle(self):
         _x, _y = geo.Orientation.get(self._config, self._index)

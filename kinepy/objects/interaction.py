@@ -74,5 +74,9 @@ class Spring(Interaction):
         # shape (2, n)
         p1, p2 = self.s1.get_point(self.p1), self.s2.get_point(self.p2)
         vector = p2 - p1
-        magnitude = np.sum(vector * vector, axis=0) ** 0.5
-        unit = vector / magnitude
+        length = np.sum(vector * vector, axis=0) ** 0.5
+        unit = vector / length
+
+        force = (length - self.l0) * self.k * unit
+        self.add_action(self.s2, p2, force, 0)
+        self.add_action(self.s1, p1, -force, 0)
