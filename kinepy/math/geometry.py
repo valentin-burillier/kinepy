@@ -131,12 +131,12 @@ class Position:
         return config.results.solid_values[Position.index(solid)]
 
     @staticmethod
-    def local_point(config: Config, solid: int, point: np.ndarray) -> np.ndarray:
+    def local_point(config: Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
         ori = Orientation.get(config, solid)
         return Orientation.add(ori, point)
 
     @staticmethod
-    def point(config: Config, solid: int, point: np.ndarray) -> np.ndarray:
+    def point(config: Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
         return Position.local_point(config, solid, point) + Position.get(config, solid)
 
 
