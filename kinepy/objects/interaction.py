@@ -54,7 +54,7 @@ class Inertia(Interaction):
 
 
 @u.UnitSystem.class_
-class Spring(Interaction):
+class LinearSpring(Interaction):
     k: u.SpringConstant.phy
     l0: u.Length.phy
 
@@ -78,5 +78,30 @@ class Spring(Interaction):
         unit = vector / length
 
         force = (length - self.l0) * self.k * unit
-        self.add_action(self.s2, p2, force, 0)
-        self.add_action(self.s1, p1, -force, 0)
+        self.add_action(self.s2, p2, -force, 0)
+        self.add_action(self.s1, p1, force, 0)
+
+
+@u.UnitSystem.class_
+class TwistingSpring(Interaction):
+    k: u.Torque.phy
+    a0: u.Angle.phy
+
+    a1: u.Angle.phy
+    a2: u.Angle.phy
+
+    def __init__(self, s1: Solid, s2: Solid, a1: u.Angle.phy = 0.0, a2: u.Angle.phy = 0.0, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
+        Interaction.__init__(self)
+        self._k = k
+        self._a0 = a0
+        self.s1 = s1
+        self.s2 = s2
+        self._a1 = a1
+        self._a2 = a2
+
+    def register_actions(self):
+        a1, a2 = self.s1.get_angle() + self.a1, self.s2.get_angle() + self.a2
+        torque = (a2 - a1 - self.a0) * self.k
+
+        self.add_action(self.s2, np.array([[0], [0]]), np.array([[0], [0]]), -torque)
+        self.add_action(self.s1, np.array([[0], [0]]), np.array([[0], [0]]), torque)
