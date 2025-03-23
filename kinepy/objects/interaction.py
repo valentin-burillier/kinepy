@@ -2,7 +2,7 @@ import numpy as np
 
 from kinepy.objects.config import Config
 import kinepy.math.dynamics as dyn
-from kinepy.objects.joints_solid import Solid
+from kinepy.objects.joints_solid import Solid, Revolute
 import kinepy.math.geometry as geo
 import kinepy.units as u
 
@@ -90,18 +90,17 @@ class TwistingSpring(Interaction):
     a1: u.Angle.phy
     a2: u.Angle.phy
 
-    def __init__(self, s1: Solid, s2: Solid, a1: u.Angle.phy = 0.0, a2: u.Angle.phy = 0.0, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
+    def __init__(self, r: Revolute, a1: u.Angle.phy = 0.0, a2: u.Angle.phy = 0.0, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
         Interaction.__init__(self)
         self._k = k
         self._a0 = a0
-        self.s1 = s1
-        self.s2 = s2
+        self.r = r
         self._a1 = a1
         self._a2 = a2
 
     def register_actions(self):
-        a1, a2 = self.s1.get_angle() + self.a1, self.s2.get_angle() + self.a2
+        a1, a2 = self.r.s1.get_angle() + self.a1, self.r.s2.get_angle() + self.a2
         torque = (a2 - a1 - self.a0) * self.k
 
-        self.add_action(self.s2, np.array([[0], [0]]), np.array([[0], [0]]), -torque)
-        self.add_action(self.s1, np.array([[0], [0]]), np.array([[0], [0]]), torque)
+        self.add_action(self.r.s2, np.array([[0], [0]]), np.array([[0], [0]]), -torque)
+        self.add_action(self.r.s1, np.array([[0], [0]]), np.array([[0], [0]]), torque)
