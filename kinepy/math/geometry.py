@@ -51,6 +51,17 @@ class Joint:
         return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], point)
 
     @staticmethod
+    def get_prismatic_application_point(config: Config, joint: OrientedJoint):
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
+        return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], dist * Orientation.from_angle(angle + np.pi * 0.5))
+
+    @staticmethod
+    def get_prismatic_normal(config: Config, joint: OrientedJoint):
+        s1 = config.joint_config[joint[0], Config.JOINT_S1]
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
+        return Position.local_point(config, s1, Orientation.from_angle(angle + np.pi * 0.5))
+
+    @staticmethod
     def get_solid(config: Config, oriented_joint: OrientedJoint, direction=False) -> int:
         """
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
