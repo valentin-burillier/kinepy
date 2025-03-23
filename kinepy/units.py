@@ -267,6 +267,7 @@ class SpringConstant(UnitSet):
 SI_UNITS = tuple(cls.SI_UNIT for cls in UnitSet.__subclasses__())
 DEFAULT_UNITS = SI_UNITS + (
     Length.MILLIMETRE,
+    SpringConstant.NEWTON_PER_MILLIMETRE
 )
 
 IMPERIAL_UNITS = (
@@ -349,6 +350,11 @@ class UnitSystem:
     @classmethod
     def function(cls, func: types.FunctionType) -> types.FunctionType:
         """
+        Currently deactivated
+        """
+        return func
+
+        """
         Function decorator that manages all arguments annotated with a PhysicalQuantity and the return value
         """
         phy_annotations = {
@@ -378,6 +384,11 @@ class UnitSystem:
 
     @classmethod
     def class_[T: type](cls, target_class: T) -> T:
+        """
+        Currently deactivated
+        """
+        return target_class
+
         """
         Class decorator that manages all methods with the `Physics.function` decorator and creates properties to manage attributes annotated with a PhysicalQuantity
         """

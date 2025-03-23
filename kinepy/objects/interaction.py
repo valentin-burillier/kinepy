@@ -51,3 +51,28 @@ class Inertia(Interaction):
         solid_g = self._config.results.solid_dynamics[:, Config.SOLID_DYN_G, :]
         inertia = self._config.solid_physics[:, (Config.SOLID_MASS,)] * np.diff(solid_g, n=2, axis=-1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
         self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE] -= inertia
+
+
+@u.UnitSystem.class_
+class Spring(Interaction):
+    k: u.SpringConstant.phy
+    l0: u.Length.phy
+
+    p1: u.Length.point
+    p2: u.Length.point
+
+    def __init__(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0):
+        Interaction.__init__(self)
+        self._k = k
+        self._l0 = l0
+        self.s1 = s1
+        self.s2 = s2
+        self._p1 = p1
+        self._p2 = p2
+
+    def register_actions(self):
+        # shape (2, n)
+        p1, p2 = self.s1.get_point(self.p1), self.s2.get_point(self.p2)
+        vector = p2 - p1
+        magnitude = np.sum(vector * vector, axis=0) ** 0.5
+        unit = vector / magnitude
