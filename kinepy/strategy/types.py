@@ -89,6 +89,10 @@ class GraphStep(ResolutionStep):
         kin.Graph.solve_ppr
     )
 
+    dynamics = (
+        dyn.Graph.solve_rrr
+    )
+
     @property
     def solution_count(self) -> int:
         return self._graph_index.solutions
@@ -98,6 +102,9 @@ class GraphStep(ResolutionStep):
 
     def solve_kinematics(self, config: Config):
         self.kinematics[self._graph_index.value](config, self._edges, self._eqs, self.solution_index)
+
+    def solve_dynamics(self, config: Config):
+        self.dynamics[self._graph_index.value](config, self._edges, self._eqs, self._zero_holder)
 
 
 class JointStep(ResolutionStep):

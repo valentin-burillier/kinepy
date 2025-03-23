@@ -24,8 +24,7 @@ class Joint:
         """
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
-        j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Position.get(config, _s_index) + Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
@@ -33,21 +32,31 @@ class Joint:
         """
         Get the solid according to the edge it represents; direction = False point is source; True point is destination
         """
-        j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
     def get_solid_orientation(config: Config, oriented_joint: OrientedJoint, direction=False):
-        j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Orientation.get(config, _s_index)
 
     @staticmethod
     def get_solid_position(config: Config, oriented_joint: OrientedJoint, direction=False):
-        j_index, orientation = oriented_joint
-        _s_index: int = config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Position.get(config, _s_index)
+
+    @staticmethod
+    def get_revolute_application_point(config: Config, joint: OrientedJoint):
+        point = config.joint_physics[joint[0], Config.JOINT_P1]
+        return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], point)
+
+    @staticmethod
+    def get_solid(config: Config, oriented_joint: OrientedJoint, direction=False) -> int:
+        """
+        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        """
+        j_index, orientation = oriented_joint
+        return config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
 
 
 class Orientation:

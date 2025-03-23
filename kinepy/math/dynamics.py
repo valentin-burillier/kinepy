@@ -36,7 +36,7 @@ class Newtons2ndLaw:
         return -np.sum(config.results.solid_dynamics[eq, Config.SOLID_MOMENT_OF_INERTIA, :] + np.cross(config.results.solid_dynamics[eq, Config.SOLID_DYN_G, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, Config.SOLID_DYN_FORCE, :], axis=1), axis=0)
 
     @staticmethod
-    def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int], ground_eq: int) -> tuple[tuple[int, ...], float]:
+    def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int, ...], ground_eq: int) -> tuple[tuple[int, ...], float]:
         target_mask = sum(1 << eq_index for eq_index in target_indices)
         sign = 1.0
         if (target_mask >> ground_eq) & 1:
@@ -51,8 +51,17 @@ class Solid:
         config.results.solid_dynamics[solid, Config.SOLID_DYN_FORCE, :] += force
         config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += torque + np.cross(point - config.results[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
+    @staticmethod
+    def add_force(config: Config, solid: int, force: np.ndarray, point: np.ndarray):
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_FORCE, :] += force
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += np.cross(point - config.results[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
-class Joint:
+
+class Joint(Joint):
+    @staticmethod
+    def set_oriented_force(config: Config, joint: OrientedJoint, force_1_2: np.ndarray):
+        return Joint.set_force(config, joint[0], force_1_2 * (-1, 1)[joint[1]])
+
     @staticmethod
     def set_force(config: Config, joint: int, force_1_2: np.ndarray):
         config.results.joint_dynamics[joint, Config.JOINT_DYN_FORCE, :] = force_1_2
@@ -96,3 +105,31 @@ class Graph:
              /     \
             1 - R2- 2
         """
+        r0, r1, r2 = edges
+        p0, p1, p2 = Joint.get_revolute_application_point(config, r0), Joint.get_revolute_application_point(config, r1), Joint.get_revolute_application_point(config, r2)
+
+        eq0, sign0 = Newtons2ndLaw.select_group(eqs, (2, 0), zero_holder)
+        torque_1_2_p0 = sign0 * Newtons2ndLaw.torque(config, eq0, p0)
+
+        eq1, sign1 = Newtons2ndLaw.select_group(eqs, (2,), zero_holder)
+        torque_1_2_p1 = sign1 * Newtons2ndLaw.torque(config, eq1, p1)
+
+        vec0, vec1 = p2 - p0, p2 - p1
+        d = Geometry.dot(vec0, vec1)
+        x, y = torque_1_2_p1 / d, torque_1_2_p0 / d
+        force_1_2 = Geometry.z_det(vec0) * x[np.newaxis, :] + Geometry.z_det(vec1) * y[np.newaxis, :]
+        Joint.set_oriented_force(config, r2, force_1_2)
+        Solid.add_force(config, Joint.get_solid(config, r2, True), force_1_2, p2)
+        Solid.add_force(config, Joint.get_solid(config, r2), -force_1_2, p2)
+
+        force_1_0 = sign0 * Newtons2ndLaw.force(config, eq0)
+        Joint.set_oriented_force(config, r0, -force_1_0)
+        Solid.add_force(config, Joint.get_solid(config, r0), force_1_0, p0)
+        Solid.add_force(config, Joint.get_solid(config, r0, True), -force_1_0, p0)
+
+        force_0_2 = sign1 * Newtons2ndLaw.force(config, eq1)
+        Joint.set_oriented_force(config, r1, force_0_2)
+        Solid.add_force(config, Joint.get_solid(config, r1, True), force_0_2, p0)
+        Solid.add_force(config, Joint.get_solid(config, r1), -force_0_2, p0)
+
+
