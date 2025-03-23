@@ -90,7 +90,8 @@ class GraphStep(ResolutionStep):
     )
 
     dynamics = (
-        dyn.Graph.solve_rrr
+        dyn.Graph.solve_rrr,
+        dyn.Graph.solve_rrp
     )
 
     @property
