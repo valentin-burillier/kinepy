@@ -416,9 +416,16 @@ class UnitSystem:
         for attr, annotation in target_class.__annotations__.items():
             if attr in target_class.__dict__ or (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
+
+            def getter(self: target_class) -> phy:
+                return self.__getattr__(f'_{attr}')
+
+            def setter(self: target_class, value: phy):
+                return self.__setattr__(f'_{attr}', value)
+
             _dict[attr] = property(
-                lambda self: getattr(self, f'_{attr}') / cls._get_unit_value(phy),
-                lambda self, value: setattr(self, f'_{attr}', value * cls._get_unit_value(phy))
+                cls.function(getter),
+                cls.function(setter)
             )
         return type(target_class.__name__, target_class.__bases__, _dict)
 
