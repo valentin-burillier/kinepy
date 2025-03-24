@@ -1,13 +1,13 @@
 from kinepy.objects.config import Config, np
 import kinepy.units as u
 from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
-from kinepy.strategy.graph_data import JointType
+from kinepy.strategy.graph_data import JointType, RelationType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 from kinepy.objects.interaction import Interaction
-
+from kinepy.objects.relations import GearRack, GearPair, Belt, Distant, Effortless
 
 @u.UnitSystem.class_
 class System:
@@ -133,3 +133,43 @@ class System:
     def add_interaction(self, interaction: Interaction):
         self._interactions.append(interaction)
         interaction._config = self.__config
+
+    def add_gear_pair(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = -1.0, pressure_angle: u.Angle.phy = np.pi / 9, gear1: Solid | None = None, gear2: Solid | None = None):
+        index = self.__config.relation_config.shape[0]
+        self.__config.add_relations(
+            np.array([[RelationType.GEAR.value, j1._index, j2._index, -1 if gear1 is None else gear1._index, -1 if gear2 else gear2._index]]),
+            np.array([[v0, r, pressure_angle, 0.0]])
+        )
+        return GearPair(self.__config, index, j1, j2, gear1, gear2)
+
+    def add_gear_rack(self, j1: Revolute, j2: Prismatic, v0: u.Length.phy = 0.0, r: u.Length.phy = 1.0, pressure_angle: u.Angle.phy = np.pi / 9, gear1: Solid | None = None, gear2: Solid | None = None):
+        index = self.__config.relation_config.shape[0]
+        self.__config.add_relations(
+            np.array([[RelationType.GEAR_RACK.value, j1._index, j2._index, -1 if gear1 is None else gear1._index, -1 if gear2 else gear2._index]]),
+            np.array([[v0, r, pressure_angle, 0.0]])
+        )
+        return GearRack(self.__config, index, j1, j2, gear1, gear2)
+
+    def add_belt(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r1: u.Length.phy = 1.0, r2: u.Length.phy = 1.0, t0: u.Force.phy = 0.0, shaft1: Solid | None = None, shaft2: Solid | None = None):
+        index = self.__config.relation_config.shape[0]
+        self.__config.add_relations(
+            np.array([[RelationType.BELT.value, j1._index, j2._index, -1 if shaft1 is None else shaft1._index, -1 if shaft2 else shaft2._index]]),
+            np.array([[v0, r1, r2, t0]])
+        )
+        return Belt(self.__config, index, j1, j2, shaft1, shaft2)
+
+    def add_distant_relation(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+        index = self.__config.relation_config.shape[0]
+        self.__config.add_relations(
+            np.array([[RelationType.DISTANT.value, j1._index, j2._index, -1, -1]]),
+            np.array([[v0, r, 0.0, 0.0]])
+        )
+        return Distant(self.__config, index, j1, j2)
+
+    def add_effortless_relation(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+        index = self.__config.relation_config.shape[0]
+        self.__config.add_relations(
+            np.array([[RelationType.EFFORTLESS.value, j1._index, j2._index, -1, -1]]),
+            np.array([[v0, r, 0.0, 0.0]])
+        )
+        return Effortless(self.__config, index, j1, j2)

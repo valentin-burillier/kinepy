@@ -2,10 +2,10 @@ import enum
 
 
 class RelationType(enum.Enum):
-    GEAR, GEAR_RACK, DISTANT, EFFORTLESS = range(4)
+    GEAR, GEAR_RACK, BELT, DISTANT, EFFORTLESS = range(5)
 
 
-GEAR_TYPES = RelationType.GEAR_RACK, RelationType.GEAR
+GEAR_TYPES = RelationType.GEAR_RACK, RelationType.GEAR, RelationType.BELT
 
 
 class JointType(enum.Enum):

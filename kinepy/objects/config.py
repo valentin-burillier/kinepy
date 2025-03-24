@@ -12,6 +12,7 @@ class Result:
 class Config:
     SOLID = 'solid_physics'
     JOINT = 'joint_physics'
+    RELATION = 'relation_physics'
 
     SOLID_MASS = 0
     SOLID_MOMENT_OF_INERTIA = 1
@@ -39,6 +40,13 @@ class Config:
     RELATION_G1 = 3
     RELATION_G2 = 4
 
+    RELATION_V0 = 0
+    RELATION_R = 1
+    RELATION_PRESSURE_ANGLE = 2
+    RELATION_R1 = 1
+    RELATION_R2 = 2
+    RELATION_T0 = 3
+
     def __init__(self):
         # mass, moment_of_inertia, g.x, g.y
         self.solid_physics = np.zeros((1, 4), float)
@@ -54,8 +62,10 @@ class Config:
 
         # _type, j1, j2, g1, g2
         self.relation_config = np.zeros((0, 5), int)
-        # r, v0, pressure_angle
-        self.relation_physics = np.zeros((0, 3), float)
+        # v0, r, _, _
+        # v0, r, pressure_angle, _
+        # v0, r1, r2, t0
+        self.relation_physics = np.zeros((0, 4), float)
 
         self.joint_states = []
         self.final_joint_states = []
