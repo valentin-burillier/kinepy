@@ -1,5 +1,6 @@
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
+from kinepy.strategy.graph_data import JointType
 
 
 class JointValueComputation:
@@ -179,3 +180,33 @@ class Graph:
         target_point = vec_1 + (Geometry.det(vec_2 - vec_1, v2) / Geometry.det(v1, v2)) * v1
         Geometry.move_eq(eq1, config, target_point - Joint.get_solid_point(config, r2))
         Geometry.move_eq(eq2, config, target_point - Joint.get_solid_point(config, r2, True))
+
+
+class Relation:
+    @staticmethod
+    def forward(value, r, v0):
+        return value * r + v0
+
+    @staticmethod
+    def backward(value, r, v0):
+        return (value - v0) / r
+
+    transformations = backward, forward
+    joint_solvers = {
+        JointType.REVOLUTE.value: JointInput.solve_revolute,
+        JointType.PRISMATIC.value: JointInput.solve_prismatic
+    }
+
+    @staticmethod
+    def solve_standard_relation(config: Config, relation: int, source: int, destination: int, destination_type: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0, r = config.relation_physics[relation, [Config.RELATION_V0, Config.RELATION_R]]
+        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r, v0)
+        s1, s2 = config.joint_config[destination, Config.JOINT_SOLIDS]
+        Relation.joint_solvers[destination_type](config, s1, s2, destination, eq1, eq2)
+
+    @staticmethod
+    def solve_belt(config: Config, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0, r1, r2 = config.relation_physics[relation, [Config.RELATION_V0, Config.RELATION_R1, Config.RELATION_R2]]
+        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r2 / r1, v0)
+        s1, s2 = config.joint_config[destination, Config.JOINT_SOLIDS]
+        JointInput.solve_revolute(config, s1, s2, destination, eq1, eq2)

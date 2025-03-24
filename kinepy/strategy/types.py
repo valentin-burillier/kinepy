@@ -1,6 +1,6 @@
 from typing import TypeAlias, Self
 from collections.abc import Generator, Callable
-from kinepy.strategy.graph_data import JointType, Graphs
+from kinepy.strategy.graph_data import JointType, Graphs, RelationType
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 from kinepy.objects.config import Config
@@ -142,25 +142,27 @@ class RelationStep(ResolutionStep):
     eq1: tuple[int]
     eq2: tuple[int]
 
-    def __init__(self, relation: int, is_1_to_2: bool, eq1: tuple[int], eq2: tuple[int]):
+    def __init__(self, relation: int, rtype: int, is_1_to_2: bool, source: int, target: int, target_type: int, eq1: tuple[int], eq2: tuple[int]):
         self.relation = relation
+        self.relation_type = RelationType(rtype)
+        self.target_type = target_type
         self.is_1_to_2 = is_1_to_2
+        self.source = source
+        self.target = target
         self.eq1 = eq1
         self.eq2 = eq2
 
-        self.formula = self.relation_formulae[is_1_to_2]
-        self.function = JointStep.kinematics_chooser[(relation.j2 if is_1_to_2 else relation.j1).get_input_physics()]
+    kinematics_chooser = {
+        RelationType.GEAR_RACK: kin.Relation.solve_standard_relation,
+        RelationType.GEAR: kin.Relation.solve_standard_relation,
+        RelationType.DISTANT: kin.Relation.solve_standard_relation,
+        RelationType.EFFORTLESS: kin.Relation.solve_standard_relation,
 
-        self.target = relation.j2 if is_1_to_2 else relation.j1
-        self.source = relation.j1 if is_1_to_2 else relation.j2
-
-    relation_formulae = (
-        lambda value, r, v0: (value - v0) / r,
-        lambda value, r, v0: value * r + v0
-    )
+        RelationType.BELT: kin.Relation.solve_belt,
+    }
 
     def solve_kinematics(self, config: Config):
-        pass
+        self.kinematics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2)
 
 
 class JointValueComputationStep(ResolutionStep):

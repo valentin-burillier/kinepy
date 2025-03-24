@@ -359,8 +359,7 @@ def register_relation_step(config: Config, relation_node: RelationGraphNode, eqs
             raise ex.SystemConfigurationError(f"(internal error) no common eq on solved gear {relation}")
         if config.relation_config[relation, src_g] == -1:
             raise ex.SystemConfigurationError(f"Could not infer pinion/rack for {relation}")
-    strategy_output.append(RelationStep(relation_node.relation, relation_node.is_1_to_2, eq1, eq2))
-
+    strategy_output.append(RelationStep(relation_node.relation, _type, relation_node.is_1_to_2, source, target, ttype, eq1, eq2))
     try:
         register_solved_joints(config, simple_gen(target), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
     except ex.SystemConfigurationError as e:
