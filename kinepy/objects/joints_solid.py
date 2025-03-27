@@ -92,6 +92,12 @@ class PrimitiveJoint(ConfigView):
             self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
         return self._config.results.joint_values[self._index, :]
 
+    def get_force(self):
+        return self._config.results.joint_dynamics[self._index, Config.JOINT_DYN_FORCE]
+
+    def get_torque(self):
+        return self._config.results.joint_dynamics[self._index, Config.JOINT_DYN_TORQUE]
+
     def __eq__(self, other: Self):
         return isinstance(other, PrimitiveJoint) and self._config is other._config and self._index == other._index
 
