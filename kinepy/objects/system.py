@@ -9,6 +9,7 @@ import kinepy.math.dynamics as dyn
 from kinepy.objects.interaction import Interaction
 from kinepy.objects.relations import GearRack, GearPair, Belt, Distant, Effortless
 
+
 @u.UnitSystem.class_
 class System:
     def __init__(self):
