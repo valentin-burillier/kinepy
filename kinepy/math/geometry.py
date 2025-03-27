@@ -47,7 +47,7 @@ class Joint:
 
     @staticmethod
     def get_revolute_application_point(config: Config, joint: OrientedJoint):
-        point = config.joint_physics[joint[0], Config.JOINT_P1]
+        point = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
         return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], point)
 
     @staticmethod

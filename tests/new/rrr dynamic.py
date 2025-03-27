@@ -17,9 +17,8 @@ r3 = sys.add_revolute(s0, s2, p1=(0, 3))
 sys.determine_computation_order()
 n = 101
 sys.set_frame_count(n)
-
+sys.solve_kinematics()
 sys.add_interaction(kp.Gravity())
-
 sys.solve_dynamics()
 
 
@@ -29,3 +28,4 @@ sys.solve_dynamics()
 plt.plot(r1.get_value())
 plt.plot(r2.get_value())
 plt.plot(r3.get_value())
+plt.show()

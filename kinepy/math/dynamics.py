@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 
@@ -7,7 +9,7 @@ class System:
     def set_up(config: Config):
         # OG
         config.results.solid_dynamics[:] = 0.0
-        config.results.solid_dynamics[:, Config.SOLID_DYN_G, :] = Position.point(config, slice(None), config.solid_physics[:,  Config.SOLID_CFG_G])
+        config.results.solid_dynamics[:, Config.SOLID_DYN_G, :] = Position.point(config, slice(None), config.solid_physics[:,  Config.SOLID_CFG_G, np.newaxis])
 
         config.results.joint_dynamics[:] = 0.0
 
@@ -47,12 +49,12 @@ class Solid:
     @staticmethod
     def add_action(config: Config, solid: int, force: np.ndarray, torque: np.ndarray, point: np.ndarray):
         config.results.solid_dynamics[solid, Config.SOLID_DYN_FORCE, :] += force
-        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += torque + np.cross(point - config.results[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += torque + np.cross(point - config.results.solid_dynamics[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
     @staticmethod
     def add_force(config: Config, solid: int, force: np.ndarray, point: np.ndarray):
         config.results.solid_dynamics[solid, Config.SOLID_DYN_FORCE, :] += force
-        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += np.cross(point - config.results[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
+        config.results.solid_dynamics[solid, Config.SOLID_DYN_TORQUE, :] += np.cross(point - config.results.solid_dynamics[solid,Config.SOLID_DYN_G, :], force, axis=0) # noqa: false positive code is unreachable with np.cross
 
     @staticmethod
     def add_torque(config: Config, solid: int, torque: np.ndarray):
@@ -128,7 +130,7 @@ class Graph:
         vec0, vec1 = p2 - p0, p2 - p1
         d = Geometry.dot(vec0, vec1)
         x, y = torque_1_2_p1 / d, torque_1_2_p0 / d
-        force_1_2 = Geometry.z_det(vec0) * x[np.newaxis, :] + Geometry.z_det(vec1) * y[np.newaxis, :]
+        force_1_2 = Geometry.z_det(vec0) * x + Geometry.z_det(vec1) * y
         Joint.set_oriented_force(config, r2, force_1_2, p2)
 
         force_1_0 = sign0 * Newtons2ndLaw.force(config, eq0)

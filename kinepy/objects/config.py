@@ -81,8 +81,7 @@ class Config:
 
         self.results.joint_values = np.zeros((self.joint_config.shape[0], frame_count), float)
 
-        if frame_time > 0.0:
-            self.allocated_results_dyn(frame_count, frame_time)
+        self.allocated_results_dyn(frame_count, frame_time)
 
     def allocated_results_dyn(self, frame_count, frame_time):
         self.frame_time = frame_time
