@@ -18,7 +18,15 @@ sys.determine_computation_order()
 n = 101
 sys.set_frame_count(n)
 sys.solve_kinematics()
+
 sys.add_interaction(kp.Gravity())
+"""
+class Load(kp.Interaction):
+    def register_actions(self):
+        self.add_action(s1, s1.get_point((1, 0)), [[0], [-1]], 0)
+sys.add_interaction(Load())
+"""
+
 sys.solve_dynamics()
 
 
@@ -29,3 +37,9 @@ plt.plot(r1.get_value())
 plt.plot(r2.get_value())
 plt.plot(r3.get_value())
 plt.show()
+
+#%%
+
+print(r1.get_force())
+print(r2.get_force())
+print(r3.get_force())
