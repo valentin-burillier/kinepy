@@ -42,7 +42,7 @@ class Newtons2ndLaw:
         if (target_mask >> ground_eq) & 1:
             target_mask ^= (1 << len(all_eqs)) - 1
             sign = -1.0
-        return sum((eq for i, eq in enumerate(all_eqs) if (i >> target_mask) & 1), ()), sign
+        return sum((eq for i, eq in enumerate(all_eqs) if (target_mask >> i) & 1), ()), sign
 
 
 class Solid:
