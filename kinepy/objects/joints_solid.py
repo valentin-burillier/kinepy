@@ -59,6 +59,9 @@ class Solid(ConfigView):
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
         return geo.Position.point(self._config, self._index, np.array(p)[:, np.newaxis])
 
+    def get_vector(self, v: u.scalar_type) -> u.scalar_type:
+        return geo.Position.local_point(self._config, self._index, v)
+
     def get_angle(self):
         _x, _y = geo.Orientation.get(self._config, self._index)
         _angle = np.arctan2(_y, _x)
