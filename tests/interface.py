@@ -95,18 +95,21 @@ class InterfaceTests(unittest.TestCase):
         ps.angle.p2 = 1, 0
         self.assertRaises(AttributeError, lambda: setattr(ps.angle, 'p1', (0, 0)))
         ps.angle.pilot()
+        ps.angle.work()
 
         ps.sliding.angle1 = 1.0
         self.assertEqual(ps.sliding.angle2, 1.0)
         ps.sliding.distance1 = 1.0
         self.assertRaises(AttributeError, lambda: setattr(ps.sliding, 'distance2', 0))
         ps.sliding.pilot()
+        ps.sliding.work()
 
         system.set_frame_count(5)
         system.determine_computation_order()
 
         # piloting Revolut and Prismatic
         system.solve_kinematics()
+        system.solve_dynamics()
 
     def test_translation(self):
         system = kp.System()
