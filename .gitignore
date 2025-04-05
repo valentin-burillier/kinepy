@@ -1,4 +1,4 @@
 cmake*/
 .idea/
 .venv/
-.git
+.git/hooks
