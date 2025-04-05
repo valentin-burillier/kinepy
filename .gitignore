@@ -1,4 +1,5 @@
 cmake*/
 .idea/
 .venv/
-.git/**
+.git/
+**/__pycache__/
