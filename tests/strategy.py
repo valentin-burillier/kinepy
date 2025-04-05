@@ -231,8 +231,6 @@ class GraphOperationsTests(unittest.TestCase):
         step: algo.GraphStep = strategy[0]
         self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gPPR)
 
-    def test_fail(self):
-        raise ValueError("I want this test to fail")
 
 if __name__ == '__main__':
     unittest.main()
