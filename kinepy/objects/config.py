@@ -16,6 +16,12 @@ class ConfigState(enum.Enum):
     def __ge__(self, other):
         return self.value >= other.value
 
+    def __le__(self, other):
+        return self.value <= other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
 
 class Config:
     SOLID = 'solid_physics'
@@ -92,7 +98,7 @@ class Config:
         self.state = ConfigState.NO_READ_ALLOWED
 
     def invalidate_physics(self):
-        self.state = ConfigState.STRATEGY_OK
+        self.state = min(ConfigState.ALLOCATED_RESOURCES, self.state)
 
     def allocate_results(self, frame_count, frame_time=0.0):
         self.state = ConfigState.ALLOCATED_RESOURCES
