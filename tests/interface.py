@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import warnings
 import kinepy as kp
 
 """
@@ -121,3 +122,53 @@ class InterfaceTests(unittest.TestCase):
         tt.x.pilot()
         tt.y.pilot()
         system.determine_computation_order()
+
+    def test_rrr(self):
+        warnings.filterwarnings('ignore')
+
+        system = kp.System()
+        s0, s1, s2 = system.ground, system.add_solid('BLOCK'), system.add_solid('BLOCK2')
+
+        r = system.add_revolute(s0, s1)
+        system.add_revolute(s0, s2)
+        system.add_revolute(s1, s2)
+
+        system.set_frame_count(5)
+        system.determine_computation_order()
+
+        system.solve_kinematics()
+        # non user-set revolute value
+        r.get_value()
+        system.solve_dynamics()
+
+    def test_rrp(self):
+        warnings.filterwarnings('ignore')
+
+        system = kp.System()
+        s0, s1, s2 = system.ground, system.add_solid('BLOCK'), system.add_solid('BLOCK2')
+
+        r = system.add_revolute(s0, s1)
+        system.add_revolute(s0, s2)
+        system.add_prismatic(s1, s2)
+
+        system.set_frame_count(5)
+        system.determine_computation_order()
+
+        system.solve_kinematics()
+        system.solve_dynamics()
+
+    def test_ppr(self):
+        warnings.filterwarnings('ignore')
+
+        system = kp.System()
+        s0, s1, s2 = system.ground, system.add_solid('BLOCK'), system.add_solid('BLOCK2')
+
+        system.add_prismatic(s0, s1)
+        system.add_prismatic(s0, s2)
+        system.add_revolute(s1, s2)
+
+        system.set_frame_count(5)
+        system.determine_computation_order()
+
+        system.solve_kinematics()
+        system.solve_dynamics()

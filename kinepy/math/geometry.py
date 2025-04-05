@@ -52,13 +52,13 @@ class Joint:
 
     @staticmethod
     def get_prismatic_application_point(config: Config, joint: OrientedJoint):
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
         return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], dist * Orientation.from_angle(angle + np.pi * 0.5))
 
     @staticmethod
     def get_prismatic_normal(config: Config, joint: OrientedJoint):
         s1 = config.joint_config[joint[0], Config.JOINT_S1]
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
         return Position.local_point(config, s1, Orientation.from_angle(angle + np.pi * 0.5))
 
     @staticmethod

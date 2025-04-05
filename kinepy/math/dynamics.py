@@ -159,10 +159,10 @@ class Graph:
 
         p2_normal = Joint.get_prismatic_normal(config, p2)
         force_1_2_s = (torque_1_2_p0 - torque_1_2_p1) / Geometry.det(p1 - p0, p2_normal)
-        force_1_2 = force_1_2_s[np.newaxis, :] * p2_normal
+        force_1_2 = force_1_2_s * p2_normal
         torque_1_2_p2_ = torque_1_2_p0 - Geometry.det(p2_ - p0, p2_normal) * force_1_2_s
 
-        Joint.set_oriented_action(config, p2, force_1_2, torque_1_2_p2_, p2_)
+        Joint.set_oriented_action(config, p2, force_1_2, torque_1_2_p2_[0], p2_)
 
         force_1_0 = sign0 * Newtons2ndLaw.force(config, eq0)
         Joint.set_oriented_force(config, r0, -force_1_0, p0)
@@ -186,7 +186,7 @@ class Graph:
         eq, sign = Newtons2ndLaw.select_group(eqs, (1, 2), zero_holder)
         force_0_12 = sign * Newtons2ndLaw.force(config, eq)
         d = Geometry.det(n0, n1)
-        force_0_1, force_0_2 = (Geometry.det(force_0_12, n1) / d)[np.newaxis, :] * n0, (Geometry.det(n0, force_0_12) / d)[np.newaxis, :] * n1
+        force_0_1, force_0_2 = (Geometry.det(force_0_12, n1) / d) * n0, (Geometry.det(n0, force_0_12) / d) * n1
 
         Joint.set_oriented_force(config, p0, force_0_1, p0_)
         Joint.set_oriented_force(config, p1, force_0_2, p1_)
