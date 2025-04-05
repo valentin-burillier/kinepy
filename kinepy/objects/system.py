@@ -1,4 +1,4 @@
-from kinepy.objects.config import Config, np
+from kinepy.objects.config import Config, np, ConfigState
 import kinepy.units as u
 from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
 from kinepy.strategy.graph_data import JointType, RelationType
@@ -91,6 +91,7 @@ class System:
         return Translation(ghost_joints, (ghost_solid,))
 
     def determine_computation_order(self):
+        self.__config.state = ConfigState.STRATEGY_OK
         if self.__config.working_joints.size:
             self._determine_computation_order(self.__config.working_joints, self._dynamic_strategy)
         self._determine_computation_order(self.__config.piloted_joints, self._kinematic_strategy)
@@ -107,9 +108,13 @@ class System:
         return 2 * self.__config.joint_config.shape[0] - 3 * (self.__config.solid_physics.shape[0] - 1) + len(joint_input) + self.__config.relation_config.shape[0]
 
     def set_frame_count(self, frame_cnt: int, frame_time: u.Time.phy = 0.0):
+        assert self.__config.state >= ConfigState.STRATEGY_OK, "Call `System.determine_computation_order` before allocating resources"
         self.__config.allocate_results(frame_cnt, frame_time)
 
     def solve_kinematics(self):
+        assert self.__config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before solving kinematics"
+        self.__config.state = ConfigState.KINEMATICS_OK
+
         kin.System.set_up(self.__config)
 
         for step in self._kinematic_strategy:
@@ -121,6 +126,9 @@ class System:
         return tuple(step for step in self._kinematic_strategy if isinstance(step, strategy.GraphStep) and step.solution_count > 1)
 
     def solve_dynamics(self):
+        assert self.__config.state >= ConfigState.KINEMATICS_OK, "Call `System.solve_kinematics` before solving dynamics"
+        self.__config.state = ConfigState.DYNAMICS_OK
+
         dyn.System.set_up(self.__config)
 
         for inter in self._interactions:

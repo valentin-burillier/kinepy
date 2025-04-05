@@ -1,4 +1,5 @@
 import numpy as np
+import enum
 
 
 class Result:
@@ -7,6 +8,13 @@ class Result:
 
     joint_values: np.ndarray
     joint_dynamics: np.ndarray
+
+
+class ConfigState(enum.Enum):
+    NO_READ_ALLOWED, STRATEGY_OK, ALLOCATED_RESOURCES, KINEMATICS_OK, DYNAMICS_OK = range(5)
+
+    def __ge__(self, other):
+        return self.value >= other.value
 
 
 class Config:
@@ -72,9 +80,22 @@ class Config:
 
         self.frame_time = 0.0
 
+        self.valid_strategy = False
+        self.valid_kinematics = False
+        self.valid_dynamics = False
+
         self.results = Result()
 
+        self.state = ConfigState.NO_READ_ALLOWED
+
+    def invalidate_config(self):
+        self.state = ConfigState.NO_READ_ALLOWED
+
+    def invalidate_physics(self):
+        self.state = ConfigState.STRATEGY_OK
+
     def allocate_results(self, frame_count, frame_time=0.0):
+        self.state = ConfigState.ALLOCATED_RESOURCES
         # x, y, cos(a), sin(a)
         self.results.solid_values = np.zeros((self.solid_physics.shape[0], 4, frame_count), float)
         self.results.solid_values[:, 2, :] = 1.
@@ -91,13 +112,16 @@ class Config:
         self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], 3, frame_count))
 
     def add_solids(self, physics: np.ndarray):
+        self.invalidate_config()
         self.solid_physics = np.r_[self.solid_physics, physics]
 
     def add_joints(self, config: np.ndarray, physics: np.ndarray):
+        self.invalidate_config()
         self.joint_config = np.r_[self.joint_config, config]
         self.joint_physics = np.r_[self.joint_physics, physics]
 
     def add_relations(self, config: np.ndarray, physics: np.ndarray):
+        self.invalidate_config()
         self.relation_config = np.r_[self.relation_config, config]
         self.relation_physics = np.r_[self.relation_physics, physics]
 
@@ -133,6 +157,7 @@ class ConfigView(Immutable):
             return getattr(self._config, array_name)[self._index, get]
 
         def setter(self: cls, value: phy) -> None:
+            self._config.invalidate_physics()
             getattr(self._config, array_name)[self._index, sub_index] = value
 
         return property(getter, setter)

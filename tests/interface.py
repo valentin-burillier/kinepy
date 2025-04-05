@@ -40,8 +40,8 @@ class InterfaceTests(unittest.TestCase):
         s1.angle.work()
 
         n = 5
-        system.set_frame_count(n)
         system.determine_computation_order()
+        system.set_frame_count(n)
         system.solve_kinematics()
 
         self.assertEqual(s1.get_angle().shape, (n,))
@@ -60,8 +60,8 @@ class InterfaceTests(unittest.TestCase):
         j.work()
 
         n = 5
-        system.set_frame_count(n)
         system.determine_computation_order()
+        system.set_frame_count(n)
         system.solve_kinematics()
 
         j.set_input(np.zeros((n,)))
@@ -104,8 +104,8 @@ class InterfaceTests(unittest.TestCase):
         ps.sliding.pilot()
         ps.sliding.work()
 
-        system.set_frame_count(5)
         system.determine_computation_order()
+        system.set_frame_count(5)
 
         # piloting Revolut and Prismatic
         system.solve_kinematics()
@@ -136,8 +136,8 @@ class InterfaceTests(unittest.TestCase):
         system.add_revolute(s0, s2)
         system.add_revolute(s1, s2)
 
-        system.set_frame_count(5)
         system.determine_computation_order()
+        system.set_frame_count(5)
 
         system.solve_kinematics()
         # non user-set revolute value
@@ -154,8 +154,8 @@ class InterfaceTests(unittest.TestCase):
         system.add_revolute(s0, s2)
         system.add_prismatic(s1, s2)
 
-        system.set_frame_count(5)
         system.determine_computation_order()
+        system.set_frame_count(5)
 
         system.solve_kinematics()
         system.solve_dynamics()
@@ -170,8 +170,8 @@ class InterfaceTests(unittest.TestCase):
         system.add_prismatic(s0, s2)
         system.add_revolute(s1, s2)
 
-        system.set_frame_count(5)
         system.determine_computation_order()
+        system.set_frame_count(5)
 
         system.solve_kinematics()
         system.solve_dynamics()
