@@ -111,8 +111,8 @@ class Immutable:
     def __setattr__(self, key, value):
         if not hasattr(self, '_initialized'):
             return object.__setattr__(self, key, value)
-        if hasattr(self.__class__, key) and isinstance(self.__class__.__dict__[key], property):
-            prop: property = self.__class__.__dict__[key]
+        if hasattr(self.__class__, key) and isinstance(getattr(self.__class__, key), property):
+            prop: property = getattr(self.__class__, key)
             return prop.__set__(self, value)
         raise ValueError(f'You should not be internally modifying {self.__class__.__name__} objects')
 

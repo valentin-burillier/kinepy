@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.objects.config import *
 import kinepy.units as u
 from kinepy.strategy.graph_data import JointType
@@ -8,8 +10,6 @@ from typing import Self
 
 @u.UnitSystem.class_
 class Solid(ConfigView):
-    __slots__ = 'name', '__3dof'
-
     def __init__(self, config: Config, index: int, name: str):
         self.name = name
         self.__3dof = []
@@ -33,7 +33,7 @@ class Solid(ConfigView):
             ghost_joints = (
                 J3DOFAxle(self._config, j_ghost_index, GhostSolid(self._config, 0, 'Ground'), ghost_solids[0], f"<{self.name}.x>"),
                 J3DOFAxle(self._config, j_ghost_index+1, ghost_solids[0], ghost_solids[1], f"<{self.name}.y>"),
-                J3DOFAngle(self._config, j_ghost_index+1, ghost_solids[1], self, f"<{self.name}.angle>")
+                J3DOFAngle(self._config, j_ghost_index+2, ghost_solids[1], self, f"<{self.name}.angle>")
             )
             self.__3dof.append(J3DOF(ghost_joints, ghost_solids))
         return self.__3dof[0]
@@ -57,9 +57,15 @@ class Solid(ConfigView):
         return geo.Position.get(self._config, self._index)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
-        return geo.Position.point(self._config, self._index, np.array(p)[:, np.newaxis])
+        p = np.array(p)
+        if len(p.shape) == 1:
+            p = p[:, np.newaxis]
+        return geo.Position.point(self._config, self._index,p)
 
-    def get_vector(self, v: u.scalar_type) -> u.scalar_type:
+    def get_vector(self, v: u.point_type = (0.0, 0.0)) -> u.point_type:
+        v = np.array(v)
+        if len(v.shape) == 1:
+            v = v[:, np.newaxis]
         return geo.Position.local_point(self._config, self._index, v)
 
     def get_angle(self):
@@ -107,7 +113,6 @@ class PrimitiveJoint(ConfigView):
 
 @u.UnitSystem.class_
 class Revolute(PrimitiveJoint):
-    __slots__ = ()
     _type = JointType.REVOLUTE
 
     p1: u.Length.point = ConfigView.physics_view(Config.JOINT, Config.JOINT_P1, u.Length.point, scalar=False)
@@ -122,7 +127,6 @@ class Revolute(PrimitiveJoint):
 
 @u.UnitSystem.class_
 class Prismatic(PrimitiveJoint):
-    __slots__ = ()
     _type = JointType.PRISMATIC
 
     distance1: u.Length.phy = ConfigView.physics_view(Config.JOINT, Config.JOINT_D1, u.Length.phy)
@@ -157,9 +161,13 @@ class GhostSolid(Solid):
     moment_of_inertia: u.MomentOfInertia.phy = _disable_set(Solid.moment_of_inertia)
     g: u.Length.point = _disable_set(Solid.g)
 
+    def _get_3dof(self):
+        # TODO: looks like bad design
+        raise ValueError("Ghost solids can't be controlled this way")
+
 
 class CompositeJoint(Immutable):
-    __slots__ = '_joints', '_solids', '_initialized'
+    __slots__ = '_joints', '_solids'
 
     def __init__(self, joints: tuple[PrimitiveJoint, ...], solids: tuple[GhostSolid, ...]):
         self._joints: tuple[PrimitiveJoint, ...] = joints

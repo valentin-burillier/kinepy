@@ -202,7 +202,7 @@ def register_graph_step(config: Config, graph: graph_data.Graphs, isomorphism: I
 def register_solved_joints(config: Config, joints: Generator[int, None, None], joint_states: list[int], joint_queue: list[int], *, value_is_computed: bool, certain_continuity: bool) -> None:
     for joint in joints:
         if joint_states[joint] & JointFlags.SOLVED_BIT:
-            raise ex.SystemConfigurationError(f"Trying to solve {joint} that is already solved")
+            raise ex.SystemConfigurationError(f"Trying to solve <joint:{joint}> that is already solved")
         joint_states[joint] |= JointFlags.SOLVED_BIT | (certain_continuity or graph_data.JointType(config.joint_config[joint, Config.JOINT_TYPE]) == graph_data.JointType.PRISMATIC) * JointFlags.CONTINUOUS_BIT | value_is_computed * JointFlags.COMPUTED_BIT
         joint_queue.append(joint)
 
