@@ -417,15 +417,18 @@ class UnitSystem:
             if attr in target_class.__dict__ or (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
 
+            _attr_name = f'_{attr}'
+
             def getter(self: target_class) -> phy:
-                return self.__getattr__(f'_{attr}')
+                return getattr(self, _attr_name)
 
             def setter(self: target_class, value: phy):
-                return self.__setattr__(f'_{attr}', value)
+                return setattr(self, _attr_name, value)
 
             _dict[attr] = property(
                 cls.function(getter),
-                cls.function(setter)
+                cls.function(setter),
+                doc=f"{attr}"
             )
         return type(target_class.__name__, target_class.__bases__, _dict)
 

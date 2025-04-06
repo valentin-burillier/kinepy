@@ -20,12 +20,15 @@ sys.set_frame_count(n)
 sys.solve_kinematics()
 
 sys.add_interaction(kp.Gravity(g=(0, -1)))
-"""
+
+
 class Load(kp.Interaction):
     def register_actions(self):
-        self.add_action(s1, s1.get_point((1, 0)), [[0], [-1]], 0)
+        self.add_action(s1, s1.get_point(s1.g), [[0], [-1]], 0)
+
+
 sys.add_interaction(Load())
-"""
+
 
 sys.solve_dynamics()
 

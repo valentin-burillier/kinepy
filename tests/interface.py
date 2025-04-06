@@ -229,26 +229,51 @@ class InterfaceTests(unittest.TestCase):
 
 
     def test_gear_rack(self):
-        sys = kp.System()
+        system = kp.System()
 
-        s0 = sys.ground
-        s1 = sys.add_solid()
-        s2 = sys.add_solid()
+        s0 = system.ground
+        s1 = system.add_solid()
+        s2 = system.add_solid()
 
-        r1 = sys.add_revolute(s0, s1)
-        p1 = sys.add_prismatic(s0, s2)
+        r1 = system.add_revolute(s0, s1)
+        p1 = system.add_prismatic(s0, s2)
 
-        gr = sys.add_gear_rack(r1, p1)
+        gr = system.add_gear_rack(r1, p1)
         gr.pressure_angle = 0
         gr.r = 2
         gr.v0 = 5
 
         r1.pilot()
 
-        sys.determine_computation_order()
+        system.determine_computation_order()
         n = 5
-        sys.set_frame_count(n)
-        sys.solve_kinematics()
+        system.set_frame_count(n)
+        system.solve_kinematics()
 
         # TODO: not ready yet
-        # sys.solve_dynamics()
+        # system.solve_dynamics()
+
+    def test_interaction(self):
+
+        system = kp.System()
+        s0 = system.ground
+        s1 = system.add_solid()
+
+        class Load(kp.Interaction):
+            def register_actions(self):
+                self.add_action(s0, s0.get_point(s0.g), [[0], [-1]], 0)
+
+        s1.angle.pilot()
+        s1.x.pilot()
+        s1.y.pilot()
+
+        system.add_interaction(Load())
+        system.add_interaction(kp.Gravity())
+        system.add_interaction(kp.Inertia())
+        system.add_interaction(a := kp.TwistingSpring(s1.angle))
+        system.add_interaction(kp.LinearSpring(s0, s1))
+
+   #    system.determine_computation_order()
+   #    system.set_frame_count(5)
+   #    system.solve_kinematics()
+   #    system.solve_dynamics()

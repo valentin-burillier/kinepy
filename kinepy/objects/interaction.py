@@ -17,7 +17,7 @@ class Interaction:
     def add_action(self, solid: Solid, point: u.Length.point, force: u.Force.point, torque: u.Torque.phy):
         if self._config is None:
             raise ValueError('Add me to a system')
-        if not solid.check_against(self._config, Config.SOLID):
+        if not solid.check_against(self._config, self._config.solid_physics):
             raise ValueError('This solid is not from the same system')
         dyn.Solid.add_action(self._config, solid._index, force, torque, point)
 
@@ -36,8 +36,11 @@ class Gravity(Interaction):
     def register_actions(self):
         self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE, :] += np.einsum('m,i->mi', self._config.solid_physics[:, Config.SOLID_MASS], self._g)[..., np.newaxis]
 
+
 class Inertia(Interaction):
     def register_actions(self):
+        if self._config.frame_time == 0.0:
+            return
         # shape (m, 2, n)
         solid_ori = geo.Orientation.get(self._config, slice(None))
         # shape (m, n)
@@ -79,6 +82,8 @@ class LinearSpring(Interaction):
         force = (length - self.l0) * self.k * unit
         self.add_action(self.s2, p2, -force, 0)
         self.add_action(self.s1, p1, force, 0)
+
+        print("End spring")
 
 
 @u.UnitSystem.class_
