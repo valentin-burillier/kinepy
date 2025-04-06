@@ -33,7 +33,7 @@ class Newtons2ndLaw:
         assert 0 not in eq, Newtons2ndLaw._ground_is_not_a_free_body
         # babar
         # np.cross: shape ((eq, 2, n) - (1, 2, n)) x (eq, 2, n) -> (eq, n)
-        return -np.sum(config.results.solid_dynamics[eq, Config.SOLID_MOMENT_OF_INERTIA, :] + np.cross(config.results.solid_dynamics[eq, Config.SOLID_DYN_G, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, Config.SOLID_DYN_FORCE, :], axis=1), axis=0)
+        return -np.sum(config.results.solid_dynamics[eq, Config.SOLID_DYN_TORQUE, :] + np.cross(config.results.solid_dynamics[eq, Config.SOLID_DYN_G, :] - point[np.newaxis, ...], config.results.solid_dynamics[eq, Config.SOLID_DYN_FORCE, :], axis=1), axis=0)
 
     @staticmethod
     def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int, ...], ground_eq: int) -> tuple[tuple[int, ...], float]:
@@ -128,8 +128,8 @@ class Graph:
         torque_1_2_p1 = sign1 * Newtons2ndLaw.torque(config, eq1, p1)
 
         vec0, vec1 = p2 - p0, p2 - p1
-        d = Geometry.dot(vec0, vec1)
-        x, y = torque_1_2_p1 / d, torque_1_2_p0 / d
+        d, n0, n1 = Geometry.dot(vec0, vec1), Geometry.dot(vec0, vec0), Geometry.dot(vec1, vec1)
+        x, y = (torque_1_2_p1 * d - torque_1_2_p0 * n1) / (d * d - n0 * n1), (torque_1_2_p0 * d - torque_1_2_p1 * n0) / (d * d - n0 * n1)
         force_1_2 = Geometry.z_det(vec0) * x + Geometry.z_det(vec1) * y
         Joint.set_oriented_force(config, r2, force_1_2, p2)
 

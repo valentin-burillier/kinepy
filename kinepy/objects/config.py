@@ -86,10 +86,6 @@ class Config:
 
         self.frame_time = 0.0
 
-        self.valid_strategy = False
-        self.valid_kinematics = False
-        self.valid_dynamics = False
-
         self.results = Result()
 
         self.state = ConfigState.NO_READ_ALLOWED

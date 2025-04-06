@@ -36,7 +36,6 @@ class Gravity(Interaction):
     def register_actions(self):
         self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE, :] += np.einsum('m,i->mi', self._config.solid_physics[:, Config.SOLID_MASS], self._g)[..., np.newaxis]
 
-
 class Inertia(Interaction):
     def register_actions(self):
         # shape (m, 2, n)
