@@ -200,3 +200,55 @@ class InterfaceTests(unittest.TestCase):
 
         # TODO: not ready yet
         # sys.solve_dynamics()
+
+    def test_belt(self):
+        sys = kp.System()
+
+        s0 = sys.ground
+        s1 = sys.add_solid()
+        s2 = sys.add_solid()
+
+        r1 = sys.add_revolute(s0, s1)
+        r2 = sys.add_revolute(s0, s2)
+
+        b = sys.add_belt(r1, r2)
+        b.t0 = 1
+        b.r1 = 1
+        b.r2 = 5
+        b.v0 = 5
+
+        r1.pilot()
+
+        sys.determine_computation_order()
+        n = 5
+        sys.set_frame_count(n)
+        sys.solve_kinematics()
+
+        # TODO: not ready yet
+        # sys.solve_dynamics()
+
+
+    def test_gear_rack(self):
+        sys = kp.System()
+
+        s0 = sys.ground
+        s1 = sys.add_solid()
+        s2 = sys.add_solid()
+
+        r1 = sys.add_revolute(s0, s1)
+        p1 = sys.add_prismatic(s0, s2)
+
+        gr = sys.add_gear_rack(r1, p1)
+        gr.pressure_angle = 0
+        gr.r = 2
+        gr.v0 = 5
+
+        r1.pilot()
+
+        sys.determine_computation_order()
+        n = 5
+        sys.set_frame_count(n)
+        sys.solve_kinematics()
+
+        # TODO: not ready yet
+        # sys.solve_dynamics()
