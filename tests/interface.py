@@ -175,3 +175,28 @@ class InterfaceTests(unittest.TestCase):
 
         system.solve_kinematics()
         system.solve_dynamics()
+
+    def test_gear_pair(self):
+        sys = kp.System()
+
+        s0 = sys.ground
+        s1 = sys.add_solid()
+        s2 = sys.add_solid()
+
+        r1 = sys.add_revolute(s0, s1)
+        r2 = sys.add_revolute(s0, s2)
+
+        gp = sys.add_gear_pair(r1, r2)
+        gp.pressure_angle = 0
+        gp.r = -1
+        gp.v0 = 5
+
+        r1.pilot()
+
+        sys.determine_computation_order()
+        n = 5
+        sys.set_frame_count(n)
+        sys.solve_kinematics()
+
+        # TODO: not ready yet
+        # sys.solve_dynamics()

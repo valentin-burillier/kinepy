@@ -26,7 +26,7 @@ def make_relation_graph(config: Config) -> RelationGraph:
     n_joint = config.joint_config.shape[0]
     result_graph: RelationGraph = [[] for _ in range(n_joint)]
 
-    for index, (_type, _j1, _j2) in config.relation_config:
+    for index, (_type, _j1, _j2) in enumerate(config.relation_config[:, Config.RELATION_TYPE_JOINTS]):
         result_graph[_j1].append(r1 := RelationGraphNode(True, index))
         result_graph[_j2].append(r2 := RelationGraphNode(False, index))
 
@@ -252,6 +252,8 @@ def find_solved_relations(relation_graph: RelationGraph, joint_queue: list[int])
         for relation_node in relation_graph[joint]:
             if relation_node.solved:
                 continue
+            relation_node.solved = True
+            relation_node.pair.solved = True
             yield relation_node
 
 
@@ -303,8 +305,8 @@ def check_gear_formation(config: Config, solid_to_eq: EqMapping) -> list[int]:
     # Pre-requisite: no gear is in the gear queue, i.e. (eq11 == eq12 xor eq21 == eq22) is false for every gear
     result: list[int] = []
 
-    for rel, (_type, j1, j2) in config.relation_config[:, Config.RELATION_TYPE_JOINTS]:
-        if graph_data.RelationType(_type) not in (graph_data.RelationType.GEAR, graph_data.RelationType.GEAR_RACK):
+    for rel, (_type, j1, j2) in enumerate(config.relation_config[:, Config.RELATION_TYPE_JOINTS]):
+        if graph_data.RelationType(_type) not in graph_data.GEAR_TYPES:
             continue
         (s11, s12), (s21, s22) = config.joint_config[[j1, j2], Config.JOINT_SOLIDS]
         eq11, eq12, eq21, eq22 = solid_to_eq[s11], solid_to_eq[s12], solid_to_eq[s21], solid_to_eq[s22]
@@ -345,7 +347,7 @@ def register_relation_step(config: Config, relation_node: RelationGraphNode, eqs
         strategy_output.append(JointValueComputationStep(source, stype, joint_states[source] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT), s1, s2))
         joint_states[source] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
 
-    eq1, eq2 = eqs[solid_to_eq[t1]], eqs[solid_to_eq[t2]]
+    eq1, eq2 = solid_to_eq[t1], solid_to_eq[t2]
 
     src_g, dst_g = (Config.RELATION_G1, Config.RELATION_G2) if relation_node.is_1_to_2 else (Config.RELATION_G2, Config.RELATION_G1)
 
@@ -359,7 +361,7 @@ def register_relation_step(config: Config, relation_node: RelationGraphNode, eqs
             raise ex.SystemConfigurationError(f"(internal error) no common eq on solved gear {relation}")
         if config.relation_config[relation, src_g] == -1:
             raise ex.SystemConfigurationError(f"Could not infer pinion/rack for {relation}")
-    strategy_output.append(RelationStep(relation_node.relation, _type, relation_node.is_1_to_2, source, target, ttype, eq1, eq2))
+    strategy_output.append(RelationStep(relation_node.relation, _type, relation_node.is_1_to_2, source, target, ttype, eqs[eq1], eqs[eq2]))
     try:
         register_solved_joints(config, simple_gen(target), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
     except ex.SystemConfigurationError as e:

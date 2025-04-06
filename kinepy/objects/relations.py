@@ -21,10 +21,12 @@ class _Gear(Relation):
 
 
 class GearPair(_Gear):
+    r = ConfigView.physics_view(Config.RELATION, Config.RELATION_R, u.Dimensionless.phy)
     pressure_angle = ConfigView.physics_view(Config.RELATION, Config.RELATION_PRESSURE_ANGLE, u.Angle.phy)
 
 
 class GearRack(_Gear):
+    r = ConfigView.physics_view(Config.RELATION, Config.RELATION_R, u.Length.phy)
     pressure_angle = ConfigView.physics_view(Config.RELATION, Config.RELATION_PRESSURE_ANGLE, u.Angle.phy)
 
 
