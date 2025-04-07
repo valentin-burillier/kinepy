@@ -207,6 +207,6 @@ class Relation:
     @staticmethod
     def solve_belt(config: Config, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
         v0, r1, r2 = config.relation_physics[relation, [Config.RELATION_V0, Config.RELATION_R1, Config.RELATION_R2]]
-        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r2 / r1, v0)
+        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r1 / r2, v0)
         s1, s2 = config.joint_config[destination, Config.JOINT_SOLIDS]
         JointInput.solve_revolute(config, s1, s2, destination, eq1, eq2)
