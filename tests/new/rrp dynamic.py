@@ -2,6 +2,10 @@ import kinepy as kp
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
+https://www.geogebra.org/calculator/f7mhwwga
+"""
+
 #%%
 
 sys = kp.System()
