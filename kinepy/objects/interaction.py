@@ -1,6 +1,7 @@
 import numpy as np
 
-from kinepy.objects.config import Config
+from kinepy.objects.config import Config, ConfigState, ActionMode
+from kinepy.objects.action import Action, InternalAction
 import kinepy.math.dynamics as dyn
 from kinepy.objects.joints_solid import Solid, Revolute
 import kinepy.math.geometry as geo
@@ -9,36 +10,58 @@ import kinepy.units as u
 
 @u.UnitSystem.class_
 class Interaction:
-    _config: None | Config
+    def __init__(self, config: Config, action_mapping: dict):
+        self._config = config
+        self._action_mapping: dict[int, int] = action_mapping
 
-    def __init__(self):
-        self._config: None | Config = None
+    def __getitem__(self, item: Solid) -> Action:
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` accessing InternalActions"
+        try:
+            return InternalAction(self._config, self._action_mapping[item._index])
+        except KeyError as e:
+            e.args = f"This interaction is not doing anything to {item}",
+            raise
 
-    def add_action(self, solid: Solid, point: u.Length.point, force: u.Force.point, torque: u.Torque.phy):
-        if self._config is None:
-            raise ValueError('Add me to a system')
-        if not solid.check_against(self._config, self._config.solid_physics):
-            raise ValueError('This solid is not from the same system')
-        dyn.Solid.add_action(self._config, solid._index, force, torque, point)
+    def _claim_resources(self):
+        pass
 
-    def register_actions(self):
-        """Override this method to apply your actions"""""
+    def _all_solids_claim(self):
+        if len(self._action_mapping) < len(self._config.solid_config):
+            diff = len(self._config.solid_config) - len(self._action_mapping)
+            _n_solid_indices = np.arange(len(self._action_mapping), len(self._config.solid_config))
+            _action_index = self._config.action_config.shape[0]
+            self._config.add_actions(
+                np.r_['-1', _n_solid_indices[:, np.newaxis], diff * [[ActionMode.SOLID_G.value]], _n_solid_indices[:, np.newaxis]],
+                np.zeros((diff, 2))
+            )
+            self._action_mapping.update(zip(_n_solid_indices, np.arange(_action_index, _action_index + diff)))
+
+    def _set_actions(self):
+        pass
 
 
 @u.UnitSystem.class_
 class Gravity(Interaction):
     g: u.Acceleration.point
 
-    def __init__(self, g: u.Acceleration.point = (0.0, -u.Acceleration.G.value)):
-        Interaction.__init__(self)
+    def __init__(self,  config: Config, action_mapping: np.array, g: u.Acceleration.point = (0.0, -u.Acceleration.G.value)):
+        Interaction.__init__(self, config, action_mapping)
         self._g = g
 
-    def register_actions(self):
-        self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE, :] += np.einsum('m,i->mi', self._config.solid_physics[:, Config.SOLID_MASS], self._g)[..., np.newaxis]
+    def _claim_resources(self):
+        return self._all_solids_claim()
+
+    def _set_actions(self):
+        g = np.einsum('m,i->mi', self._config.solid_physics[:, Config.SOLID_MASS], self._g)[..., np.newaxis]
+        self._config.results.action_values[list(self._action_mapping.values()), Config.ACTION_DYN_FORCE] = g
+        self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE] += g
 
 
 class Inertia(Interaction):
-    def register_actions(self):
+    def _claim_resources(self):
+        return self._all_solids_claim()
+
+    def _set_actions(self):
         if self._config.frame_time == 0.0:
             return
         # shape (m, 2, n)
@@ -46,12 +69,14 @@ class Inertia(Interaction):
         # shape (m, n)
         solid_angles = np.arctan2(solid_ori[:, 1, :], solid_ori[:, 0, :])
         # shape (m, n)
-        inertia = self._config.solid_physics[:, (Config.SOLID_MOMENT_OF_INERTIA,)] * np.diff(solid_angles, n=2, axis=-1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
-        self._config.results.solid_dynamics[:, Config.JOINT_DYN_TORQUE] -= inertia
+        inertia = self._config.solid_physics[:, (Config.SOLID_MOMENT_OF_INERTIA,)] * np.diff(solid_angles, n=2, axis=-1,  prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.action_values[list(self._action_mapping.values()), Config.ACTION_DYN_TORQUE] = inertia
+        self._config.results.solid_dynamics[:, Config.SOLID_DYN_TORQUE] -= inertia
 
         # shape (m, 2, n)
         solid_g = self._config.results.solid_dynamics[:, Config.SOLID_DYN_G, :]
         inertia = self._config.solid_physics[:, (Config.SOLID_MASS,)] * np.diff(solid_g, n=2, axis=-1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.action_values[list(self._action_mapping.values()), Config.ACTION_DYN_TORQUE] = inertia
         self._config.results.solid_dynamics[:, Config.SOLID_DYN_FORCE] -= inertia
 
 
@@ -63,27 +88,37 @@ class LinearSpring(Interaction):
     p1: u.Length.point
     p2: u.Length.point
 
-    def __init__(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0):
-        Interaction.__init__(self)
+    def __init__(self, config: Config, action_mapping: np.array, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0):
+        Interaction.__init__(self, config, action_mapping)
         self._k = k
         self._l0 = l0
         self.s1 = s1
         self.s2 = s2
+        self._s1 = s1._index
+        self._s2 = s2._index
         self._p1 = p1
         self._p2 = p2
+        self._initialized = None
 
-    def register_actions(self):
+    def __setattr__(self, key, value):
+        if not hasattr(self, '_initialized'):
+            return object.__setattr__(self, key, value)
+        elif key in ('s1', 's2'):
+            raise AttributeError(f"Do not touch LinearSpring.{key}")
+        return object.__setattr__(self, key, value)
+
+    def _set_actions(self):
         # shape (2, n)
-        p1, p2 = self.s1.get_point(self.p1), self.s2.get_point(self.p2)
+        p1, p2 = geo.Position.point(self._config, self._s1, self._p1), geo.Position.point(self._config, self._s2, self._p2)
         vector = p2 - p1
         length = np.sum(vector * vector, axis=0) ** 0.5
         unit = vector / length
 
         force = (length - self.l0) * self.k * unit
-        self.add_action(self.s2, p2, -force, 0)
-        self.add_action(self.s1, p1, force, 0)
-
-        print("End spring")
+        self._config.results.action_values[self._action_mapping[self._s1], Config.ACTION_DYN_FORCE] = force
+        self._config.results.solid_dynamics[self._s1, Config.SOLID_DYN_FORCE] += force
+        self._config.results.action_values[self._action_mapping[self._s2], Config.ACTION_DYN_FORCE] = -force
+        self._config.results.solid_dynamics[self._s2, Config.SOLID_DYN_FORCE] -= force
 
 
 @u.UnitSystem.class_
@@ -91,14 +126,24 @@ class TwistingSpring(Interaction):
     k: u.Torque.phy
     a0: u.Angle.phy
 
-    def __init__(self, r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
-        Interaction.__init__(self)
+    def __setattr__(self, key, value):
+        if not hasattr(self, '_initialized'):
+            return object.__setattr__(self, key, value)
+        elif key in ('r',):
+            raise AttributeError(f"Do not touch TwistingSpring.{key}")
+        return object.__setattr__(self, key, value)
+
+    def __init__(self, config: Config, action_mapping: np.array, r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
+        Interaction.__init__(self, config, action_mapping)
         self._k = k
         self._a0 = a0
         self.r = r
+        self._initialized = None
 
     def register_actions(self):
         torque = (self.r.get_value() - self.a0) * self.k
 
-        self.add_action(self.r.s2, np.array([[0], [0]]), np.array([[0], [0]]), -torque)
-        self.add_action(self.r.s1, np.array([[0], [0]]), np.array([[0], [0]]), torque)
+        self._config.results.action_values[self._action_mapping[self.r.s1._index], Config.ACTION_DYN_TORQUE] = torque
+        self._config.results.solid_dynamics[self.r.s1._index, Config.SOLID_DYN_TORQUE] += torque
+        self._config.results.action_values[self._action_mapping[self.r.s2._index], Config.ACTION_DYN_TORQUE] = -torque
+        self._config.results.solid_dynamics[self.r.s2._index, Config.SOLID_DYN_TORQUE] -= torque

@@ -423,6 +423,7 @@ class UnitSystem:
                 return getattr(self, _attr_name)
 
             def setter(self: target_class, value: phy):
+                self._config.invalidate_dynamics()
                 return setattr(self, _attr_name, value)
 
             _dict[attr] = property(

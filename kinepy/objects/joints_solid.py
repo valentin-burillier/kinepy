@@ -85,7 +85,7 @@ class Solid(ConfigView):
     def add_action(self, ap: u.Length.point = (0, 0)) -> Action:
         _action_index = self._config.action_config.shape[0]
         self._config.add_actions(
-            np.array([self._index, ActionMode.NO_INDIRECTION.value, 0]),
+            np.array([[self._index, ActionMode.NO_INDIRECTION.value, 0]]),
             np.array([ap])
         )
         return Action(self._config, _action_index)

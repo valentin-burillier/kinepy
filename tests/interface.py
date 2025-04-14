@@ -259,21 +259,27 @@ class InterfaceTests(unittest.TestCase):
         s0 = system.ground
         s1 = system.add_solid()
 
-        class Load(kp.Interaction):
-            def register_actions(self):
-                self.add_action(s0, s0.get_point(s0.g), [[0], [-1]], 0)
+        fs1 = s1.add_action((0, -1))
+        fs1.ap = (1, 0)
 
         s1.angle.pilot()
         s1.x.pilot()
         s1.y.pilot()
 
-        system.add_interaction(Load())
-        system.add_interaction(kp.Gravity())
-        system.add_interaction(kp.Inertia())
-        system.add_interaction(a := kp.TwistingSpring(s1.angle))
-        system.add_interaction(kp.LinearSpring(s0, s1))
+        g = system.add_gravity()
+        i = system.add_inertia()
+        ls = system.add_twisting_spring(s1.angle)
+        ts = system.add_linear_spring(s0, s1)
 
-   #    system.determine_computation_order()
-   #    system.set_frame_count(5)
-   #    system.solve_kinematics()
-   #    system.solve_dynamics()
+        system.determine_computation_order()
+        system.set_frame_count(5)
+
+        fs1.set_force([[1], [0]])
+        fs1.set_force_locally([[1], [0]])
+        fs1.set_torque(1)
+
+        g[s0].get_force()
+        g[s1].get_torque()
+        self.assertRaises(AttributeError, g[s1].set_torque, 0)
+        system.solve_kinematics()
+        system.solve_dynamics()

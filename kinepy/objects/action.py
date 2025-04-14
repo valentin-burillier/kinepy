@@ -46,7 +46,7 @@ class Action(ConfigView):
         if _type != ActionMode.NO_INDIRECTION:
             raise ValueError("You cannot modify this value from here")
         self._config.invalidate_dynamics()
-        self._config.action_physics[self._index] = value
+        self._config.action_physics[self._index] = np.array(value)
 
     def set_force(self, value: u.Force.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting values"
@@ -55,7 +55,7 @@ class Action(ConfigView):
     def set_force_locally(self, value: u.Length.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting values"
         _solid = self._config.action_config[self._index, Config.ACTION_SOLID]
-        self._config.results.action_values[self._index, Config.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, value)
+        self._config.results.action_values[self._index, Config.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
 
     def get_force(self) -> u.Force.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before getting values"

@@ -1,4 +1,4 @@
-from kinepy.objects.config import Config, np, ConfigState
+from kinepy.objects.config import Config, np, ConfigState, ActionMode
 import kinepy.units as u
 from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid
 from kinepy.strategy.graph_data import JointType, RelationType
@@ -6,7 +6,7 @@ import kinepy.exceptions as ex
 import kinepy.strategy as strategy
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
-from kinepy.objects.interaction import Interaction
+from kinepy.objects.interaction import Interaction, Gravity, Inertia, LinearSpring, TwistingSpring
 from kinepy.objects.relations import GearRack, GearPair, Belt, Distant, Effortless
 
 
@@ -109,6 +109,8 @@ class System:
 
     def set_frame_count(self, frame_cnt: int, frame_time: u.Time.phy = 0.0):
         assert self.__config.state >= ConfigState.STRATEGY_OK, "Call `System.determine_computation_order` before allocating resources"
+        for inter in self._interactions:
+            inter._claim_resources()
         self.__config.allocate_results(frame_cnt, frame_time)
 
     def solve_kinematics(self):
@@ -132,12 +134,14 @@ class System:
         dyn.System.set_up(self.__config)
 
         for inter in self._interactions:
-            inter.register_actions()
+            inter._set_actions()
+
         _strategy = self._dynamic_strategy or self._kinematic_strategy
         for step in _strategy[::-1]:
             step.solve_dynamics(self.__config)
 
         dyn.System.clean_up(self.__config)
+
 
     def add_interaction(self, interaction: Interaction):
         self._interactions.append(interaction)
@@ -182,3 +186,35 @@ class System:
             np.array([[v0, r, 0.0, 0.0]])
         )
         return Effortless(self.__config, index, j1, j2)
+
+    def add_gravity(self, g: u.Acceleration.point = (0, -u.Acceleration.G.value)) -> Gravity:
+        self._interactions.append(gravity := Gravity(self.__config, dict(), g))
+        gravity._claim_resources()
+        return gravity
+
+    def add_inertia(self) -> Inertia:
+        self._interactions.append(inertia := Gravity(self.__config, dict()))
+        inertia._claim_resources()
+        return inertia
+
+    def add_linear_spring(self, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0) -> LinearSpring:
+        _action_index = self.__config.action_config.shape[0]
+        self.__config.add_actions(
+            np.array([
+                [s1._index, ActionMode.NO_INDIRECTION, 0],
+                [s2._index, ActionMode.NO_INDIRECTION, 0]
+            ]),
+            np.array([p1, p2])
+        )
+        return LinearSpring(self.__config, {s1._index: _action_index, s2._index: _action_index+1}, s1, s2, p1, p2, k, l0)
+
+    def add_twisting_spring(self,  r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0) -> TwistingSpring:
+        _action_index = self.__config.action_config.shape[0]
+        self.__config.add_actions(
+            np.array([
+                [r.s1._index, ActionMode.JOINT_POINT, r._index],
+                [r.s2._index, ActionMode.JOINT_POINT, r._index]
+            ]),
+            np.zeros((2, 2))
+        )
+        return TwistingSpring(self.__config, {r.s1._index: _action_index, r.s2._index: _action_index+1}, r, k, a0)
