@@ -1,11 +1,12 @@
-import numpy as np
-
 from kinepy.objects.config import *
+from kinepy.objects.action import Action
 import kinepy.units as u
 from kinepy.strategy.graph_data import JointType
 import kinepy.math.geometry as geo
 import kinepy.strategy.types as strategy
+
 from typing import Self
+
 
 
 @u.UnitSystem.class_
@@ -81,6 +82,14 @@ class Solid(ConfigView):
         geo.Orientation.make_angle_continuous(_angle)
         return _angle
 
+    def add_action(self, ap: u.Length.point = (0, 0)) -> Action:
+        _action_index = self._config.action_config.shape[0]
+        self._config.add_actions(
+            np.array([self._index, ActionMode.NO_INDIRECTION.value, 0]),
+            np.array([ap])
+        )
+        return Action(self._config, _action_index)
+
 
 class PrimitiveJoint(ConfigView):
     _type = JointType.EMPTY
@@ -155,24 +164,12 @@ class Prismatic(PrimitiveJoint):
         return PrimitiveJoint.get_value(self)
 
 
-def _disable_set(prop: property) -> property:
-    return property(prop.fget)
-
-
-def _mirror_other(prop: property, other: property) -> property:
-    def setter(self: PrimitiveJoint, value):
-        prop.fset(self, value)
-        other.fset(self, value)
-
-    return property(prop.fget, setter)
-
-
 class GhostSolid(Solid):
     __slots__ = ()
 
-    mass: u.Mass.phy = _disable_set(Solid.mass)
-    moment_of_inertia: u.MomentOfInertia.phy = _disable_set(Solid.moment_of_inertia)
-    g: u.Length.point = _disable_set(Solid.g)
+    mass: u.Mass.phy = disable_set(Solid.mass)
+    moment_of_inertia: u.MomentOfInertia.phy = disable_set(Solid.moment_of_inertia)
+    g: u.Length.point = disable_set(Solid.g)
 
     def _get_3dof(self):
         # TODO: looks like bad design
@@ -199,10 +196,10 @@ class CompositeJoint(Immutable):
 class _X(Prismatic):
     __slots__ = ()
 
-    angle1: u.Angle.phy = _mirror_other(Prismatic.angle1, Prismatic.angle2)
-    angle2: u.Angle.phy = _mirror_other(Prismatic.angle2, Prismatic.angle1)
+    angle1: u.Angle.phy = mirror_other(Prismatic.angle1, Prismatic.angle2)
+    angle2: u.Angle.phy = mirror_other(Prismatic.angle2, Prismatic.angle1)
 
-    distance2 = _disable_set(Prismatic.distance2)
+    distance2 = disable_set(Prismatic.distance2)
 
 
 PinSlotSliding = _X
@@ -211,7 +208,7 @@ TranslationAxleX = _X
 
 class PinSlotAngle(Revolute):
     __slots__ = ()
-    p1 = _disable_set(Revolute.p1)
+    p1 = disable_set(Revolute.p1)
 
 
 class PinSlot(CompositeJoint):
@@ -229,7 +226,7 @@ class PinSlot(CompositeJoint):
 
 class TranslationAxleY(Prismatic):
     __slots__ = ()
-    distance1 = _disable_set(Prismatic.distance1)
+    distance1 = disable_set(Prismatic.distance1)
 
 
 @u.UnitSystem.class_
@@ -258,15 +255,15 @@ class Translation(CompositeJoint):
 
 class J3DOFAxle(Prismatic):
     __slots__ = ()
-    angle1 = _disable_set(Prismatic.angle1)
-    angle2 = _disable_set(Prismatic.angle2)
-    distance1 = _disable_set(Prismatic.distance1)
-    distance2 = _disable_set(Prismatic.distance2)
+    angle1 = disable_set(Prismatic.angle1)
+    angle2 = disable_set(Prismatic.angle2)
+    distance1 = disable_set(Prismatic.distance1)
+    distance2 = disable_set(Prismatic.distance2)
 
 
 class J3DOFAngle(Revolute):
     __slots__ = ()
-    p1 = _disable_set(Revolute.p1)
+    p1 = disable_set(Revolute.p1)
 
 
 class J3DOF(CompositeJoint):

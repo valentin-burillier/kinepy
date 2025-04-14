@@ -25,6 +25,10 @@ class ConfigState(enum.Enum):
         return self.value > other.value
 
 
+class ActionMode(enum.Enum):
+    NO_INDIRECTION, SOLID_G, JOINT_POINT = range(3)
+
+
 class Config:
     SOLID = 'solid_physics'
     JOINT = 'joint_physics'
@@ -63,6 +67,13 @@ class Config:
     RELATION_R2 = 2
     RELATION_T0 = 3
 
+    ACTION_SOLID = 0
+    ACTION_MODE = 1
+    ACTION_INDIRECTION = 2
+
+    ACTION_DYN_FORCE = slice(0, 2)
+    ACTION_DYN_TORQUE = 2
+
     def __init__(self):
         # name
         self.solid_config = ['Ground']
@@ -85,8 +96,8 @@ class Config:
         # v0, r1, r2, t0
         self.relation_physics = np.zeros((0, 4), float)
 
-        # solid
-        self.action_config = np.zeros((0,), int)
+        # solid, indirection type, indirection index
+        self.action_config = np.zeros((0, 3), int)
         # ap.x, ap.y
         self.action_physics = np.zeros((0, 2), float)
 
@@ -102,7 +113,10 @@ class Config:
     def invalidate_config(self):
         self.state = ConfigState.NO_READ_ALLOWED
 
-    def invalidate_physics(self):
+    def invalidate_dynamics(self):
+        self.state = min(ConfigState.KINEMATICS_OK, self.state)
+
+    def invalidate_kinematics(self):
         self.state = min(ConfigState.ALLOCATED_RESOURCES, self.state)
 
     def allocate_results(self, frame_count, frame_time=0.0):
@@ -177,7 +191,7 @@ class ConfigView(Immutable):
             return getattr(self._config, array_name)[self._index, get]
 
         def setter(self: cls, value: phy) -> None:
-            self._config.invalidate_physics()
+            self._config.invalidate_kinematics()
             getattr(self._config, array_name)[self._index, sub_index] = value
 
         return property(getter, setter)
@@ -188,3 +202,15 @@ class ConfigView(Immutable):
         if self._index >= array.shape[0]:
             return False
         return True
+
+
+def disable_set(prop: property) -> property:
+    return property(prop.fget)
+
+
+def mirror_other(prop: property, other: property) -> property:
+    def setter(self, value):
+        prop.fset(self, value)
+        other.fset(self, value)
+
+    return property(prop.fget, setter)
