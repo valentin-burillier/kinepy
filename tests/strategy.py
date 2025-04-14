@@ -149,7 +149,7 @@ class GraphOperationsTests(unittest.TestCase):
         strategy = []
 
         conf = Config()
-        conf.add_solids(np.zeros([2, 4]))
+        conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             np.array([
                 [graph_data.R.value, 0, 1],
@@ -171,14 +171,14 @@ class GraphOperationsTests(unittest.TestCase):
         self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), strategy)
 
         # 1 solid too many
-        conf.add_solids(np.zeros([1, 4]))
+        conf.add_solids([''], np.zeros([1, 4]))
         self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
 
     def test_std_graphs(self) -> None:
         strategy = []
 
         conf = Config()
-        conf.add_solids(np.zeros([2, 4]))
+        conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             np.array([
                 [graph_data.R.value, 0, 1],
@@ -196,7 +196,7 @@ class GraphOperationsTests(unittest.TestCase):
         self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRR)
 
         conf = Config()
-        conf.add_solids(np.zeros([2, 4]))
+        conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             np.array([
                 [graph_data.R.value, 0, 1],
@@ -214,7 +214,7 @@ class GraphOperationsTests(unittest.TestCase):
         self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRP)
 
         conf = Config()
-        conf.add_solids(np.zeros([2, 4]))
+        conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             np.array([
                 [graph_data.P.value, 0, 1],

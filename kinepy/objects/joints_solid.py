@@ -10,8 +10,7 @@ from typing import Self
 
 @u.UnitSystem.class_
 class Solid(ConfigView):
-    def __init__(self, config: Config, index: int, name: str):
-        self.name = name
+    def __init__(self, config: Config, index: int):
         self.__3dof = []
         ConfigView.__init__(self, config, index)
 
@@ -22,8 +21,8 @@ class Solid(ConfigView):
     def _get_3dof(self):
         if not self.__3dof:
             s_ghost_index = self._config.solid_physics.shape[0]
-            self._config.add_solids(np.zeros((2, 4)))
-            ghost_solids = GhostSolid(self._config, s_ghost_index, f'GhostSolid {s_ghost_index}'), GhostSolid(self._config, s_ghost_index + 1, f'GhostSolid {s_ghost_index + 1}')
+            self._config.add_solids([f'GhostSolid {s_ghost_index}', f'GhostSolid {s_ghost_index + 1}'], np.zeros((2, 4)))
+            ghost_solids = GhostSolid(self._config, s_ghost_index), GhostSolid(self._config, s_ghost_index + 1)
 
             j_ghost_index = self._config.joint_config.shape[0]
             self._config.add_joints(
@@ -31,7 +30,7 @@ class Solid(ConfigView):
                 np.array([[0, 0, 0, 0], [np.pi * 0.5, 0, np.pi * 0.5, 0], [0, 0, 0, 0]])
             )
             ghost_joints = (
-                J3DOFAxle(self._config, j_ghost_index, GhostSolid(self._config, 0, 'Ground'), ghost_solids[0], f"<{self.name}.x>"),
+                J3DOFAxle(self._config, j_ghost_index, GhostSolid(self._config, 0), ghost_solids[0], f"<{self.name}.x>"),
                 J3DOFAxle(self._config, j_ghost_index+1, ghost_solids[0], ghost_solids[1], f"<{self.name}.y>"),
                 J3DOFAngle(self._config, j_ghost_index+2, ghost_solids[1], self, f"<{self.name}.angle>")
             )
@@ -40,6 +39,10 @@ class Solid(ConfigView):
 
     def __eq__(self, other: Self):
         return isinstance(other, Solid) and self._config is other._config and self._index == other._index
+
+    @property
+    def name(self) -> str:
+        return self._config.solid_config[self._index]
 
     @property
     def x(self) -> "J3DOFAxle":

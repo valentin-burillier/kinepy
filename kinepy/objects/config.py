@@ -9,6 +9,8 @@ class Result:
     joint_values: np.ndarray
     joint_dynamics: np.ndarray
 
+    action_values: np.ndarray
+
 
 class ConfigState(enum.Enum):
     NO_READ_ALLOWED, STRATEGY_OK, ALLOCATED_RESOURCES, KINEMATICS_OK, DYNAMICS_OK = range(5)
@@ -62,6 +64,8 @@ class Config:
     RELATION_T0 = 3
 
     def __init__(self):
+        # name
+        self.solid_config = ['Ground']
         # mass, moment_of_inertia, g.x, g.y
         self.solid_physics = np.zeros((1, 4), float)
 
@@ -80,6 +84,11 @@ class Config:
         # v0, r, pressure_angle, _
         # v0, r1, r2, t0
         self.relation_physics = np.zeros((0, 4), float)
+
+        # solid
+        self.action_config = np.zeros((0,), int)
+        # ap.x, ap.y
+        self.action_physics = np.zeros((0, 2), float)
 
         self.joint_states = []
         self.final_joint_states = []
@@ -113,8 +122,12 @@ class Config:
         # force x, force y, torque
         self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], 3, frame_count))
 
-    def add_solids(self, physics: np.ndarray):
+        # force.x, force.y, torque
+        self.results.action_values = np.zeros((self.action_config.shape[0], 3, frame_count))
+
+    def add_solids(self, names: list[str], physics: np.ndarray):
         self.invalidate_config()
+        self.solid_config.extend(names)
         self.solid_physics = np.r_[self.solid_physics, physics]
 
     def add_joints(self, config: np.ndarray, physics: np.ndarray):
@@ -126,6 +139,11 @@ class Config:
         self.invalidate_config()
         self.relation_config = np.r_[self.relation_config, config]
         self.relation_physics = np.r_[self.relation_physics, physics]
+
+    def add_actions(self, config: np.ndarray, physics: np.ndarray):
+        self.invalidate_config()
+        self.action_config = np.r_[self.action_config, config]
+        self.action_physics = np.r_[self.action_physics, physics]
 
 
 class Immutable:

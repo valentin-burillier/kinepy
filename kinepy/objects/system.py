@@ -14,7 +14,7 @@ from kinepy.objects.relations import GearRack, GearPair, Belt, Distant, Effortle
 class System:
     def __init__(self):
         self.__config = Config()
-        self._ground = GhostSolid(self.__config, 0, 'Ground')
+        self._ground = GhostSolid(self.__config, 0)
 
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
         self._dynamic_strategy: list[strategy.ResolutionStep] = []
@@ -27,8 +27,8 @@ class System:
 
     def add_solid(self, name='', mass: u.Mass.phy = 0.0, moment_of_inertia: u.MomentOfInertia.phy = 0.0, g: u.Length.point = (0.0, 0.0)) -> Solid:
         index = self.__config.solid_physics.shape[0]
-        self.__config.add_solids(np.r_[mass, moment_of_inertia, g][np.newaxis, :])
-        return Solid(self.__config, index, name)
+        self.__config.add_solids([name], np.r_[mass, moment_of_inertia, g][np.newaxis, :])
+        return Solid(self.__config, index)
 
     def _check_solids_ownership(self, *solids: Solid, kw_solids: tuple[Solid, ...] = ()):
         for solid in solids + kw_solids:
@@ -56,7 +56,7 @@ class System:
         self._check_solids(s1, s2)
 
         s_ghost_index = self.__config.solid_physics.shape[0]
-        self.__config.add_solids(np.zeros((1, 4)))
+        self.__config.add_solids([f'GhostSolid {s_ghost_index}'], np.zeros((1, 4)))
 
         j_ghost_index = self.__config.joint_config.shape[0]
         self.__config.add_joints(
@@ -64,7 +64,7 @@ class System:
             np.array(([alpha1, distance1, alpha1, 0], np.r_[0, 0, p2]))
         )
 
-        ghost_solid = GhostSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
+        ghost_solid = GhostSolid(self.__config, s_ghost_index)
         ghost_joints = (
             PinSlotSliding(self.__config, j_ghost_index, s1, ghost_solid, f"<PinSlot: {s2.name}/{s1.name} .sliding>"),
             PinSlotAngle(self.__config, j_ghost_index+1, ghost_solid, s2, f"<¨PinSlot: {s2.name}/{s1.name} .angle>")
@@ -75,7 +75,7 @@ class System:
         self._check_solids(s1, s2)
 
         s_ghost_index = self.__config.solid_physics.shape[0]
-        self.__config.add_solids(np.zeros((1, 4)))
+        self.__config.add_solids([f'GhostSolid {s_ghost_index}'], np.zeros((1, 4)))
 
         j_ghost_index = self.__config.joint_config.shape[0]
         self.__config.add_joints(
@@ -83,7 +83,7 @@ class System:
             np.array(([alpha1, distance1, alpha1, 0], [alpha2, 0, alpha2 + diff_angle, distance2]))
         )
 
-        ghost_solid = GhostSolid(self.__config, s_ghost_index, f'GhostSolid {s_ghost_index}')
+        ghost_solid = GhostSolid(self.__config, s_ghost_index)
         ghost_joints = (
             TranslationAxleX(self.__config, j_ghost_index, s1, ghost_solid, f"<¨Translation: {s2.name}/{s1.name} .angle>"),
             TranslationAxleY(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<Translation: {s2.name}/{s1.name} .sliding>")
