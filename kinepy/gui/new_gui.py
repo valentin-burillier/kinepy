@@ -15,10 +15,14 @@ import time
 
 _icon_path = os.path.join(os.path.dirname(__file__), 'logo.ico')
 
+COLORMAP = (
+    (144, 144, 144), (61, 131, 198), (204, 0, 0), (106, 167, 79), (241, 194, 57), (227, 119, 194), (255, 127, 14),
+    (148, 103, 189), (145, 220, 3), (26, 190, 207)
+)
 
 
 class _GUIObject:
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation):
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
         pass
 
     def update_bbox(self, bbox, solid_values):
@@ -30,34 +34,48 @@ class _GUIObject:
         bbox[0:2] = np.minimum(bbox[0:2], np.nanmin(positions, axis=-1))
         bbox[2:4] = np.maximum(bbox[2:4], np.nanmax(positions, axis=-1))
 
+    @staticmethod
+    def point_to_screen(solid_values, frame_index, scale, translation, point, grounded=False):
+        if not grounded:
+            return (solid_values[0:2, frame_index] + geo.Orientation.add_s(solid_values[2:4, frame_index], point)) * scale + translation
+        else:
+            return point * scale + translation
+
+    def compute_mounting_point(self, scale):
+        pass
+
+    def add_solid_structure(self, solid_obj_list):
+        pass
+
 
 class _Symbol(_GUIObject):
     def __init__(self, point, mesh, mounting_point, grounded: bool):
         self.point = point
         self.mesh = mesh
         self.mesh_mounting_point = mounting_point
-        if grounded:
-            self.region = -1
-        else:
-            self.region = 2 * (point[1] > point[0]) + (point[1] > -point[0])
+        self.grounded = grounded
+        self.region = 2 * (point[1] > point[0]) + (point[1] > -point[0])
+        self._solid_structure = _SolidStructure()
 
     def update_bbox(self, bbox, solid_values):
         self.update_bbox_from_point(bbox, solid_values, self.point)
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation):
-        point = (solid_values[0:2, frame_index] + geo.Orientation.add_s(solid_values[2:4, frame_index], self.point)) * scale + translation
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
         mesh = geo.Orientation.sub_m(self.mesh, solid_values[2:4, frame_index]) + point
         pg.draw.polygon(surface, (0, 0, 0), mesh, 0)
-        pg.draw.polygon(surface, (255, 255, 255), mesh, 3)
+        pg.draw.polygon(surface, color, mesh, 3)
 
     @classmethod
     def from_revolute(cls, r_index, config: Config, mesh, mounting_point):
         s1, s2 = config.joint_config[r_index, Config.JOINT_SOLIDS]
         point = config.joint_physics[r_index, Config.JOINT_P2]
 
+        if mesh is None:
+            return _RevoluteSymbol(point, None, None, not s2)
+
         if not s2:
-            # point towards south
-            mesh = mesh * (1, -1)
+            pass
         else:
             # point towards solid ref
             region = 2 * (point[1] > point[0]) + (point[1] > -point[0])
@@ -76,9 +94,9 @@ class _Symbol(_GUIObject):
 
         if not s2:
             # point towards south
-            if abs(angle) < np.pi * 0.5:
+            if abs(angle) > np.pi * 0.5:
                 mesh = mesh * (1, -1)
-        elif dist > 0:
+        elif dist < 0:
             # point towards solid ref
             mesh = mesh * (1, -1)
 
@@ -87,20 +105,39 @@ class _Symbol(_GUIObject):
         point = geo.Orientation.from_angle(np.array(angle + np.pi)) * dist
         return cls(point, mesh, mounting_point, not s2)
 
+    def add_solid_structure(self, solid_obj_list):
+        solid_obj_list.append(self._solid_structure)
+
+    def compute_mounting_point(self, scale):
+        m_point = (self.point + self.mesh[self.mesh_mounting_point] / scale)
+        self._solid_structure.update(m_point, self.grounded)
+
+
+class _RevoluteSymbol(_Symbol):
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
+        pg.draw.circle(surface, (0, 0, 0), point, meshes.REVOLUTE_RADIUS)
+        pg.draw.circle(surface, color, point, meshes.REVOLUTE_RADIUS, 3)
+
+    def compute_mounting_point(self, scale):
+        self._solid_structure.update(self.point + np.array((0, meshes.REVOLUTE_RADIUS)) / scale * self.grounded, self.grounded)
+
 
 class _Sliding(_GUIObject):
-    def __init__(self, start_point, end_point):
+    def __init__(self, start_point, end_point, grounded):
         self.start_point, self.end_point = start_point, end_point
+        self.grounded = grounded
+        self._solid_structure = _SolidStructure()
 
     def update_bbox(self, bbox, solid_values):
         self.update_bbox_from_point(bbox, solid_values, self.start_point)
         self.update_bbox_from_point(bbox, solid_values, self.end_point)
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation):
-        start = (solid_values[0:2, frame_index] + geo.Orientation.add_s(solid_values[2:4, frame_index], self.start_point)) * scale + translation
-        end = (solid_values[0:2, frame_index] + geo.Orientation.add_s(solid_values[2:4, frame_index], self.end_point)) * scale + translation
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        start = self.point_to_screen(solid_values, frame_index, scale, translation, self.start_point, self.grounded)
+        end = self.point_to_screen(solid_values, frame_index, scale, translation, self.end_point, self.grounded)
 
-        pg.draw.line(surface, (255, 255, 255), start, end, 3)
+        pg.draw.line(surface, color, start, end, 3)
 
     @classmethod
     def from_prismatic(cls, p_index, config: Config):
@@ -114,7 +151,47 @@ class _Sliding(_GUIObject):
             strategy.JointValueComputationStep(p_index, JointType.PRISMATIC, config.joint_states[p_index], s1, s2).solve_kinematics(config)
             config.joint_states[p_index] = strategy.JointFlags.READY_FOR_USER
         sliding = config.results.joint_values[p_index]
-        return cls(point + np.nanmin(sliding) * v_dir, point + np.nanmax(sliding) * v_dir)
+        return cls(point + np.nanmin(sliding) * v_dir, point + np.nanmax(sliding) * v_dir, not s1)
+
+    def add_solid_structure(self, solid_obj_list):
+        solid_obj_list.append(self._solid_structure)
+
+    def compute_mounting_point(self, scale):
+        mid = (self.start_point + self.end_point) * 0.5
+        self._solid_structure.update(mid, self.grounded)
+
+
+class _SolidStructure(_GUIObject):
+    point = np.zeros((2,))
+    region = -1
+    grounded = False
+    points = np.zeros((0, 2), float)
+
+    def update(self, point, grounded):
+        self.point = point
+        region = 2 * (point[1] > point[0]) + (point[1] > -point[0])
+        self.points = np.array((point, point * (region in (1, 2), region in (0, 3)), (0, 0)))
+        print(self.points)
+        self.grounded = grounded
+
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        if self.grounded:
+            for line in meshes.GROUND.reshape((meshes.GROUND.shape[0] // 2, 2, 2)):
+                pg.draw.lines(surface, color, False, self.point * scale + translation + line, 2)
+            return
+        if np.all(np.abs(self.points) < 1e-2):
+            return
+        line = (solid_values[0:2, frame_index] + geo.Orientation.add_m(self.points, solid_values[2:4, frame_index])) * scale + translation
+        pg.draw.lines(surface, color, False, line, 3)
+
+    @classmethod
+    def from_revolute(cls, r_index, config: Config):
+        s1, s2 = config.joint_config[r_index, Config.JOINT_SOLIDS]
+        point = config.joint_physics[r_index, Config.JOINT_P1]
+
+        s = cls()
+        s.update(point, not s1)
+        return s
 
 
 class GUI:
@@ -133,17 +210,24 @@ class GUI:
         s1, s2 = self._config.get_composite_solids(index)
         p, r, _ = self._config.composite_joint_config[index, Config.COMPOSITE_JOINTS]
 
-        self._solid_objects_1[s1].append(_Sliding.from_prismatic(p, self._config))
-        self._solid_objects_2[s2].append(_Symbol.from_revolute(r, self._config, meshes.PIN_SLOT, meshes.PIN_SLOT_MOUNTING_POINT))
+        self._solid_objects_1[s1].append(s := _Sliding.from_prismatic(p, self._config))
+        s.add_solid_structure(self._solid_objects_1[s1])
+        self._solid_objects_2[s2].append(s := _Symbol.from_revolute(r, self._config, meshes.PIN_SLOT, meshes.PIN_SLOT_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects_1[s2])
 
     def _add_revolute(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
-        self._solid_objects_2[s2].append(_Symbol.from_revolute(index, self._config, meshes.REVOLUTE, meshes.REVOLUTE_MOUNTING_POINT))
+
+        self._solid_objects_1[s1].append(_SolidStructure.from_revolute(index, self._config))
+        self._solid_objects_2[s2].append(s := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects_1[s2])
 
     def _add_prismatic(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
-        self._solid_objects_2[s1].append(_Sliding.from_prismatic(index, self._config))
-        self._solid_objects_2[s2].append(_Symbol.from_revolute(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
+        self._solid_objects_1[s1].append(s := _Sliding.from_prismatic(index, self._config))
+        s.add_solid_structure(self._solid_objects_1[s1])
+        self._solid_objects_2[s2].append(s := _Symbol.from_prismatic(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects_1[s2])
 
     _composite_additions = {
         CompositeType.PIN_SLOT: _add_pin_slot,
@@ -156,7 +240,7 @@ class GUI:
        JointType.PRISMATIC: _add_prismatic
     }
 
-    def _prepare(self):
+    def _prepare(self, win_size):
         self._solid_objects_1.clear()
         self._solid_objects_2.clear()
 
@@ -207,7 +291,15 @@ class GUI:
                 for obj in _dic.get(solid, []):
                     obj.update_bbox(bbox, solid_values)
 
-        return bbox
+        scale, translation = self.get_transform(bbox, win_size)
+
+        for _dic in self._solid_objects_1, self._solid_objects_2:
+            for s_index, obj_list in _dic.items():
+                print(s_index)
+                for gui_obj in obj_list:
+                    gui_obj.compute_mounting_point(scale)
+
+        return scale, translation
 
     @staticmethod
     def get_transform(bbox, screen_size):
@@ -228,8 +320,7 @@ class GUI:
         _icon = pg.image.load(_icon_path).convert_alpha()
         pg.display.set_icon(_icon)
 
-        bbox = self._prepare()
-        scale, translation = self.get_transform(bbox, window.get_size())
+        scale, translation = self._prepare(window.get_size())
 
         frame_count, frame_time = self._config.results.solid_values.shape[-1], self._config.frame_time
         if not frame_time:
@@ -261,14 +352,17 @@ class GUI:
 
     def _display(self, surface: pg.Surface, frame_index: int, scale, translation):
         surface.fill((0, 0, 0))
+
         for solid, obj_list in self._solid_objects_1.items():
             solid_values = self._config.results.solid_values[solid]
+            color = COLORMAP[0] if not solid else COLORMAP[(solid - 1) % (len(COLORMAP) - 1) + 1]
 
             for obj in obj_list:
-                obj.draw(surface, solid_values, frame_index, scale, translation)
+                obj.draw(surface, solid_values, frame_index, scale, translation, color)
 
         for solid, obj_list in self._solid_objects_2.items():
             solid_values = self._config.results.solid_values[solid]
+            color = COLORMAP[0] if not solid else COLORMAP[(solid - 1) % (len(COLORMAP) - 1) + 1]
 
             for obj in obj_list:
-                obj.draw(surface, solid_values, frame_index, scale, translation)
+                obj.draw(surface, solid_values, frame_index, scale, translation, color)

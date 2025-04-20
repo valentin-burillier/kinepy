@@ -39,7 +39,7 @@ GROUND = np.array((
     (-.5, -2), (0., -1),
     (0, -2), (.5, -1),
     (.5, -2), (1, -1)
-), float) * REVOLUTE_RADIUS
+), float) * REVOLUTE_RADIUS * (1, -1)
 
 # CIRCLE_ARROW = np.concatenate((
 #     2.12 * unit(np.linspace(0, 3 * np.pi / 2, 40)),
