@@ -171,7 +171,6 @@ class _SolidStructure(_GUIObject):
         self.point = point
         region = 2 * (point[1] > point[0]) + (point[1] > -point[0])
         self.points = np.array((point, point * (region in (1, 2), region in (0, 3)), (0, 0)))
-        print(self.points)
         self.grounded = grounded
 
     def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
@@ -295,7 +294,6 @@ class GUI:
 
         for _dic in self._solid_objects_1, self._solid_objects_2:
             for s_index, obj_list in _dic.items():
-                print(s_index)
                 for gui_obj in obj_list:
                     gui_obj.compute_mounting_point(scale)
 
