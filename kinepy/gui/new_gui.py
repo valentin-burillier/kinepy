@@ -9,7 +9,7 @@ import pygame as pg
 import kinepy.gui.new_meshes as meshes
 import kinepy.math.geometry as geo
 from kinepy.objects.config import Config, ConfigState
-from kinepy.objects.joints_solid import CompositeType, JointType, PrimitiveJoint
+from kinepy.objects.joints_solid import CompositeType, JointType, PrimitiveJoint, Solid
 import kinepy.strategy.types as strategy
 import time
 
@@ -123,6 +123,16 @@ class _RevoluteSymbol(_Symbol):
         self._solid_structure.update(self.point + np.array((0, meshes.REVOLUTE_RADIUS)) / scale * self.grounded, self.grounded)
 
 
+class _Point(_Symbol):
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
+        pg.draw.circle(surface, (0, 0, 0), point, meshes.REVOLUTE_RADIUS * 0.5)
+        pg.draw.circle(surface, color, point, meshes.REVOLUTE_RADIUS * 0.5, 3)
+
+    def compute_mounting_point(self, scale):
+        self._solid_structure.update(self.point + np.array((0, meshes.REVOLUTE_RADIUS)) / scale * self.grounded, self.grounded)
+
+
 class _Sliding(_GUIObject):
     def __init__(self, start_point, end_point, grounded):
         self.start_point, self.end_point = start_point, end_point
@@ -161,6 +171,14 @@ class _Sliding(_GUIObject):
         self._solid_structure.update(mid, self.grounded)
 
 
+class _Trace(_GUIObject):
+    def __init__(self, value):
+        self.value = value.swapaxes(0, 1)
+
+    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+        pg.draw.lines(surface, color, False, self.value * scale + translation, 1)
+
+
 class _SolidStructure(_GUIObject):
     point = np.zeros((2,))
     region = -1
@@ -197,10 +215,14 @@ class GUI:
     def __init__(self, config: Config):
         self._config = config
 
-        # layer 1: ground markers, tree branches, sliders
-        self._solid_objects_1: dict[int, list[_GUIObject]] = {}
-        # layer 2: joint symbols, single point symbols
-        self._solid_objects_2: dict[int, list[_GUIObject]] = {}
+        # layer 1: ground markers, tree branches, sliders; layer 2: joint symbols, single point symbols
+        self._solid_objects: dict[int, tuple[list[_GUIObject], list[_GUIObject]]] = {}
+
+        self._wild_points = []
+
+    def add_solid_point(self, solid: Solid, point, trace=True):
+        solid.check_against(self._config, self._config.solid_physics)
+        self._wild_points.append((solid._index, np.array(point), trace))
 
     def _do_nothing(self, index: int):
         pass
@@ -209,24 +231,24 @@ class GUI:
         s1, s2 = self._config.get_composite_solids(index)
         p, r, _ = self._config.composite_joint_config[index, Config.COMPOSITE_JOINTS]
 
-        self._solid_objects_1[s1].append(s := _Sliding.from_prismatic(p, self._config))
-        s.add_solid_structure(self._solid_objects_1[s1])
-        self._solid_objects_2[s2].append(s := _Symbol.from_revolute(r, self._config, meshes.PIN_SLOT, meshes.PIN_SLOT_MOUNTING_POINT))
-        s.add_solid_structure(self._solid_objects_1[s2])
+        self._solid_objects[s1][0].append(s := _Sliding.from_prismatic(p, self._config))
+        s.add_solid_structure(self._solid_objects[s1][0])
+        self._solid_objects[s2][1].append(s := _Symbol.from_revolute(r, self._config, meshes.PIN_SLOT, meshes.PIN_SLOT_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects[s2][0])
 
     def _add_revolute(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
 
-        self._solid_objects_1[s1].append(_SolidStructure.from_revolute(index, self._config))
-        self._solid_objects_2[s2].append(s := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
-        s.add_solid_structure(self._solid_objects_1[s2])
+        self._solid_objects[s1][0].append(_SolidStructure.from_revolute(index, self._config))
+        self._solid_objects[s2][1].append(s := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects[s2][0])
 
     def _add_prismatic(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
-        self._solid_objects_1[s1].append(s := _Sliding.from_prismatic(index, self._config))
-        s.add_solid_structure(self._solid_objects_1[s1])
-        self._solid_objects_2[s2].append(s := _Symbol.from_prismatic(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
-        s.add_solid_structure(self._solid_objects_1[s2])
+        self._solid_objects[s1][0].append(s := _Sliding.from_prismatic(index, self._config))
+        s.add_solid_structure(self._solid_objects[s1][0])
+        self._solid_objects[s2][1].append(s := _Symbol.from_prismatic(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
+        s.add_solid_structure(self._solid_objects[s2][0])
 
     _composite_additions = {
         CompositeType.PIN_SLOT: _add_pin_slot,
@@ -240,8 +262,7 @@ class GUI:
     }
 
     def _prepare(self, win_size):
-        self._solid_objects_1.clear()
-        self._solid_objects_2.clear()
+        self._solid_objects.clear()
 
         _solid_visibility = [1] * len(self._config.solid_config)
         _joint_visibility = [1] * self._config.joint_config.shape[0]
@@ -263,8 +284,7 @@ class GUI:
         # TODO: add user requested hidden joints/solids
 
         for solid, _ in filter(lambda x: x[1], enumerate(_solid_visibility)):
-            self._solid_objects_1[solid] = []
-            self._solid_objects_2[solid] = []
+            self._solid_objects[solid] = [], []
 
         for cj_index, _ in filter(lambda x: x[1], enumerate(_composite_joint_visibility)):
             s1, s2 = self._config.get_composite_solids(cj_index)
@@ -282,18 +302,27 @@ class GUI:
             _type = JointType(self._config.joint_config[j_index, Config.JOINT_TYPE])
             self._joint_additions[_type](self, j_index)
 
+        for solid, point, trace in self._wild_points:
+            if not _solid_visibility[solid]:
+                continue
+            self._solid_objects[solid][1].append(s := _Point(point, None, None, not solid))
+            s.add_solid_structure(self._solid_objects[solid][0])
+            if trace:
+                # TODO: move this to a background layer
+                self._solid_objects[solid][0].append(_Trace(Solid(self._config, solid).get_point(point)))
+
         bbox = np.array([float('inf'), float('inf'), float('-inf'), float('-inf')])
         for solid, _ in filter(lambda x: x[1], enumerate(_solid_visibility)):
             solid_values = self._config.results.solid_values[solid]
 
-            for _dic in self._solid_objects_1, self._solid_objects_2:
-                for obj in _dic.get(solid, []):
+            for obj_l in self._solid_objects.get(solid, ([],)):
+                for obj in obj_l:
                     obj.update_bbox(bbox, solid_values)
 
         scale, translation = self.get_transform(bbox, win_size)
 
-        for _dic in self._solid_objects_1, self._solid_objects_2:
-            for s_index, obj_list in _dic.items():
+        for s_index, layers in self._solid_objects.items():
+            for obj_list in layers:
                 for gui_obj in obj_list:
                     gui_obj.compute_mounting_point(scale)
 
@@ -351,16 +380,11 @@ class GUI:
     def _display(self, surface: pg.Surface, frame_index: int, scale, translation):
         surface.fill((0, 0, 0))
 
-        for solid, obj_list in self._solid_objects_1.items():
+        for solid, layers in self._solid_objects.items():
             solid_values = self._config.results.solid_values[solid]
             color = COLORMAP[0] if not solid else COLORMAP[(solid - 1) % (len(COLORMAP) - 1) + 1]
 
-            for obj in obj_list:
-                obj.draw(surface, solid_values, frame_index, scale, translation, color)
+            for obj_list in layers:
+                for gui_obj in obj_list:
+                    gui_obj.draw(surface, solid_values, frame_index, scale, translation, color)
 
-        for solid, obj_list in self._solid_objects_2.items():
-            solid_values = self._config.results.solid_values[solid]
-            color = COLORMAP[0] if not solid else COLORMAP[(solid - 1) % (len(COLORMAP) - 1) + 1]
-
-            for obj in obj_list:
-                obj.draw(surface, solid_values, frame_index, scale, translation, color)
