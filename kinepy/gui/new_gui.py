@@ -100,7 +100,7 @@ class _Symbol(_GUIObject):
             # point towards solid ref
             mesh = mesh * (1, -1)
 
-        mesh = geo.Orientation.add(geo.Orientation.from_angle(angle), mesh)
+        mesh = geo.Orientation.add_m(mesh, geo.Orientation.from_angle(angle))
 
         point = geo.Orientation.from_angle(np.array(angle + np.pi)) * dist
         return cls(point, mesh, mounting_point, not s2)
