@@ -6,6 +6,7 @@ import numpy as np
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 import pygame as pg
+import PIL.Image as im
 import kinepy.gui.new_meshes as meshes
 import kinepy.math.geometry as geo
 from kinepy.objects.config import Config, ConfigState
@@ -21,8 +22,15 @@ COLORMAP = (
 )
 
 
+class GUIParameters:
+    background_color = 16, 16, 16
+    scale = np.array((1, -1))
+    translation = np.zeros((2,))
+    figure_size = 800, 800
+
+
 class _GUIObject:
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
         pass
 
     def update_bbox(self, bbox, solid_values):
@@ -60,10 +68,10 @@ class _Symbol(_GUIObject):
     def update_bbox(self, bbox, solid_values):
         self.update_bbox_from_point(bbox, solid_values, self.point)
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
-        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
+        point = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.point, self.grounded)
         mesh = geo.Orientation.sub_m(self.mesh, solid_values[2:4, frame_index]) + point
-        pg.draw.polygon(surface, (0, 0, 0), mesh, 0)
+        pg.draw.polygon(surface, param.background_color, mesh, 0)
         pg.draw.polygon(surface, color, mesh, 3)
 
     @classmethod
@@ -114,19 +122,24 @@ class _Symbol(_GUIObject):
 
 
 class _RevoluteSymbol(_Symbol):
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
-        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
-        pg.draw.circle(surface, (0, 0, 0), point, meshes.REVOLUTE_RADIUS)
+    distant_relative = None
+
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
+        point = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.point, self.grounded)
+        pg.draw.circle(surface, param.background_color, point, meshes.REVOLUTE_RADIUS)
         pg.draw.circle(surface, color, point, meshes.REVOLUTE_RADIUS, 3)
 
     def compute_mounting_point(self, scale):
         self._solid_structure.update(self.point + np.array((0, meshes.REVOLUTE_RADIUS)) / scale * self.grounded, self.grounded)
+        if self.distant_relative is not None and self.distant_relative.grounded:
+            self.distant_relative.point += np.array((0, meshes.REVOLUTE_RADIUS)) / scale
 
 
 class _Point(_Symbol):
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
-        point = self.point_to_screen(solid_values, frame_index, scale, translation, self.point, self.grounded)
-        pg.draw.circle(surface, (0, 0, 0), point, meshes.REVOLUTE_RADIUS * 0.5)
+
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
+        point = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.point, self.grounded)
+        pg.draw.circle(surface, param.background_color, point, meshes.REVOLUTE_RADIUS * 0.5)
         pg.draw.circle(surface, color, point, meshes.REVOLUTE_RADIUS * 0.5, 3)
 
     def compute_mounting_point(self, scale):
@@ -143,9 +156,9 @@ class _Sliding(_GUIObject):
         self.update_bbox_from_point(bbox, solid_values, self.start_point)
         self.update_bbox_from_point(bbox, solid_values, self.end_point)
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
-        start = self.point_to_screen(solid_values, frame_index, scale, translation, self.start_point, self.grounded)
-        end = self.point_to_screen(solid_values, frame_index, scale, translation, self.end_point, self.grounded)
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
+        start = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.start_point, self.grounded)
+        end = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.end_point, self.grounded)
 
         pg.draw.line(surface, color, start, end, 3)
 
@@ -175,8 +188,8 @@ class _Trace(_GUIObject):
     def __init__(self, value):
         self.value = value.swapaxes(0, 1)
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
-        pg.draw.lines(surface, color, False, self.value * scale + translation, 1)
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
+        pg.draw.lines(surface, color, False, self.value * param.scale + param.translation, 1)
 
 
 class _SolidStructure(_GUIObject):
@@ -191,14 +204,14 @@ class _SolidStructure(_GUIObject):
         self.points = np.array((point, point * (region in (1, 2), region in (0, 3)), (0, 0)))
         self.grounded = grounded
 
-    def draw(self, surface: pg.Surface, solid_values, frame_index, scale, translation, color):
+    def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
         if self.grounded:
             for line in meshes.GROUND.reshape((meshes.GROUND.shape[0] // 2, 2, 2)):
-                pg.draw.lines(surface, color, False, self.point * scale + translation + line, 2)
+                pg.draw.lines(surface, color, False, self.point * param.scale + param.translation + line, 2)
             return
         if np.all(np.abs(self.points) < 1e-2):
             return
-        line = (solid_values[0:2, frame_index] + geo.Orientation.add_m(self.points, solid_values[2:4, frame_index])) * scale + translation
+        line = (solid_values[0:2, frame_index] + geo.Orientation.add_m(self.points, solid_values[2:4, frame_index])) * param.scale + param.translation
         pg.draw.lines(surface, color, False, line, 3)
 
     @classmethod
@@ -210,6 +223,8 @@ class _SolidStructure(_GUIObject):
         s.update(point, not s1)
         return s
 
+class GUIState(enum.Enum):
+    STOPPED, RUNNING, PAUSED = range(3)
 
 class GUI:
     def __init__(self, config: Config):
@@ -219,6 +234,7 @@ class GUI:
         self._solid_objects: dict[int, tuple[list[_GUIObject], list[_GUIObject]]] = {}
 
         self._wild_points = []
+        self._params = GUIParameters()
 
     def add_solid_point(self, solid: Solid, point, trace=True):
         solid.check_against(self._config, self._config.solid_physics)
@@ -239,9 +255,10 @@ class GUI:
     def _add_revolute(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
 
-        self._solid_objects[s1][0].append(_SolidStructure.from_revolute(index, self._config))
-        self._solid_objects[s2][1].append(s := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
-        s.add_solid_structure(self._solid_objects[s2][0])
+        self._solid_objects[s1][0].append(struct := _SolidStructure.from_revolute(index, self._config))
+        self._solid_objects[s2][1].append(symbol := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
+        symbol.add_solid_structure(self._solid_objects[s2][0])
+        symbol.distant_relative = struct
 
     def _add_prismatic(self, index: int):
         s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
@@ -305,8 +322,8 @@ class GUI:
         for solid, point, trace in self._wild_points:
             if not _solid_visibility[solid]:
                 continue
-            self._solid_objects[solid][1].append(s := _Point(point, None, None, not solid))
-            s.add_solid_structure(self._solid_objects[solid][0])
+            self._solid_objects[solid][1].append(symbol := _Point(point, None, None, not solid))
+            symbol.add_solid_structure(self._solid_objects[solid][0])
             if trace:
                 # TODO: move this to a background layer
                 self._solid_objects[solid][0].append(_Trace(Solid(self._config, solid).get_point(point)))
@@ -319,17 +336,18 @@ class GUI:
                 for obj in obj_l:
                     obj.update_bbox(bbox, solid_values)
 
-        scale, translation = self.get_transform(bbox, win_size)
+        scale, translation = self._get_transform(bbox, win_size)
 
         for s_index, layers in self._solid_objects.items():
             for obj_list in layers:
                 for gui_obj in obj_list:
                     gui_obj.compute_mounting_point(scale)
 
-        return scale, translation
+        self._params.scale = np.array(scale)
+        self._params.translation = translation
 
     @staticmethod
-    def get_transform(bbox, screen_size):
+    def _get_transform(bbox, screen_size):
         bbox_center = (bbox[0:2] + bbox[2:4]) * 0.5
         bbox_h_extent = (bbox[2:4] - bbox[0:2]) * 0.5
         screen_center = screen_size * np.array(0.5)
@@ -342,28 +360,47 @@ class GUI:
         assert self._config.state >= ConfigState.KINEMATICS_OK, "Call `System.solve_kinematics` before displaying"
         pg.init()
 
-        window = pg.display.set_mode((800, 800))
+        window = pg.display.set_mode(self._params.figure_size)
         pg.display.set_caption('Kinepy', 'Kinepy')
         _icon = pg.image.load(_icon_path).convert_alpha()
         pg.display.set_icon(_icon)
 
-        scale, translation = self._prepare(window.get_size())
+        self._prepare(window.get_size())
 
         frame_count, frame_time = self._config.results.solid_values.shape[-1], self._config.frame_time
         if not frame_time:
             frame_time = 0.02  # 20ms frames if no time is set
         __frame_index = 0
-        self._display(window, __frame_index, scale, translation)
+        self._display(window, __frame_index)
         pg.display.flip()
 
         __date = time.perf_counter()
         __remaining_time = 0.0
 
-        __running = True
-        while __running:
+        __state = GUIState.RUNNING
+        while __state != GUIState.STOPPED:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    __running = False
+                    __state = GUIState.STOPPED
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        if __state == GUIState.RUNNING:
+                            __state = GUIState.PAUSED
+                        elif __state == GUIState.PAUSED:
+                            __state = GUIState.RUNNING
+                            __date = time.perf_counter()
+                    elif __state == GUIState.PAUSED:
+                        if event.key == pg.K_LEFT:
+                            __frame_index = (__frame_index - 1) % frame_count
+                            self._display(window, __frame_index)
+                            pg.display.flip()
+                        elif event.key == pg.K_RIGHT:
+                            __frame_index = (__frame_index + 1) % frame_count
+                            self._display(window, __frame_index)
+                            pg.display.flip()
+
+            if __state == GUIState.PAUSED:
+                continue
 
             n_date = time.perf_counter()
             __remaining_time += n_date - __date
@@ -372,13 +409,27 @@ class GUI:
             if __remaining_time >= frame_time:
                 time_shift, __remaining_time = divmod(__remaining_time, frame_time)
                 __frame_index = (__frame_index + int(time_shift)) % frame_count
-                self._display(window, __frame_index, scale, translation)
+                self._display(window, __frame_index)
                 pg.display.flip()
 
         pg.quit()
 
-    def _display(self, surface: pg.Surface, frame_index: int, scale, translation):
-        surface.fill((0, 0, 0))
+    def save(self, file_name: str):
+        surface = pg.Surface(self._params.figure_size)
+        self._prepare(surface.get_size())
+
+        video = []
+
+        for frame_index in range(self._config.results.solid_values.shape[-1]):
+            self._display(surface, frame_index)
+            img_string = pg.image.tostring(surface, 'RGB', False)
+            video.append(im.frombytes('RGB', surface.get_size(), img_string))
+
+        base = video[0]
+        base.save(file_name, fps=24, save_all=True, append_images=video[1:])
+
+    def _display(self, surface: pg.Surface, frame_index: int):
+        surface.fill(self._params.background_color)
 
         for solid, layers in self._solid_objects.items():
             solid_values = self._config.results.solid_values[solid]
@@ -386,5 +437,5 @@ class GUI:
 
             for obj_list in layers:
                 for gui_obj in obj_list:
-                    gui_obj.draw(surface, solid_values, frame_index, scale, translation, color)
+                    gui_obj.draw(surface, solid_values, frame_index, self._params, color)
 
