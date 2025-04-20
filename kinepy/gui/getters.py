@@ -1,3 +1,5 @@
+exit()
+
 import kinepy.units as units
 from kinepy.interface.decorators import get_object
 from kinepy.math.geometry import rot, rvec, unit

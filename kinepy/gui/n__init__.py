@@ -1,3 +1,5 @@
+exit()
+
 import kinepy.gui.gui_class as _g
 import kinepy.units as _units
 from PIL.Image import frombytes as _from_bytes

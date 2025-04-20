@@ -51,6 +51,9 @@ class Config:
     JOINT_P2 = slice(2, 4)
     JOINT_A1, JOINT_D1, JOINT_A2, JOINT_D2 = range(4)
 
+    COMPOSITE_TYPE = 0
+    COMPOSITE_JOINTS = slice(1, 4)
+
     JOINT_DYN_FORCE = slice(0, 2)
     JOINT_DYN_TORQUE = 2
 
@@ -85,6 +88,9 @@ class Config:
         # p1.x, p1.y, p2.x, p2.y
         # angle1, distance1, angle2, distance2
         self.joint_physics = np.zeros((0, 4), float)
+
+        # _type, ghost_j1, ghost_j2, ghost_j3, ghost_s1, ghost_s2
+        self.composite_joint_config = np.zeros((0, 6), int)
 
         self.piloted_joints = np.zeros((0,), int)
         self.working_joints = np.zeros((0,), int)
@@ -148,6 +154,24 @@ class Config:
         self.invalidate_config()
         self.joint_config = np.r_[self.joint_config, config]
         self.joint_physics = np.r_[self.joint_physics, physics]
+
+    def add_composite(self, _type: int, ghost_j_indices, ghost_s_indices) -> int:
+        index = self.composite_joint_config.shape[0]
+
+        _gj = [-1] * 3
+        _gj[:len(ghost_j_indices)] = ghost_j_indices
+
+        _gs = [0] * 2
+        _gs[:len(ghost_s_indices)] = ghost_s_indices
+
+        self.composite_joint_config = np.r_[self.composite_joint_config, [[_type] + _gj + _gs]]
+        return index
+
+    def get_composite_solids(self, composite_index) -> tuple[int, int]:
+        joints = self.composite_joint_config[composite_index, Config.COMPOSITE_JOINTS]
+        while joints[-1] == -1:
+            joints = joints[:-1]
+        return int(self.joint_config[joints[0], Config.JOINT_S1]), int(self.joint_config[joints[-1], Config.JOINT_S2])
 
     def add_relations(self, config: np.ndarray, physics: np.ndarray):
         self.invalidate_config()

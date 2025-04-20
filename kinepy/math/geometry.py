@@ -91,6 +91,14 @@ class Orientation:
         return out
 
     @staticmethod
+    def add_s(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        complex product
+        Shapes (2) * (2) -> (2,)
+        """
+        return np.array([x[0] * y[0] - x[1] * y[1], x[0] * y[1] + x[1] * y[0]])
+
+    @staticmethod
     def add_m(xm: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         complex product
@@ -107,6 +115,18 @@ class Orientation:
         out[0, ...] = x[0, ...] * y[0, ...] + x[1, ...] * y[1, ...]
         out[1, ...] = x[1, ...] * y[0, ...] - x[0, ...] * y[1, ...]
         return out
+
+    @staticmethod
+    def sub_m(xm: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        complex product
+        Shapes (m, 2, n) * (2, n) -> (m, 2, n)
+        """
+        out = np.zeros(xm.shape, dtype=xm.dtype)
+        out[:, 0, ...] = xm[:, 0, ...] * y[np.newaxis, 0, ...] + xm[:, 1, ...] * y[np.newaxis, 1, ...]
+        out[:, 1, ...] = xm[:, 1, ...] * y[np.newaxis, 0, ...] - xm[:, 0, ...] * y[np.newaxis, 1, ...]
+        return out
+
 
     @staticmethod
     def from_angle(angle: np.ndarray) -> np.ndarray:

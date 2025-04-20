@@ -8,7 +8,7 @@ import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 from kinepy.objects.interaction import Interaction, Gravity, Inertia, LinearSpring, TwistingSpring
 from kinepy.objects.relations import GearRack, GearPair, Belt, Distant, Effortless
-
+from kinepy.gui.new_gui import GUI
 
 @u.UnitSystem.class_
 class System:
@@ -69,7 +69,7 @@ class System:
             PinSlotSliding(self.__config, j_ghost_index, s1, ghost_solid, f"<PinSlot: {s2.name}/{s1.name} .sliding>"),
             PinSlotAngle(self.__config, j_ghost_index+1, ghost_solid, s2, f"<¨PinSlot: {s2.name}/{s1.name} .angle>")
         )
-        return PinSlot(ghost_joints, (ghost_solid,))
+        return PinSlot(self.__config, ghost_joints, (ghost_solid,))
 
     def add_translation(self, s1: Solid, s2: Solid, alpha1: u.Angle.phy = 0.0, distance1: u.Length.phy = 0.0, alpha2: u.Angle.phy = 0.0, distance2: u.Length.phy = 0.0, diff_angle: u.Angle.phy = 0.0) -> Translation:
         self._check_solids(s1, s2)
@@ -88,7 +88,7 @@ class System:
             TranslationAxleX(self.__config, j_ghost_index, s1, ghost_solid, f"<¨Translation: {s2.name}/{s1.name} .angle>"),
             TranslationAxleY(self.__config, j_ghost_index + 1, ghost_solid, s2, f"<Translation: {s2.name}/{s1.name} .sliding>")
         )
-        return Translation(ghost_joints, (ghost_solid,))
+        return Translation(self.__config, ghost_joints, (ghost_solid,))
 
     def determine_computation_order(self):
         self.__config.state = ConfigState.STRATEGY_OK
@@ -193,7 +193,7 @@ class System:
         return gravity
 
     def add_inertia(self) -> Inertia:
-        self._interactions.append(inertia := Gravity(self.__config, dict()))
+        self._interactions.append(inertia := Inertia(self.__config, dict()))
         inertia._claim_resources()
         return inertia
 
@@ -218,3 +218,6 @@ class System:
             np.zeros((2, 2))
         )
         return TwistingSpring(self.__config, {r.s1._index: _action_index, r.s2._index: _action_index+1}, r, k, a0)
+
+    def pygame_ui(self) -> GUI:
+        return GUI(self.__config)

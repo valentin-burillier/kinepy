@@ -8,7 +8,6 @@ import kinepy.strategy.types as strategy
 from typing import Self
 
 
-
 @u.UnitSystem.class_
 class Solid(ConfigView):
     def __init__(self, config: Config, index: int):
@@ -35,7 +34,7 @@ class Solid(ConfigView):
                 J3DOFAxle(self._config, j_ghost_index+1, ghost_solids[0], ghost_solids[1], f"<{self.name}.y>"),
                 J3DOFAngle(self._config, j_ghost_index+2, ghost_solids[1], self, f"<{self.name}.angle>")
             )
-            self.__3dof.append(J3DOF(ghost_joints, ghost_solids))
+            self.__3dof.append(J3DOF(self._config, ghost_joints, ghost_solids))
         return self.__3dof[0]
 
     def __eq__(self, other: Self):
@@ -172,16 +171,24 @@ class GhostSolid(Solid):
     g: u.Length.point = disable_set(Solid.g)
 
     def _get_3dof(self):
-        # TODO: looks like bad design
         raise ValueError("Ghost solids can't be controlled this way")
 
 
-class CompositeJoint(Immutable):
-    __slots__ = '_joints', '_solids'
+class CompositeType(enum.Enum):
+    PIN_SLOT, TRANSLATION, J3DOF = range(3)
 
-    def __init__(self, joints: tuple[PrimitiveJoint, ...], solids: tuple[GhostSolid, ...]):
+
+class CompositeJoint(Immutable):
+    __slots__ = '_joints', '_solids', '_config', '_index'
+
+    _type: CompositeType
+
+    def __init__(self, config: Config, joints: tuple[PrimitiveJoint, ...], solids: tuple[GhostSolid, ...]):
         self._joints: tuple[PrimitiveJoint, ...] = joints
         self._solids: tuple[GhostSolid, ...] = solids
+
+        self._config = config
+        self._index = config.add_composite(self._type.value, [j._index for j in joints], [s._index for s in solids])
         Immutable.__init__(self)
 
     @property
@@ -213,6 +220,8 @@ class PinSlotAngle(Revolute):
 
 class PinSlot(CompositeJoint):
     _sliding, _angle = range(2)
+    _type = CompositeType.PIN_SLOT
+
     __slots__ = ()
 
     @property
@@ -232,6 +241,8 @@ class TranslationAxleY(Prismatic):
 @u.UnitSystem.class_
 class Translation(CompositeJoint):
     _x, _y = range(2)
+    _type = CompositeType.TRANSLATION
+
     __slots__ = ()
 
     @property
@@ -268,6 +279,8 @@ class J3DOFAngle(Revolute):
 
 class J3DOF(CompositeJoint):
     _x, _y, _angle = range(3)
+    _type = CompositeType.J3DOF
+
     __slots__ = ()
 
     @property
