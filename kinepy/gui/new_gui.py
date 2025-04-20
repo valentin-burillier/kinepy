@@ -415,6 +415,8 @@ class GUI:
         pg.quit()
 
     def save(self, file_name: str):
+        assert self._config.state >= ConfigState.KINEMATICS_OK, "Call `System.solve_kinematics` before saving"
+        assert file_name.endswith('.gif'), 'Only gif files are supported'
         surface = pg.Surface(self._params.figure_size)
         self._prepare(surface.get_size())
 
