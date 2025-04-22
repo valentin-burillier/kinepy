@@ -36,7 +36,7 @@ sys.solve_kinematics()
 gui = sys.pygame_ui()
 gui.add_solid_point(s3, (-2, 1))
 gui.show()
-exit()
+
 #%%
 
 plt.plot(r1.get_value(), p1.get_value())
