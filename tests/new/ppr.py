@@ -19,7 +19,7 @@ r2 = sys.add_revolute(s2, s3, p2=(5, 0))
 r1.pilot()
 
 sys.determine_computation_order()
-n = 101
+n = 61
 sys.set_frame_count(n)
 
 """
@@ -33,6 +33,10 @@ r1.set_input(angle)
 
 sys.solve_kinematics()
 
+gui = sys.pygame_ui()
+gui.add_solid_point(s3, (-2, 1))
+gui.show()
+exit()
 #%%
 
 plt.plot(r1.get_value(), p1.get_value())
