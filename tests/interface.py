@@ -45,9 +45,9 @@ class InterfaceTests(unittest.TestCase):
         system.solve_kinematics()
 
         self.assertEqual(s1.get_angle().shape, (n,))
-        self.assertEqual(s1.get_origin().shape, (n, 2))
-        self.assertEqual(s1.get_point((0, 0)).shape, (n, 2))
-        self.assertEqual(s1.get_vector((0, 0)).shape, (n, 2))
+        self.assertEqual(s1.get_origin().shape, (2, n))
+        self.assertEqual(s1.get_point((0, 0)).shape, (2, n))
+        self.assertEqual(s1.get_vector((0, 0)).shape, (2, n))
 
     def test_joint(self):
         system = kp.System()
