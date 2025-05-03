@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import numpy as np
 import enum
 
@@ -30,10 +32,7 @@ class ActionMode(enum.Enum):
 
 
 class Config:
-    SOLID = 'solid_physics'
-    JOINT = 'joint_physics'
-    RELATION = 'relation_physics'
-
+    SOLID_3DOF = 0
     SOLID_MASS = 0
     SOLID_MOMENT_OF_INERTIA = 1
     SOLID_CFG_G = slice(2, 4)
@@ -79,12 +78,16 @@ class Config:
 
     def __init__(self):
         # name
-        self.solid_config = ['Ground']
+        self.solid_names = ['Ground']
+        # 3dof_index
+        self.solid_config = np.array(((-1,),), int)
         # mass, moment_of_inertia, g.x, g.y
         self.solid_physics = np.zeros((1, 4), float)
 
+        self.joint_names = []
         # _type, s1, s2
         self.joint_config = np.zeros((0, 3), int)
+
         # p1.x, p1.y, p2.x, p2.y
         # angle1, distance1, angle2, distance2
         self.joint_physics = np.zeros((0, 4), float)
@@ -97,9 +100,9 @@ class Config:
 
         # _type, j1, j2, g1, g2
         self.relation_config = np.zeros((0, 5), int)
-        # v0, r, _, _
-        # v0, r, pressure_angle, _
-        # v0, r1, r2, t0
+        # v0, r, _, _ (distant / effortless)
+        # v0, r, pressure_angle, _ (gear pair / gear rack)
+        # v0, r1, r2, t0 (belt)
         self.relation_physics = np.zeros((0, 4), float)
 
         # solid, indirection type, indirection index
@@ -128,8 +131,8 @@ class Config:
     def allocate_results(self, frame_count, frame_time=0.0):
         self.state = ConfigState.ALLOCATED_RESOURCES
         # x, y, cos(a), sin(a)
-        self.results.solid_values = np.zeros((self.solid_physics.shape[0], 4, frame_count), float)
-        self.results.solid_values[:, 2, :] = 1.
+        self.results.solid_values = np.zeros((self.solid_physics.shape[0], frame_count, 4), float)
+        self.results.solid_values[..., 2] = 1.
 
         self.results.joint_values = np.zeros((self.joint_config.shape[0], frame_count), float)
 
@@ -138,20 +141,22 @@ class Config:
     def allocated_results_dyn(self, frame_count, frame_time):
         self.frame_time = frame_time
         # force x, force y, gx, gy, torque(g)
-        self.results.solid_dynamics = np.zeros((self.solid_physics.shape[0], 5, frame_count))
+        self.results.solid_dynamics = np.zeros((self.solid_physics.shape[0], frame_count, 5))
         # force x, force y, torque
-        self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], 3, frame_count))
+        self.results.joint_dynamics = np.zeros((self.joint_config.shape[0], frame_count, 3))
 
         # force.x, force.y, torque
-        self.results.action_values = np.zeros((self.action_config.shape[0], 3, frame_count))
+        self.results.action_values = np.zeros((self.action_config.shape[0], frame_count, 3))
 
     def add_solids(self, names: list[str], physics: np.ndarray):
         self.invalidate_config()
-        self.solid_config.extend(names)
+        self.solid_names.extend(names)
+        self.solid_config = np.r_[self.solid_config, (-1,) * physics.shape[0]]
         self.solid_physics = np.r_[self.solid_physics, physics]
 
-    def add_joints(self, config: np.ndarray, physics: np.ndarray):
+    def add_joints(self, names: Iterable[str], config: np.ndarray, physics: np.ndarray):
         self.invalidate_config()
+        self.joint_names.extend(names)
         self.joint_config = np.r_[self.joint_config, config]
         self.joint_physics = np.r_[self.joint_physics, physics]
 
@@ -184,41 +189,12 @@ class Config:
         self.action_physics = np.r_[self.action_physics, physics]
 
 
-class Immutable:
-    __slots__ = '_initialized'
-
-    def __init__(self):
-        self._initialized: None = None
-
-    def __setattr__(self, key, value):
-        if not hasattr(self, '_initialized'):
-            return object.__setattr__(self, key, value)
-        if hasattr(self.__class__, key) and isinstance(getattr(self.__class__, key), property):
-            prop: property = getattr(self.__class__, key)
-            return prop.__set__(self, value)
-        raise ValueError(f'You should not be internally modifying {self.__class__.__name__} objects')
-
-
-class ConfigView(Immutable):
+class ConfigView:
     __slots__ = '_config', '_index'
 
     def __init__(self, config: Config, index: int):
         self._config: Config = config
         self._index: int = index
-        Immutable.__init__(self)
-
-    @classmethod
-    def physics_view(cls, array_name: str, sub_index, phy, scalar=True) -> property:
-        get = sub_index[0] if isinstance(sub_index, (tuple, list)) and scalar else sub_index
-
-        def getter(self: cls) -> phy:
-            return getattr(self._config, array_name)[self._index, get]
-
-        def setter(self: cls, value: phy) -> None:
-            self._config.invalidate_kinematics()
-            getattr(self._config, array_name)[self._index, sub_index] = value
-
-        return property(getter, setter)
 
     def check_against(self, config: Config, array: np.ndarray) -> bool:
         if self._config is not config:
@@ -226,6 +202,42 @@ class ConfigView(Immutable):
         if self._index >= array.shape[0]:
             return False
         return True
+
+    def _config_arr(self) -> np.ndarray[int]:
+        pass
+
+    def _names(self) -> list[str]:
+        pass
+
+    def _physics(self) -> np.ndarray[float]:
+        pass
+
+    @classmethod
+    def _physics_view(cls, index: int | slice, phy) -> property:
+        def getter(self: cls) -> phy:
+            return self._physics()[self._index, index]
+
+        def setter(self: cls, value: phy):
+            self._physics()[self._index, index] = value
+
+        return property(getter, setter)
+
+    @classmethod
+    def _config_view(cls, index: int | slice) -> property:
+        def getter(self: cls) -> int:
+            return int(self._config_arr()[self._index, index])
+
+        def setter(self: cls, value):
+            self._config_arr()[self._index, index] = value
+
+        return property(getter, setter)
+
+    @classmethod
+    def _name(cls) -> property:
+        def getter(self: cls) -> str:
+            return self._names()[self._index]
+
+        return property(getter)
 
 
 def disable_set(prop: property) -> property:

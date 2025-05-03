@@ -281,7 +281,7 @@ class GUI:
     def _prepare(self, win_size):
         self._solid_objects.clear()
 
-        _solid_visibility = [1] * len(self._config.solid_config)
+        _solid_visibility = [1] * len(self._config.solid_names)
         _joint_visibility = [1] * self._config.joint_config.shape[0]
         _composite_joint_visibility = [1] * self._config.composite_joint_config.shape[0]
         # TODO: add relation visibility

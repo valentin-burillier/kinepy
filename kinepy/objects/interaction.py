@@ -26,9 +26,9 @@ class Interaction:
         pass
 
     def _all_solids_claim(self):
-        if len(self._action_mapping) < len(self._config.solid_config):
-            diff = len(self._config.solid_config) - len(self._action_mapping)
-            _n_solid_indices = np.arange(len(self._action_mapping), len(self._config.solid_config))
+        if len(self._action_mapping) < len(self._config.solid_names):
+            diff = len(self._config.solid_names) - len(self._action_mapping)
+            _n_solid_indices = np.arange(len(self._action_mapping), len(self._config.solid_names))
             _action_index = self._config.action_config.shape[0]
             self._config.add_actions(
                 np.r_['-1', _n_solid_indices[:, np.newaxis], diff * [[ActionMode.SOLID_G.value]], _n_solid_indices[:, np.newaxis]],
