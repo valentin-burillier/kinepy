@@ -151,6 +151,7 @@ class GraphOperationsTests(unittest.TestCase):
         conf = Config()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
+            ['', ''],
             np.array([
                 [graph_data.R.value, 0, 1],
                 [graph_data.R.value, 0, 2],
@@ -163,6 +164,7 @@ class GraphOperationsTests(unittest.TestCase):
 
         # input on solved joint
         conf.add_joints(
+            [''],
             np.array([
                 [graph_data.R.value, 1, 2],
             ]),
@@ -180,6 +182,7 @@ class GraphOperationsTests(unittest.TestCase):
         conf = Config()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
+            ['', '', ''],
             np.array([
                 [graph_data.R.value, 0, 1],
                 [graph_data.R.value, 0, 2],
@@ -198,6 +201,7 @@ class GraphOperationsTests(unittest.TestCase):
         conf = Config()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
+            ['', '', ''],
             np.array([
                 [graph_data.R.value, 0, 1],
                 [graph_data.R.value, 0, 2],
@@ -216,6 +220,7 @@ class GraphOperationsTests(unittest.TestCase):
         conf = Config()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
+            ['', '', ''],
             np.array([
                 [graph_data.P.value, 0, 1],
                 [graph_data.P.value, 0, 2],

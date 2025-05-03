@@ -58,6 +58,8 @@ class Config:
 
     RELATION_TYPE = 0
     RELATION_JOINTS = slice(1, 3)
+    RELATION_J1 = 1
+    RELATION_J2 = 2
     RELATION_TYPE_JOINTS = slice(0, 3)
     RELATION_G1 = 3
     RELATION_G2 = 4
@@ -151,7 +153,7 @@ class Config:
     def add_solids(self, names: list[str], physics: np.ndarray):
         self.invalidate_config()
         self.solid_names.extend(names)
-        self.solid_config = np.r_[self.solid_config, (-1,) * physics.shape[0]]
+        self.solid_config = np.r_[self.solid_config, ((-1,),) * physics.shape[0]]
         self.solid_physics = np.r_[self.solid_physics, physics]
 
     def add_joints(self, names: Iterable[str], config: np.ndarray, physics: np.ndarray):
@@ -196,10 +198,10 @@ class ConfigView:
         self._config: Config = config
         self._index: int = index
 
-    def check_against(self, config: Config, array: np.ndarray) -> bool:
+    def check_against(self, config: Config) -> bool:
         if self._config is not config:
             return False
-        if self._index >= array.shape[0]:
+        if self._index >= self._config_arr().shape[0]:
             return False
         return True
 
@@ -240,8 +242,15 @@ class ConfigView:
         return property(getter)
 
 
+class ReadOnlyArray(np.ndarray):
+    def __array_finalize__(self, obj, /):
+        self.flags.writeable = False
+
+
 def disable_set(prop: property) -> property:
-    return property(prop.fget)
+    def getter(self):
+        return prop.__get__(self).view(ReadOnlyArray)
+    return property(getter)
 
 
 def mirror_other(prop: property, other: property) -> property:

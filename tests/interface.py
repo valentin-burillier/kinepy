@@ -45,9 +45,9 @@ class InterfaceTests(unittest.TestCase):
         system.solve_kinematics()
 
         self.assertEqual(s1.get_angle().shape, (n,))
-        self.assertEqual(s1.get_origin().shape, (2, n))
-        self.assertEqual(s1.get_point((0, 0)).shape, (2, n))
-        self.assertEqual(s1.get_vector((0, 0)).shape, (2, n))
+        self.assertEqual(s1.get_origin().shape, (n, 2))
+        self.assertEqual(s1.get_point((0, 0)).shape, (n, 2))
+        self.assertEqual(s1.get_vector((0, 0)).shape, (n, 2))
 
     def test_joint(self):
         system = kp.System()
@@ -66,7 +66,7 @@ class InterfaceTests(unittest.TestCase):
 
         j.set_input(np.zeros((n,)))
         self.assertEqual(j.get_value().shape, (n,))
-        self.assertEqual(j.get_force().shape, (2, n))
+        self.assertEqual(j.get_force().shape, (n, 2))
         self.assertEqual(j.get_torque().shape, (n,))
 
     def test_prismatic(self):
@@ -274,8 +274,8 @@ class InterfaceTests(unittest.TestCase):
         system.determine_computation_order()
         system.set_frame_count(5)
 
-        fs1.set_force([[1], [0]])
-        fs1.set_force_locally([[1], [0]])
+        fs1.set_force([1, 0])
+        fs1.set_force_locally([1, 0])
         fs1.set_torque(1)
 
         g[s0].get_force()

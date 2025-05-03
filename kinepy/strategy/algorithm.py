@@ -12,9 +12,10 @@ def make_joint_graph(config: Config) -> tuple[JointGraph, Eq, EqMapping]:
     n_solid = config.solid_physics.shape[0]
     result_graph: JointGraph = [[JointGraphNode(JointType.EMPTY) for _ in range(n_solid)] for _ in range(n_solid)]
 
+    type_mask = 3
     for index, (_type, _s1, _s2) in enumerate(config.joint_config):
-        result_graph[_s1][_s2].set(index, graph_data.JointType(_type))
-        result_graph[_s2][_s1].set(index, graph_data.JointType(_type))
+        result_graph[_s1][_s2].set(index, graph_data.JointType(_type & type_mask))
+        result_graph[_s2][_s1].set(index, graph_data.JointType(_type & type_mask))
 
     return result_graph, tuple((i,) for i in range(n_solid)), tuple(range(n_solid))
 

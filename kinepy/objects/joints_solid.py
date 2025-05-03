@@ -44,9 +44,9 @@ class Solid(ConfigView):
             self._config.add_joints(
                 [f"<{self.name}.x>", f"<{self.name}.y>", f"<{self.name}.angle>"],
                 np.array([
-                    [JointType.PRISMATIC.value, 0, s_ghost_index],
-                    [JointType.PRISMATIC.value, s_ghost_index, s_ghost_index + 1],
-                    [JointType.REVOLUTE.value, s_ghost_index + 1, self._index]
+                    [JointType.J_AXLE.value, 0, s_ghost_index],
+                    [JointType.J_AXLE.value, s_ghost_index, s_ghost_index + 1],
+                    [JointType.GHOST_ANGLE.value, s_ghost_index + 1, self._index]
                 ]),
                 np.array([
                     [0, 0, 0, 0],
@@ -75,20 +75,20 @@ class Solid(ConfigView):
 
     def get_origin(self) -> u.Length.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
-        return geo.Position.get(self._config, self._index)
+        return geo.Position.get(self._config, self._index).swapaxes(0, 1)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
-        return geo.Position.point(self._config, self._index, p)
+        return geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1)
 
     def get_vector(self, v: u.point_type = (0.0, 0.0)) -> u.point_type:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
-        return geo.Position.local_point(self._config, self._index, v)
+        return geo.Position.local_point(self._config, self._index, np.array(v)).swapaxes(0, 1)
 
     def get_angle(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
-        _x, _y = geo.Orientation.get(self._config, self._index)
-        _angle = np.arctan2(_y, _x)
+        ori = geo.Orientation.get(self._config, self._index)
+        _angle = np.arctan2(ori[..., 1], ori[..., 0])
         geo.Orientation.make_angle_continuous(_angle)
         return _angle
 
@@ -102,6 +102,18 @@ class Solid(ConfigView):
 
 
 class PrimitiveJoint(ConfigView):
+
+    def __new__(cls, config, index):
+        _dict: dict[JointType, type[PrimitiveJoint]] = {
+            JointType.REVOLUTE: Revolute,
+            JointType.PRISMATIC: Prismatic,
+            JointType.GHOST_ANGLE: GhostAngle,
+            JointType.X: _X,
+            JointType.Y: TranslationAxleY,
+            JointType.J_AXLE: J3DOFAxle
+        }
+        return ConfigView.__new__(_dict.get(JointType(config.joint_config[index, Config.JOINT_TYPE]), cls))
+
     def _names(self) -> list[str]:
         return self._config.joint_names
 
@@ -136,7 +148,7 @@ class PrimitiveJoint(ConfigView):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting Joint values"
         self._config.results.joint_values[self._index] = value
 
-    def _get_value(self):
+    def _get_value(self) -> np.ndarray:
         if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
             strategy.JointValueComputationStep(self._index, JointType(self._type), self._config.joint_states[self._index], self.s1._index, self.s2._index).solve_kinematics(self._config)
             self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
@@ -247,12 +259,15 @@ PinSlotSliding = _X
 TranslationAxleX = _X
 
 
-class PinSlotAngle(Revolute):
+class GhostAngle(Revolute):
     p1 = disable_set(Revolute.p1)
 
     @property
     def s1(self) -> Solid:
         return GhostSolid(self._config, self._s1)
+
+
+PinSlotAngle = GhostAngle
 
 
 class PinSlot(CompositeJoint):
@@ -321,12 +336,7 @@ class J3DOFAxle(Prismatic):
         return GhostSolid(self._config, self._s2)
 
 
-class J3DOFAngle(Revolute):
-    p1 = disable_set(Revolute.p1)
-
-    @property
-    def s1(self) -> Solid:
-        return GhostSolid(self._config, self._s1)
+J3DOFAngle = GhostAngle
 
 
 class J3DOF(CompositeJoint):

@@ -38,14 +38,14 @@ class _GUIObject:
 
     @staticmethod
     def update_bbox_from_point(bbox, solid_values, point):
-        positions = solid_values[0:2] + geo.Orientation.add(solid_values[2:4], point[:, np.newaxis])
-        bbox[0:2] = np.minimum(bbox[0:2], np.nanmin(positions, axis=-1))
-        bbox[2:4] = np.maximum(bbox[2:4], np.nanmax(positions, axis=-1))
+        positions = solid_values[:, 0:2] + geo.Orientation.add(solid_values[:, 2:4], point)
+        bbox[0:2] = np.minimum(bbox[0:2], np.nanmin(positions, axis=0))
+        bbox[2:4] = np.maximum(bbox[2:4], np.nanmax(positions, axis=0))
 
     @staticmethod
     def point_to_screen(solid_values, frame_index, scale, translation, point, grounded=False):
         if not grounded:
-            return (solid_values[0:2, frame_index] + geo.Orientation.add_s(solid_values[2:4, frame_index], point)) * scale + translation
+            return (solid_values[frame_index, 0:2] + geo.Orientation.add(solid_values[frame_index, 2:4], point)) * scale + translation
         else:
             return point * scale + translation
 
@@ -70,7 +70,7 @@ class _Symbol(_GUIObject):
 
     def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
         point = self.point_to_screen(solid_values, frame_index, param.scale, param.translation, self.point, self.grounded)
-        mesh = geo.Orientation.sub_m(self.mesh, solid_values[2:4, frame_index]) + point
+        mesh = geo.Orientation.sub(self.mesh, solid_values[frame_index, 2:4]) + point
         pg.draw.polygon(surface, param.background_color, mesh, 0)
         pg.draw.polygon(surface, color, mesh, 3)
 
@@ -108,7 +108,7 @@ class _Symbol(_GUIObject):
             # point towards solid ref
             mesh = mesh * (1, -1)
 
-        mesh = geo.Orientation.add_m(mesh, geo.Orientation.from_angle(angle))
+        mesh = geo.Orientation.add(mesh, geo.Orientation.from_angle(angle))
 
         point = geo.Orientation.from_angle(np.array(angle + np.pi)) * dist
         return cls(point, mesh, mounting_point, not s2)
@@ -211,7 +211,7 @@ class _SolidStructure(_GUIObject):
             return
         if np.all(np.abs(self.points) < 1e-2):
             return
-        line = (solid_values[0:2, frame_index] + geo.Orientation.add_m(self.points, solid_values[2:4, frame_index])) * param.scale + param.translation
+        line = (solid_values[frame_index, 0:2] + geo.Orientation.add(self.points, solid_values[frame_index, 2:4])) * param.scale + param.translation
         pg.draw.lines(surface, color, False, line, 3)
 
     @classmethod
@@ -237,7 +237,7 @@ class GUI:
         self._params = GUIParameters()
 
     def add_solid_point(self, solid: Solid, point, trace=True):
-        solid.check_against(self._config, self._config.solid_physics)
+        solid.check_against(self._config)
         self._wild_points.append((solid._index, np.array(point), trace))
 
     def _do_nothing(self, index: int):
@@ -367,7 +367,7 @@ class GUI:
 
         self._prepare(window.get_size())
 
-        frame_count, frame_time = self._config.results.solid_values.shape[-1], self._config.frame_time
+        frame_count, frame_time = self._config.results.solid_values.shape[1], self._config.frame_time
         if not frame_time:
             frame_time = 0.02  # 20ms frames if no time is set
         __frame_index = 0

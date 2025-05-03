@@ -50,24 +50,24 @@ class Action(ConfigView):
 
     def set_force(self, value: u.Force.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting values"
-        self._config.results.action_values[self._index, Config.ACTION_DYN_FORCE] = value
+        self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE] = value
 
     def set_force_locally(self, value: u.Length.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting values"
         _solid = self._config.action_config[self._index, Config.ACTION_SOLID]
-        self._config.results.action_values[self._index, Config.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
+        self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
 
     def get_force(self) -> u.Force.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before getting values"
-        return self._config.results.action_values[self._index, Config.ACTION_DYN_FORCE]
+        return self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE]
 
     def set_torque(self, value: u.Torque.phy):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting values"
-        self._config.results.action_values[self._index, Config.ACTION_DYN_TORQUE] = value
+        self._config.results.action_values[self._index, :, Config.ACTION_DYN_TORQUE] = value
 
     def get_torque(self) -> u.Torque.phy:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before getting values"
-        return self._config.results.action_values[self._index, Config.ACTION_DYN_TORQUE]
+        return self._config.results.action_values[self._index, :, Config.ACTION_DYN_TORQUE]
 
 
 class InternalAction(Action):

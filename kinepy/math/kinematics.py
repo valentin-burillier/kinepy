@@ -1,3 +1,5 @@
+import numpy as np
+
 from kinepy.math.geometry import *
 from kinepy.objects.config import Config
 from kinepy.strategy.graph_data import JointType
@@ -14,14 +16,13 @@ class JointValueComputation:
         s2_orientation = Orientation.get(config, s2)
 
         diff = Orientation.sub(s2_orientation, s1_orientation)
-
-        config.results.joint_values[joint] = np.arctan2(diff[1, ...], diff[0, ...])
+        config.results.joint_values[joint] = np.arctan2(diff[..., 1], diff[..., 0])
 
     @staticmethod
     def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
         angle = config.joint_physics[joint, (Config.JOINT_A1,)]
         director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
-        config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))
+        config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))[..., 0]
 
     @staticmethod
     def do_not_compute_continuity(config: Config, joint: int):
@@ -36,8 +37,8 @@ class JointInput:
     @staticmethod
     def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_point = Position.point(config, s1, config.joint_physics[joint, Config.JOINT_P1, np.newaxis])
-        s2_point = Position.point(config, s2, config.joint_physics[joint, Config.JOINT_P2, np.newaxis])
+        s1_point = Position.point(config, s1, config.joint_physics[joint, Config.JOINT_P1])
+        s2_point = Position.point(config, s2, config.joint_physics[joint, Config.JOINT_P2])
 
         s1_ori = Orientation.get(config, s1)
         s2_ori = Orientation.get(config, s2)
@@ -51,7 +52,7 @@ class JointInput:
 
     @staticmethod
     def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
-        angle1, distance1, angle2, distance2 = config.joint_physics[joint][:, np.newaxis]
+        angle1, distance1, angle2, distance2 = config.joint_physics[joint]
         s1_point = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle1))
         s2_point = Orientation.add(Orientation.get(config, s2), Orientation.from_angle(angle2))
 
@@ -59,21 +60,20 @@ class JointInput:
 
         Geometry.move_eq(eq2, config, -Geometry.det_z(s2_point) * distance2 - Position.get(config, s2))
         Geometry.rotate_eq(eq2, config, total_rotation)
-        Geometry.move_eq(eq2, config, Position.get(config, s1) + Geometry.det_z(s1_point) * distance1 + s1_point * config.results.joint_values[np.newaxis, joint, :])
+        Geometry.move_eq(eq2, config, Position.get(config, s1) + Geometry.det_z(s1_point) * distance1 + s1_point * config.results.joint_values[joint, :, np.newaxis])
 
 
 class System:
     @staticmethod
     def set_up(config: Config):
-        # shapes: m, 4, n <-  1, 4, 1
-        config.results.solid_values[:] = ((0.,), (0.,), (1.0,), (0.,)),
+        config.results.solid_values[:] = 0.0, 0.0, 1.0, 0.0
         config.joint_states[:] = config.final_joint_states
 
     @staticmethod
     def clean_up(config: Config):
         eq = tuple(range(config.solid_physics.shape[0]))
         Geometry.move_eq(eq, config, -Position.get(config, 0))
-        Geometry.rotate_eq(eq, config, Orientation.get(config, 0) * np.array([[1], [-1]]))
+        Geometry.rotate_eq(eq, config, Orientation.get(config, 0) * np.array([1, -1]))
 
 
 class Graph:
@@ -103,7 +103,7 @@ class Graph:
         cos_angle = 0.5 * (sq_a + sq_b - sq_c) * inv_ab
         sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
 
-        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_[cos_angle, sin_angle])
+        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_['-1', cos_angle, sin_angle])
         Geometry.rotate_eq(eq1, config, total_rotation)
         Geometry.move_eq(eq1, config, Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r0, True))
 
@@ -142,7 +142,7 @@ class Graph:
             Joint.get_solid_point(config, r1, True) - Joint.get_solid_position(config, p2, True)
         ) + (_distance21 - _distance22)
         v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
-        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_[v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
+        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_['-1', v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
 
         Geometry.rotate_eq(eq0, config, total_rotation)
         Geometry.move_eq(eq0, config, Joint.get_solid_point(config, r0, True) - Joint.get_solid_point(config, r0))

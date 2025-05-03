@@ -10,6 +10,8 @@ GEAR_TYPES = RelationType.GEAR_RACK, RelationType.GEAR, RelationType.BELT
 
 class JointType(enum.Enum):
     EMPTY, REVOLUTE, PRISMATIC = range(3)
+    X, Y, J_AXLE = 6, 10, 14
+    GHOST_ANGLE = 5
 
 
 E, R, P = JointType.EMPTY, JointType.REVOLUTE, JointType.PRISMATIC

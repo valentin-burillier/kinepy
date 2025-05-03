@@ -17,7 +17,7 @@ class Joint:
         """
         j_index, orientation = oriented_joint
         point_slice = Config.JOINT_P2, Config.JOINT_P1
-        return config.joint_physics[j_index, point_slice[orientation ^ direction], np.newaxis]
+        return config.joint_physics[j_index, point_slice[orientation ^ direction]]
 
     @staticmethod
     def get_solid_point(config: Config, oriented_joint: OrientedJoint, direction=False):
@@ -47,18 +47,18 @@ class Joint:
 
     @staticmethod
     def get_revolute_application_point(config: Config, joint: OrientedJoint):
-        point = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
+        point = config.joint_physics[joint[0], Config.JOINT_P1]
         return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], point)
 
     @staticmethod
     def get_prismatic_application_point(config: Config, joint: OrientedJoint):
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
         return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], dist * Orientation.from_angle(angle + np.pi * 0.5))
 
     @staticmethod
     def get_prismatic_normal(config: Config, joint: OrientedJoint):
         s1 = config.joint_config[joint[0], Config.JOINT_S1]
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1, np.newaxis]
+        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
         return Position.local_point(config, s1, Orientation.from_angle(angle + np.pi * 0.5))
 
     @staticmethod
@@ -73,7 +73,7 @@ class Joint:
 class Orientation:
     @staticmethod
     def index(solid: Any):
-        return solid, slice(2, 4), Ellipsis
+        return solid, slice(None), slice(2, 4)
 
     @staticmethod
     def get(config: Config, solid: Any) -> np.ndarray:
@@ -86,53 +86,22 @@ class Orientation:
         Shapes (..., 2, n) * (..., 2, n) -> (..., 2, n)
         """
         out = np.zeros(x.shape, dtype=x.dtype)
-        out[..., 0, :] = x[..., 0, :] * y[..., 0, :] - x[..., 1, :] * y[..., 1, :]
-        out[..., 1, :] = x[..., 0, :] * y[..., 1, :] + x[..., 1, :] * y[..., 0, :]
-        return out
-
-    @staticmethod
-    def add_s(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """
-        complex product
-        Shapes (2) * (2) -> (2,)
-        """
-        return np.array([x[0] * y[0] - x[1] * y[1], x[0] * y[1] + x[1] * y[0]])
-
-    @staticmethod
-    def add_m(xm: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """
-        complex product
-        Shapes (m, 2, n) * (2, n) -> (m, 2, n)
-        """
-        out = np.zeros(xm.shape, dtype=xm.dtype)
-        out[:, 0, ...] = xm[:, 0, ...] * y[np.newaxis, 0, ...] - xm[:, 1, ...] * y[np.newaxis, 1, ...]
-        out[:, 1, ...] = xm[:, 0, ...] * y[np.newaxis, 1, ...] + xm[:, 1, ...] * y[np.newaxis, 0, ...]
+        out[..., 0] = x[..., 0] * y[..., 0] - x[..., 1] * y[..., 1]
+        out[..., 1] = x[..., 0] * y[..., 1] + x[..., 1] * y[..., 0]
         return out
 
     @staticmethod
     def sub(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         out = np.zeros(x.shape, dtype=x.dtype)
-        out[0, ...] = x[0, ...] * y[0, ...] + x[1, ...] * y[1, ...]
-        out[1, ...] = x[1, ...] * y[0, ...] - x[0, ...] * y[1, ...]
+        out[..., 0] = x[..., 0] * y[..., 0] + x[..., 1] * y[..., 1]
+        out[..., 1] = x[..., 1] * y[..., 0] - x[..., 0] * y[..., 1]
         return out
-
-    @staticmethod
-    def sub_m(xm: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """
-        complex product
-        Shapes (m, 2, n) * (2, n) -> (m, 2, n)
-        """
-        out = np.zeros(xm.shape, dtype=xm.dtype)
-        out[:, 0, ...] = xm[:, 0, ...] * y[np.newaxis, 0, ...] + xm[:, 1, ...] * y[np.newaxis, 1, ...]
-        out[:, 1, ...] = xm[:, 1, ...] * y[np.newaxis, 0, ...] - xm[:, 0, ...] * y[np.newaxis, 1, ...]
-        return out
-
 
     @staticmethod
     def from_angle(angle: np.ndarray) -> np.ndarray:
-        out = np.zeros((2, *angle.shape), dtype=angle.dtype)
-        out[0, ...] = np.cos(angle)
-        out[1, ...] = np.sin(angle)
+        out = np.zeros((*angle.shape, 2), dtype=angle.dtype)
+        out[..., 0] = np.cos(angle)
+        out[..., 1] = np.sin(angle)
         return out
 
     @staticmethod
@@ -144,7 +113,7 @@ class Orientation:
 class Position:
     @staticmethod
     def index(solid: Any):
-        return solid, slice(0, 2), Ellipsis
+        return solid, slice(None), slice(0, 2)
 
     @staticmethod
     def get(config: Config, solid: Any) -> np.ndarray:
@@ -163,11 +132,11 @@ class Position:
 class Geometry:
     @staticmethod
     def dot(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-        return np.sum(v1 * v2, axis=0)[np.newaxis, ...]
+        return np.sum(v1 * v2, axis=-1)[..., np.newaxis]
 
     @staticmethod
     def det(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-        return v1[np.newaxis, 0, :] * v2[np.newaxis, 1, :] - v1[np.newaxis, 1, :] * v2[np.newaxis, 0, :]
+        return np.cross(v1, v2, axis=-1)[..., np.newaxis]
 
     @staticmethod
     def inv_mag(vec: np.ndarray) -> np.ndarray:
@@ -180,23 +149,23 @@ class Geometry:
     @staticmethod
     def move_eq(eq: tuple[int, ...], config: Config, vec: np.ndarray):
         # shape: (m, 2, n) + (1, 2, n)
-        config.results.solid_values[Position.index(eq)] += vec[np.newaxis, ...]
+        config.results.solid_values[Position.index(eq)] += vec
 
     @staticmethod
     def rotate_eq(eq: tuple[int, ...], config: Config, rot: np.ndarray):
-        config.results.solid_values[Position.index(eq)] = Orientation.add_m(Position.get(config, eq), rot)
-        config.results.solid_values[Orientation.index(eq)] = Orientation.add_m(Orientation.get(config, eq), rot)
+        config.results.solid_values[Position.index(eq)] = Orientation.add(Position.get(config, eq), rot[np.newaxis])
+        config.results.solid_values[Orientation.index(eq)] = Orientation.add(Orientation.get(config, eq), rot[np.newaxis])
 
     @staticmethod
     def det_z(vec: np.ndarray) -> np.ndarray:
         out = np.zeros(vec.shape, vec.dtype)
-        out[0, ...] = vec[1, ...]
-        out[1, ...] = -vec[0, ...]
+        out[..., 0] = vec[..., 1]
+        out[..., 1] = -vec[..., 0]
         return out
 
     @staticmethod
     def z_det(vec: np.ndarray) -> np.ndarray:
         out = np.zeros(vec.shape, vec.dtype)
-        out[0, ...] = -vec[1, ...]
-        out[1, ...] = vec[0, ...]
+        out[..., 0] = -vec[..., 1]
+        out[..., 1] = vec[..., 0]
         return out
