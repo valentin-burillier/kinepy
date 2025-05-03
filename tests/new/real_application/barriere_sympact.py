@@ -31,8 +31,8 @@ a.solution_index = 1
 
 #%%
 
+# angle = np.linspace(0, 1, n)**2
 angle = np.linspace(-np.pi/4, 5/4*np.pi, n)
-angle = np.linspace(0, 1, n)**2
 r2.set_input(angle)
 
 barriere.solve_kinematics()
