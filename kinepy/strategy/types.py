@@ -169,6 +169,7 @@ class RelationStep(ResolutionStep):
         RelationType.DISTANT: dyn.Relation.solve_distant_relation,
         RelationType.GEAR: dyn.Relation.solve_gear_pair,
         RelationType.GEAR_RACK: dyn.Relation.solve_gear_rack,
+        RelationType.BELT: dyn.Relation.solve_belt
     }
 
     def solve_dynamics(self, config: Config):

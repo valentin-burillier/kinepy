@@ -321,3 +321,36 @@ class Relation:
             _ap = Joint.get_prismatic_application_point(config, (target, True))
             torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, _ap)
             Joint.set_torque(config, target, torque_1_2)
+
+    @staticmethod
+    def solve_belt(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
+        p1, p2 = Joint.get_solid_point(config, (source, True)), Joint.get_solid_point(config, (target, True))
+        r1, r2 = config.relation_physics[relation, (Config.RELATION_R1, Config.RELATION_R2) if is_1_to_2 else (Config.RELATION_R2, Config.RELATION_R1)]
+        t0 = config.relation_physics[relation, Config.RELATION_T0]
+
+        shaft1, shaft2 = config.relation_config[relation, (Config.RELATION_G1, Config.RELATION_G2) if is_1_to_2 else (Config.RELATION_G2, Config.RELATION_G1)]
+        t2 = config.joint_config[target, Config.JOINT_S2]
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (shaft2 == t2,), zero_holder)
+        torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, p2)
+
+        _f1 = t0 + 0.5 * torque_1_2 / r2
+        _f2 = t0 + 0.5 * torque_1_2 / r2
+
+        vec_2_1 = p1 - p2
+        ll = Geometry.sq_mag(vec_2_1)
+        vec_2_1 /= ll
+
+        rot = np.array(((ll[0, 0] - (r2 - r1) ** 2) ** 0.5, r1 - r2))
+        f1 = Orientation.add(vec_2_1 * _f1, rot)
+        f2 = Orientation.sub(vec_2_1 * _f2, rot)
+
+        pa1 = p2 + Orientation.add(Geometry.z_det(vec_2_1), rot)
+        pa2 = p2 + Orientation.sub(Geometry.det_z(vec_2_1), rot)
+
+        Solid.add_force(config, shaft2, f1, pa1)
+        Solid.add_force(config, shaft2, f2, pa2)
+
+        Solid.add_force(config, shaft1, -f1, pa1)
+        Solid.add_force(config, shaft1, -f2, pa2)
+
+

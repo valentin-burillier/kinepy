@@ -225,6 +225,8 @@ class InterfaceTests(unittest.TestCase):
         sys.solve_dynamics()
 
     def test_belt(self):
+        warnings.filterwarnings('ignore')
+
         sys = kp.System()
 
         s0 = sys.ground
@@ -247,8 +249,7 @@ class InterfaceTests(unittest.TestCase):
         sys.set_sim_parameters(n)
         sys.solve_kinematics()
 
-        # TODO: not ready yet
-        # sys.solve_dynamics()
+        sys.solve_dynamics()
 
     def test_gear_rack(self):
         system = kp.System()
