@@ -123,9 +123,8 @@ class TwistingSpring(Interaction):
         self._a0 = a0
         self.r = r
 
-    def register_actions(self):
+    def _set_actions(self):
         torque = (self.r.get_value() - self._a0) * self._k
-
         self._config.results.action_values[self._action_mapping[self.r._s1], :, Config.ACTION_DYN_TORQUE] = torque
         self._config.results.solid_dynamics[self.r._s1, :, Config.SOLID_DYN_TORQUE] += torque
         self._config.results.action_values[self._action_mapping[self.r._s2], :, Config.ACTION_DYN_TORQUE] = -torque
