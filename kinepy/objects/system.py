@@ -114,14 +114,14 @@ class System:
     def _hyper_statism_value(self, joint_input: np.ndarray[int]) -> int:
         return 2 * self.__config.joint_config.shape[0] - 3 * (self.__config.solid_physics.shape[0] - 1) + len(joint_input) + self.__config.relation_config.shape[0]
 
-    def set_frame_count(self, frame_cnt: int, frame_time: u.Time.phy = 0.0):
+    def set_sim_parameters(self, frame_cnt: int, total_time: u.Time.phy = 0.0):
         assert self.__config.state >= ConfigState.STRATEGY_OK, "Call `System.determine_computation_order` before allocating resources"
         for inter in self._interactions:
             inter._claim_resources()
-        self.__config.allocate_results(frame_cnt, frame_time)
+        self.__config.allocate_results(frame_cnt, total_time / (frame_cnt - 1) if frame_cnt > 1 else total_time)
 
     def solve_kinematics(self):
-        assert self.__config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before solving kinematics"
+        assert self.__config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before solving kinematics"
         self.__config.state = ConfigState.KINEMATICS_OK
 
         kin.System.set_up(self.__config)
@@ -220,15 +220,14 @@ class System:
         _action_index = self.__config.action_config.shape[0]
         self.__config.add_actions(
             np.array([
-                [r.s1._index, ActionMode.JOINT_POINT, r._index],
-                [r.s2._index, ActionMode.JOINT_POINT, r._index]
+                [r._s1, ActionMode.JOINT_POINT, r._index],
+                [r._s2, ActionMode.JOINT_POINT, r._index]
             ]),
             np.zeros((2, 2))
         )
-        ts = TwistingSpring(self.__config, {r.s1._index: _action_index, r.s2._index: _action_index+1}, r, k, a0)
+        ts = TwistingSpring(self.__config, {r._s1: _action_index, r._s2: _action_index+1}, r, k, a0)
         self._interactions.append(ts)
         return ts
 
-
-    def pygame_ui(self) -> GUI:
+    def kinematic_diagram(self) -> GUI:
         return GUI(self.__config)

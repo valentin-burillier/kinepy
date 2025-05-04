@@ -41,7 +41,7 @@ class InterfaceTests(unittest.TestCase):
 
         n = 5
         system.determine_computation_order()
-        system.set_frame_count(n)
+        system.set_sim_parameters(n)
         system.solve_kinematics()
 
         self.assertEqual(s1.get_angle().shape, (n,))
@@ -61,7 +61,7 @@ class InterfaceTests(unittest.TestCase):
 
         n = 5
         system.determine_computation_order()
-        system.set_frame_count(n)
+        system.set_sim_parameters(n)
         system.solve_kinematics()
 
         j.set_input(np.zeros((n,)))
@@ -105,7 +105,7 @@ class InterfaceTests(unittest.TestCase):
         ps.sliding.work()
 
         system.determine_computation_order()
-        system.set_frame_count(5)
+        system.set_sim_parameters(5)
 
         # piloting Revolut and Prismatic
         system.solve_kinematics()
@@ -137,7 +137,7 @@ class InterfaceTests(unittest.TestCase):
         system.add_revolute(s1, s2)
 
         system.determine_computation_order()
-        system.set_frame_count(5)
+        system.set_sim_parameters(5)
 
         system.solve_kinematics()
         # non user-set revolute value
@@ -155,7 +155,7 @@ class InterfaceTests(unittest.TestCase):
         system.add_prismatic(s1, s2)
 
         system.determine_computation_order()
-        system.set_frame_count(5)
+        system.set_sim_parameters(5)
 
         system.solve_kinematics()
         system.solve_dynamics()
@@ -171,7 +171,7 @@ class InterfaceTests(unittest.TestCase):
         system.add_revolute(s1, s2)
 
         system.determine_computation_order()
-        system.set_frame_count(5)
+        system.set_sim_parameters(5)
 
         system.solve_kinematics()
         system.solve_dynamics()
@@ -195,7 +195,7 @@ class InterfaceTests(unittest.TestCase):
 
         sys.determine_computation_order()
         n = 5
-        sys.set_frame_count(n)
+        sys.set_sim_parameters(n)
         sys.solve_kinematics()
 
         # TODO: not ready yet
@@ -221,12 +221,11 @@ class InterfaceTests(unittest.TestCase):
 
         sys.determine_computation_order()
         n = 5
-        sys.set_frame_count(n)
+        sys.set_sim_parameters(n)
         sys.solve_kinematics()
 
         # TODO: not ready yet
         # sys.solve_dynamics()
-
 
     def test_gear_rack(self):
         system = kp.System()
@@ -247,7 +246,7 @@ class InterfaceTests(unittest.TestCase):
 
         system.determine_computation_order()
         n = 5
-        system.set_frame_count(n)
+        system.set_sim_parameters(n)
         system.solve_kinematics()
 
         # TODO: not ready yet
@@ -273,7 +272,7 @@ class InterfaceTests(unittest.TestCase):
         ts = system.add_linear_spring(s0, s1)
 
         system.determine_computation_order()
-        system.set_frame_count(5)
+        system.set_sim_parameters(5)
 
         fs1.set_force([1, 0])
         fs1.set_force_locally([1, 0])

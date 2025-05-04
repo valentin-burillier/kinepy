@@ -24,7 +24,7 @@ barriere.add_inertia()
 
 barriere.determine_computation_order()
 n = 101
-barriere.set_frame_count(n)
+barriere.set_sim_parameters(n)
 
 a, = barriere.get_steps_with_multiple_solutions()
 a.solution_index = 1
@@ -39,7 +39,7 @@ barriere.solve_kinematics()
 
 #%%
 
-kd = barriere.pygame_ui()
+kd = barriere.kinematic_diagram()
 
 kd.add_solid_point(lisse, (1, 0))
 

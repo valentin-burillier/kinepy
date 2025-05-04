@@ -16,7 +16,7 @@ r3 = sys.add_revolute(s0, s2, p1=(0, 3))
 
 sys.determine_computation_order()
 n = 1
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 sys.solve_kinematics()
 
 sys.add_interaction(kp.Gravity(g=(0, -1)))

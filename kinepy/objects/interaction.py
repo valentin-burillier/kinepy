@@ -23,7 +23,7 @@ class Interaction:
 
 class SystemInteraction(Interaction):
     def __getitem__(self, item: Solid) -> Action:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` accessing InternalActions"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` accessing InternalActions"
         if not item.check_against(self._config):
             raise KeyError(f'This solid {item} does not belong to the same system')
         try:

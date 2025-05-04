@@ -20,7 +20,7 @@ r1.pilot()
 
 sys.determine_computation_order()
 n = 61
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 
 """
 https://www.geogebra.org/calculator/dxqhvvm3
@@ -33,7 +33,7 @@ r1.set_input(angle)
 
 sys.solve_kinematics()
 
-gui = sys.pygame_ui()
+gui = sys.kinematic_diagram()
 gui.add_solid_point(s3, (-2, 1))
 gui.show()
 

@@ -15,7 +15,7 @@ p1.pilot()
 
 sys.determine_computation_order()
 n = 101
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 #%%
 
 p1.set_input(np.linspace(0, 4, n))

@@ -74,19 +74,19 @@ class Solid(ConfigView):
         return self._get_3dof().angle
 
     def get_origin(self) -> u.Length.point:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
         return geo.Position.get(self._config, self._index).swapaxes(0, 1)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
         return geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1)
 
     def get_vector(self, v: u.point_type = (0.0, 0.0)) -> u.point_type:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
         return geo.Position.local_point(self._config, self._index, np.array(v)).swapaxes(0, 1)
 
     def get_angle(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count`before reading Solid kinematics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
         ori = geo.Orientation.get(self._config, self._index)
         _angle = np.arctan2(ori[..., 1], ori[..., 0])
         geo.Orientation.make_angle_continuous(_angle)
@@ -145,7 +145,7 @@ class PrimitiveJoint(ConfigView):
         self._config.working_joints = np.r_[self._config.working_joints, self._index]
 
     def set_input(self, value):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before setting Joint values"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting Joint values"
         self._config.results.joint_values[self._index] = value
 
     def _get_value(self) -> np.ndarray:
@@ -155,15 +155,15 @@ class PrimitiveJoint(ConfigView):
         return self._config.results.joint_values[self._index]
 
     def get_value(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before reading Joint values"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint values"
         return self._get_value()
 
     def get_force(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before reading Joint dynamics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
         return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE]
 
     def get_torque(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_frame_count` before reading Joint dynamics"
+        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
         return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_TORQUE]
 
     def __eq__(self, other: Self):

@@ -20,7 +20,7 @@ r1.pilot()
 
 sys.determine_computation_order()
 n = 101
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 
 """
 Faire tourner le point C :

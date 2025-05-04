@@ -19,7 +19,7 @@ r1.pilot()
 sys.determine_computation_order()
 sys._kinematic_strategy[1].solution_index = 0  # ou 1
 n = 101
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 
 """
 Faire tourner le point C :

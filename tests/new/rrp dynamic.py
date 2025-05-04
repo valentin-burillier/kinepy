@@ -25,7 +25,7 @@ p1.work()
 
 sys.determine_computation_order()
 n = 101
-sys.set_frame_count(n)
+sys.set_sim_parameters(n)
 
 pa = (2, 0)
 
