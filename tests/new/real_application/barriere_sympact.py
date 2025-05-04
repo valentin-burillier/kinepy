@@ -18,21 +18,21 @@ r2.pilot()
 r2.work()
 
 #barriere.add_gravity()
-barriere.add_inertia()
-#barriere.add_twisting_spring(r1, k=10)
-#barriere.add_linear_spring(bati, lisse, p1=(0, 1), p2=(1, 0), k=10)
+barriere.add_inertia() # donne nan
+#barriere.add_twisting_spring(r2, 10) # donne que des 0
+#barriere.add_linear_spring(bati, lisse, p1=(-1, 1), p2=(1, 0), k=10) # donne que des 0 lorsque r1.work()
 
 barriere.determine_computation_order()
 n = 101
-barriere.set_sim_parameters(n)
+barriere.set_sim_parameters(n, 5)
 
 a, = barriere.get_steps_with_multiple_solutions()
-a.solution_index = 1
+a.solution_index = -1
 
 #%%
 
-# angle = np.linspace(0, 1, n)**2
 angle = np.linspace(-np.pi/4, 5/4*np.pi, n)
+#angle = np.linspace(0, 1, n)**2
 r2.set_input(angle)
 
 barriere.solve_kinematics()
@@ -55,5 +55,4 @@ barriere.solve_dynamics()
 
 #%%
 
-plt.plot(r2.get_value(), r2.get_torque())
-
+plt.plot(r1.get_value(), r2.get_torque())
