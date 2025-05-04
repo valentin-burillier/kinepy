@@ -166,7 +166,8 @@ class RelationStep(ResolutionStep):
 
     dynamics_chooser = {
         RelationType.EFFORTLESS: dyn.Relation.solve_effortless_relation,
-        RelationType.DISTANT: dyn.Relation.solve_distant_relation
+        RelationType.DISTANT: dyn.Relation.solve_distant_relation,
+        RelationType.GEAR: dyn.Relation.solve_gear_pair,
     }
 
     def solve_dynamics(self, config: Config):

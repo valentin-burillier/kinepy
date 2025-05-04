@@ -251,3 +251,34 @@ class Relation:
         source_type = config.joint_config[source, Config.JOINT_TYPE] & 3
         s1, s2 = config.joint_config[source, Config.JOINT_SOLIDS]
         Relation._effort_setter[source_type](config, source, s1, s2, effort * _r)
+
+    @staticmethod
+    def solve_gear_pair(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
+        p1, p2 = Joint.get_solid_point(config, (source, True)), Joint.get_solid_point(config, (target, True))
+        _r, _pa = config.relation_physics[relation, (Config.RELATION_R, Config.RELATION_PRESSURE_ANGLE)]
+        vec_1_2 = p1 - p2
+        if is_1_to_2:
+            r1, r2 = 1 / (_r - 1), -_r / (_r - 1)
+        else:
+            r1, r2 = _r / (_r - 1), -1 / (_r - 1)
+        # ap = p1 + r1 * vec_1_2 = p2 + r2 * vec_1_2
+        application_point = p1 + r1 * vec_1_2
+
+        gear1, gear2 = config.relation_config[relation, (Config.RELATION_G1, Config.RELATION_G2) if is_1_to_2 else (Config.RELATION_G2, Config.RELATION_G1)]
+        t2 = config.joint_config[target, Config.JOINT_S2]
+
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (t2 == gear2,), zero_holder)
+        torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, p2)
+
+        force = Geometry.z_det(vec_1_2) / r2 / Geometry.sq_mag(vec_1_2) * torque_1_2
+        rotation = np.zeros_like(force)
+        rotation[:] = 1, np.tan(_pa)
+        rotation[..., 1, np.newaxis] *= np.sign(torque_1_2)
+        force = Orientation.add(force, rotation)
+
+        Solid.add_force(config, gear2, force, application_point)
+        Solid.add_force(config, gear1, -force, application_point)
+
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
+        force_1_2 = sign * Newtons2ndLaw.force(config, eq)
+        Joint.set_force(config, target, force_1_2)

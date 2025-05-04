@@ -190,8 +190,8 @@ class InterfaceTests(unittest.TestCase):
 
         system.add_distant_relation(r1, r2)
         system.add_distant_relation(r1, p3)
-        system.add_effortless_relation(r1, r4)
-        system.add_effortless_relation(r1, p5)
+        system.add_effortless_relation(p3, r4)
+        system.add_effortless_relation(p3, p5)
 
         system.determine_computation_order()
         system.set_sim_parameters(5)
@@ -200,6 +200,8 @@ class InterfaceTests(unittest.TestCase):
         system.solve_dynamics()
 
     def test_gear_pair(self):
+        warnings.filterwarnings('ignore')
+
         sys = kp.System()
 
         s0 = sys.ground
@@ -220,9 +222,7 @@ class InterfaceTests(unittest.TestCase):
         n = 5
         sys.set_sim_parameters(n)
         sys.solve_kinematics()
-
-        # TODO: not ready yet
-        # sys.solve_dynamics()
+        sys.solve_dynamics()
 
     def test_belt(self):
         sys = kp.System()
