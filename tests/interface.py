@@ -271,9 +271,7 @@ class InterfaceTests(unittest.TestCase):
         n = 5
         system.set_sim_parameters(n)
         system.solve_kinematics()
-
-        # TODO: not ready yet
-        # system.solve_dynamics()
+        system.solve_dynamics()
 
     def test_interaction(self):
         warnings.filterwarnings('ignore')

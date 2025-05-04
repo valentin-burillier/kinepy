@@ -282,3 +282,42 @@ class Relation:
         eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
         force_1_2 = sign * Newtons2ndLaw.force(config, eq)
         Joint.set_force(config, target, force_1_2)
+
+    @staticmethod
+    def solve_gear_rack(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
+        _r, _pa = config.relation_physics[relation, (Config.RELATION_R, Config.RELATION_PRESSURE_ANGLE)]
+        if is_1_to_2:
+            n = Joint.get_prismatic_normal(config, (target, True))
+            p = Joint.get_solid_point(config, (source, True))
+        else:
+            n = Joint.get_prismatic_normal(config, (source, True))
+            p = Joint.get_solid_point(config, (target, True))
+
+        application_point = p - _r * n
+
+        gear1, gear2 = config.relation_config[relation, (Config.RELATION_G1, Config.RELATION_G2) if is_1_to_2 else (Config.RELATION_G2, Config.RELATION_G1)]
+        t2 = config.joint_config[target, Config.JOINT_S2]
+
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (gear2 == t2,), zero_holder)
+
+        if is_1_to_2:
+            effort_1_2 = Geometry.det(sign * Newtons2ndLaw.force(config, eq), n)
+        else:
+            effort_1_2 = sign * Newtons2ndLaw.torque(config, eq, p) / _r
+
+        force = n * effort_1_2
+        rotation = np.zeros_like(force)
+        rotation[:] = 1, np.tan(_pa)
+        rotation[..., 1, np.newaxis] *= np.sign(effort_1_2)
+        force = Orientation.add(force, rotation)
+
+        Solid.add_force(config, gear2, force, application_point)
+        Solid.add_force(config, gear1, -force, application_point)
+
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
+        force_1_2 = sign * Newtons2ndLaw.force(config, eq)
+        Joint.set_force(config, target, force_1_2)
+        if is_1_to_2:
+            _ap = Joint.get_prismatic_application_point(config, (target, True))
+            torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, _ap)
+            Joint.set_torque(config, target, torque_1_2)
