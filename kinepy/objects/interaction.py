@@ -100,10 +100,10 @@ class LinearSpring(Interaction):
     def _set_actions(self):
         # shape (n, 2)
         p1, p2 = geo.Position.point(self._config, self._s1, self._p1), geo.Position.point(self._config, self._s2, self._p2)
+
         vector = p2 - p1
         length = geo.Geometry.mag(vector)
         unit = vector / length
-
         force = (length - self.l0) * self.k * unit
         self._config.results.action_values[self._action_mapping[self._s1], :, Config.ACTION_DYN_FORCE] = force
         self._config.results.solid_dynamics[self._s1, :, Config.SOLID_DYN_FORCE] += force

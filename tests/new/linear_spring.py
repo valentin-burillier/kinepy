@@ -43,3 +43,4 @@ sys.solve_dynamics()
 #%%
 
 plt.plot(p1.get_value(), p1.get_force()[:, 0])
+plt.show()

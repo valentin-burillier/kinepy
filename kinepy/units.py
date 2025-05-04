@@ -417,12 +417,10 @@ class UnitSystem:
             if attr in target_class.__dict__ or (phy := cls._physical_quantity_annotation(annotation)) is None:
                 continue
 
-            _attr_name = f'_{attr}'
-
-            def getter(self: target_class) -> phy:
+            def getter(self: target_class, _attr_name=f'_{attr}') -> phy:
                 return getattr(self, _attr_name)
 
-            def setter(self: target_class, value: phy):
+            def setter(self: target_class, value: phy, _attr_name=f'_{attr}'):
                 self._config.invalidate_dynamics()
                 return setattr(self, _attr_name, value)
 
