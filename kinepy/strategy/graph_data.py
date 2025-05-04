@@ -13,6 +13,12 @@ class JointType(enum.Enum):
     X, Y, J_AXLE = 6, 10, 14
     GHOST_ANGLE = 5
 
+    def simple(self):
+        """
+        Removes extra information giving only the primitive type
+        """
+        return JointType(self.value & 3)
+
 
 E, R, P = JointType.EMPTY, JointType.REVOLUTE, JointType.PRISMATIC
 
@@ -266,9 +272,7 @@ triad_edges = (0, 1), (0, 2), (0, 3), (1, 4), (2, 4), (3, 4)
 ADJACENCY: tuple[Adjacency, ...] = (
     graph_rrr, graph_rrp, graph_ppr, graph_3rr, graph_2rr_pp, graph_3pr, graph_2pr_rr, graph_pp_rr_pr, graph_2rr_pr, graph_pp_pr_rp, graph_2rp_pp, graph_rr_pr_rp, graph_2rp_pr
 )
-NAMES = (
-    'RRR', 'RRP', 'PPR', '3RR', '2RR-PP', '3PR', '2PR-RR', 'PP-RR-PR', '2RR-PR', 'PP-PR-RP', '2RP-PP', 'RR-PR-RP', '2RP-PR'
-)
+
 SOLUTION_COUNT = (
     2, 2, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 )
@@ -290,7 +294,7 @@ DEGREES = tuple(_degrees(adj) for adj in ADJACENCY)
 
 class Graphs(enum.Enum):
     """
-    Name are prefixed with 'g' since some names strat with a number
+    Name are prefixed with 'g' since some names start with a number
     """
     gRRR, gRRP, gPPR, g3RR, g2RR_PP, g3PR, g2PR_RR, gPP_RR_PR, g2RR_PR, gPP_PR_RP, g2RP_PP, gRR_PR_RP, g2RP_PR = range(13)
 

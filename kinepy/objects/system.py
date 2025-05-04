@@ -212,7 +212,9 @@ class System:
             ]),
             np.array([p1, p2])
         )
-        return LinearSpring(self.__config, {s1._index: _action_index, s2._index: _action_index+1}, s1, s2, p1, p2, k, l0)
+        ls = LinearSpring(self.__config, {s1._index: _action_index, s2._index: _action_index+1}, s1, s2, p1, p2, k, l0)
+        self._interactions.append(ls)
+        return ls
 
     def add_twisting_spring(self,  r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0) -> TwistingSpring:
         _action_index = self.__config.action_config.shape[0]
@@ -223,7 +225,10 @@ class System:
             ]),
             np.zeros((2, 2))
         )
-        return TwistingSpring(self.__config, {r.s1._index: _action_index, r.s2._index: _action_index+1}, r, k, a0)
+        ts = TwistingSpring(self.__config, {r.s1._index: _action_index, r.s2._index: _action_index+1}, r, k, a0)
+        self._interactions.append(ts)
+        return ts
+
 
     def pygame_ui(self) -> GUI:
         return GUI(self.__config)

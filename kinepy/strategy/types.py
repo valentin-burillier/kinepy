@@ -115,7 +115,7 @@ class JointStep(ResolutionStep):
         ResolutionStep.__init__(self)
         self.joint = joint
         self.eq1, self.eq2 = eq1, eq2
-        self.joint_type = JointType(joint_type.value & 3)
+        self.joint_type = joint_type.simple()
         self.s1, self.s2 = s1, s2
         self.zero_holder = 0 in eq2
 
@@ -172,7 +172,7 @@ class JointValueComputationStep(ResolutionStep):
     continuity_function: Callable[[Config, int], None]
 
     def __init__(self, joint: int, _type: JointType, flags: int, s1: int, s2: int):
-        _type = JointType(_type.value & 3)
+        _type = _type.simple()
         self.s1, self.s2 = s1, s2
         self.joint = joint
         self.flags = flags

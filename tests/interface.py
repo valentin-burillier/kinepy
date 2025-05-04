@@ -254,6 +254,7 @@ class InterfaceTests(unittest.TestCase):
         # system.solve_dynamics()
 
     def test_interaction(self):
+        warnings.filterwarnings('ignore')
 
         system = kp.System()
         s0 = system.ground

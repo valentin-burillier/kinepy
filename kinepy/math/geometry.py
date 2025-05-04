@@ -147,6 +147,10 @@ class Geometry:
         return Geometry.dot(vec, vec)
 
     @staticmethod
+    def mag(vec: np.ndarray) -> np.ndarray:
+        return Geometry.dot(vec, vec) ** 0.5
+
+    @staticmethod
     def move_eq(eq: tuple[int, ...], config: Config, vec: np.ndarray):
         # shape: (m, 2, n) + (1, 2, n)
         config.results.solid_values[Position.index(eq)] += vec

@@ -5,7 +5,6 @@ import kinepy.units as u
 
 
 class Action(ConfigView):
-
     def __get_ap(self, indirection: int) -> u.point_type:
         return self._config.action_physics[self._index]
 
@@ -76,11 +75,12 @@ class InternalAction(Action):
     def __do_not_set(self, value):
         raise AttributeError("You cannot manually set values of InternalAction")
 
-    def set_force_locally(self, value: u.Length.point):
-        return self.__do_not_set(value)
+    set_force_locally = __do_not_set
+    set_force = __do_not_set
+    set_torque = __do_not_set
 
-    def set_force(self, value: u.Force.point):
-        return self.__do_not_set(value)
+    def get_force(self) -> u.Force.point:
+        return Action.get_force(self).view(ReadOnlyArray)
 
-    def set_torque(self, value: u.Torque.phy):
-        return self.__do_not_set(value)
+    def get_torque(self) -> u.Torque.phy:
+        return Action.get_torque(self).view(ReadOnlyArray)
