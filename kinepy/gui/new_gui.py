@@ -352,7 +352,7 @@ class GUI:
         bbox_h_extent = (bbox[2:4] - bbox[0:2]) * 0.5
         screen_center = screen_size * np.array(0.5)
 
-        scale = min((screen_center - 2 * meshes.REVOLUTE_RADIUS) / bbox_h_extent)
+        scale = 1 / max(bbox_h_extent / (screen_center - 2 * meshes.REVOLUTE_RADIUS))
         translation = screen_center - scale * bbox_center * (1, -1)
         return (scale, -scale), translation
 

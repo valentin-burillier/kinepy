@@ -27,7 +27,7 @@ n = 101
 barriere.set_sim_parameters(n, 5)
 
 a, = barriere.get_steps_with_multiple_solutions()
-a.solution_index = -1
+a.solution_index = 1
 
 #%%
 
