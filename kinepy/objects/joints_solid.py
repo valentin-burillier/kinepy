@@ -102,7 +102,6 @@ class Solid(ConfigView):
 
 
 class PrimitiveJoint(ConfigView):
-
     def __new__(cls, config, index):
         _dict: dict[JointType, type[PrimitiveJoint]] = {
             JointType.REVOLUTE: Revolute,

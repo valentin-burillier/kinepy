@@ -58,7 +58,7 @@ class Solid:
 
     @staticmethod
     def add_torque(config: Config, solid: int, torque: np.ndarray):
-        config.results.solid_dynamics[solid, :, Config.SOLID_DYN_TORQUE] += torque
+        config.results.solid_dynamics[solid, :, Config.SOLID_DYN_TORQUE, np.newaxis] += torque
 
 
 class Joint(Joint):
@@ -86,26 +86,6 @@ class Joint(Joint):
     @staticmethod
     def set_torque(config: Config, joint: int, torque_1_2: np.ndarray):
         config.results.joint_dynamics[joint, :, Config.JOINT_DYN_TORQUE, np.newaxis] = torque_1_2
-
-
-class JointInput:
-    @staticmethod
-    def solve_joint(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int, _point):
-        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
-        force_1_2 = sign * Newtons2ndLaw.force(config, eq)
-        point = Position.point(config, s1, _point)
-        torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, point)
-
-        Joint.set_oriented_action(config, (joint, True), force_1_2, torque_1_2, point)
-
-    @staticmethod
-    def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, Config.JOINT_P1])
-
-    @staticmethod
-    def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        angle, dist = config.joint_physics[joint, (Config.JOINT_A1, Config.JOINT_D1)]
-        JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, dist * Orientation.from_angle(angle + np.pi * 0.5))
 
 
 class Graph:
@@ -201,4 +181,73 @@ class Graph:
         Joint.set_oriented_torque(config, p0, torque_0_1)
 
 
+class JointInput:
+    @staticmethod
+    def solve_joint(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int, _point):
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
+        force_1_2 = sign * Newtons2ndLaw.force(config, eq)
+        point = Position.point(config, s1, _point)
+        torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, point)
 
+        Joint.set_oriented_action(config, (joint, True), force_1_2, torque_1_2, point)
+        return force_1_2, torque_1_2
+
+    @staticmethod
+    def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
+        return JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joint_physics[joint, Config.JOINT_P1])
+
+    @staticmethod
+    def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
+        angle, dist = config.joint_physics[joint, (Config.JOINT_A1, Config.JOINT_D1)]
+        return JointInput.solve_joint(config, s1, s2, joint, eq1, eq2, zero_holder, dist * Orientation.from_angle(angle + np.pi * 0.5))
+
+
+class Relation:
+    @staticmethod
+    def get_prismatic_effort(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
+        force_1_2, _ = JointInput.solve_prismatic(config, s1, s2, joint, eq1, eq2, zero_holder)
+        director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(config.joint_physics[joint, Config.JOINT_A1]))
+        return Geometry.dot(director, force_1_2)
+
+    @staticmethod
+    def get_revolute_effort(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
+        _, torque_1_2 = JointInput.solve_revolute(config, s1, s2, joint, eq1, eq2, zero_holder)
+        return torque_1_2
+
+    _effort_getter = {
+        1: get_prismatic_effort,
+        2: get_revolute_effort
+    }
+
+    @staticmethod
+    def add_prismatic_effort(config: Config, joint, s1, s2, value):
+        angle, dist = config.joint_physics[joint, (Config.JOINT_A1, Config.JOINT_D1)]
+        point = Position.point(config, s1, dist * Orientation.from_angle(angle + np.pi * 0.5))
+        force = Position.local_point(config, s1, Orientation.from_angle(config.joint_physics[joint, Config.JOINT_A1])) * value
+        Solid.add_force(config, s1, force, point)
+        Solid.add_force(config, s2, -force, point)
+
+    @staticmethod
+    def add_revolute_effort(config: Config, joint, s1, s2, value):
+        Solid.add_torque(config, s1, value)
+        Solid.add_torque(config, s2, -value)
+
+    _effort_setter = {
+        1: add_prismatic_effort,
+        2: add_revolute_effort
+    }
+
+    @staticmethod
+    def solve_effortless_relation(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
+        t1, t2 = config.joint_config[target, Config.JOINT_SOLIDS]
+        return Relation._effort_getter[target_type](config, t1, t2, target, eq1, eq2, zero_holder)
+
+    @staticmethod
+    def solve_distant_relation(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
+        effort = Relation.solve_effortless_relation(config, relation, source, target, target_type, eq1, eq2, is_1_to_2, zero_holder)
+        _r = config.relation_physics[relation, Config.RELATION_R]
+        if not is_1_to_2:
+            _r = 1 / _r
+        source_type = config.joint_config[source, Config.JOINT_TYPE] & 3
+        s1, s2 = config.joint_config[source, Config.JOINT_SOLIDS]
+        Relation._effort_setter[source_type](config, source, s1, s2, effort * _r)

@@ -176,6 +176,29 @@ class InterfaceTests(unittest.TestCase):
         system.solve_kinematics()
         system.solve_dynamics()
 
+    def test_distant_effortless(self):
+        system = kp.System()
+
+        s0, s1, s2, s3, s4, s5 = system.ground, system.add_solid(), system.add_solid(), system.add_solid(), system.add_solid(), system.add_solid()
+
+        r1 = system.add_revolute(s0, s1)
+        r2 = system.add_revolute(s0, s2)
+        p3 = system.add_prismatic(s0, s3)
+        r4 = system.add_revolute(s0, s4)
+        p5 = system.add_prismatic(s0, s5)
+        r1.pilot()
+
+        system.add_distant_relation(r1, r2)
+        system.add_distant_relation(r1, p3)
+        system.add_effortless_relation(r1, r4)
+        system.add_effortless_relation(r1, p5)
+
+        system.determine_computation_order()
+        system.set_sim_parameters(5)
+
+        system.solve_kinematics()
+        system.solve_dynamics()
+
     def test_gear_pair(self):
         sys = kp.System()
 

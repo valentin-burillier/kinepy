@@ -1,6 +1,6 @@
 from kinepy.objects.config import Config, np, ConfigState, ActionMode
 import kinepy.units as u
-from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, TranslationAxleX, TranslationAxleY, PinSlotAngle, PinSlotSliding, GhostSolid, CompositeType
+from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, PrimitiveJoint, CompositeType
 from kinepy.strategy.graph_data import JointType, RelationType
 import kinepy.exceptions as ex
 import kinepy.strategy as strategy
@@ -177,7 +177,7 @@ class System:
         )
         return Belt(self.__config, index)
 
-    def add_distant_relation(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+    def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
         index = self.__config.relation_config.shape[0]
         self.__config.add_relations(
             np.array([[RelationType.DISTANT.value, j1._index, j2._index, -1, -1]]),
@@ -185,13 +185,13 @@ class System:
         )
         return Distant(self.__config, index)
 
-    def add_effortless_relation(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+    def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
         index = self.__config.relation_config.shape[0]
         self.__config.add_relations(
             np.array([[RelationType.EFFORTLESS.value, j1._index, j2._index, -1, -1]]),
             np.array([[v0, r, 0.0, 0.0]])
         )
-        return Effortless(self.__config, index, j1, j2)
+        return Effortless(self.__config, index)
 
     def add_gravity(self, g: u.Acceleration.point = (0, -u.Acceleration.G.value)) -> Gravity:
         self._interactions.append(gravity := Gravity(self.__config, dict(), g))

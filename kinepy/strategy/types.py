@@ -145,24 +145,32 @@ class RelationStep(ResolutionStep):
     def __init__(self, relation: int, rtype: int, is_1_to_2: bool, source: int, target: int, target_type: int, eq1: tuple[int], eq2: tuple[int]):
         self.relation = relation
         self.relation_type = RelationType(rtype)
-        self.target_type = target_type
+        self.target_type = JointType(target_type).simple().value
         self.is_1_to_2 = is_1_to_2
         self.source = source
         self.target = target
         self.eq1 = eq1
         self.eq2 = eq2
+        self.zero_holder = 0 in eq2
 
     kinematics_chooser = {
         RelationType.GEAR_RACK: kin.Relation.solve_standard_relation,
         RelationType.GEAR: kin.Relation.solve_standard_relation,
         RelationType.DISTANT: kin.Relation.solve_standard_relation,
         RelationType.EFFORTLESS: kin.Relation.solve_standard_relation,
-
         RelationType.BELT: kin.Relation.solve_belt,
     }
 
     def solve_kinematics(self, config: Config):
         self.kinematics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2)
+
+    dynamics_chooser = {
+        RelationType.EFFORTLESS: dyn.Relation.solve_effortless_relation,
+        RelationType.DISTANT: dyn.Relation.solve_distant_relation
+    }
+
+    def solve_dynamics(self, config: Config):
+        self.dynamics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2, self.zero_holder)
 
 
 class JointValueComputationStep(ResolutionStep):
