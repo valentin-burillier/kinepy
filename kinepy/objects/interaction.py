@@ -62,13 +62,15 @@ class Inertia(SystemInteraction):
     def _set_actions(self):
         if self._config.frame_time == 0.0:
             return
-        print(self._config.frame_time)
         # shape (m, n, 2)
         solid_ori = geo.Orientation.get(self._config, slice(None))
         # shape (m, n)
         solid_angles = np.arctan2(solid_ori[..., 1], solid_ori[..., 0])
+        geo.Orientation.make_angle_continuous(solid_angles)
+
         # shape (m, n)
         inertia = self._config.solid_physics[..., Config.SOLID_MOMENT_OF_INERTIA, np.newaxis] * np.diff(solid_angles, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+
         self._config.results.action_values[list(self._action_mapping.values()), :, Config.ACTION_DYN_TORQUE] = inertia
         self._config.results.solid_dynamics[..., Config.SOLID_DYN_TORQUE] -= inertia
 

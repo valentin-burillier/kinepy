@@ -105,9 +105,14 @@ class Orientation:
         return out
 
     @staticmethod
-    def make_angle_continuous(angle):
+    def _make_angle_continuous(angle: np.ndarray):
         indices = ~np.isnan(angle)
         angle[indices & (indices.cumsum() > 1)] -= ((np.diff(angle[indices]) + np.pi) // (2 * np.pi)).cumsum() * (2 * np.pi)
+        return angle
+
+    @staticmethod
+    def make_angle_continuous(angle: np.ndarray):
+        return np.apply_along_axis(Orientation._make_angle_continuous, -1, angle)
 
 
 class Position:
