@@ -305,7 +305,7 @@ class Relation:
         else:
             effort_1_2 = sign * Newtons2ndLaw.torque(config, eq, p) / _r
 
-        force = n * effort_1_2
+        force = Geometry.det_z(n) * effort_1_2
         rotation = np.zeros_like(force)
         rotation[:] = 1, np.tan(_pa)
         rotation[..., 1, np.newaxis] *= np.sign(effort_1_2)
