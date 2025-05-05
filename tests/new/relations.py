@@ -14,9 +14,9 @@ r1 = sys.add_revolute(s0, s1)
 r2 = sys.add_revolute(s0, s2, p1=(1, 0))
 #p1 = sys.add_prismatic(s0, s2, alpha1=np.pi/2)
 
-gp = sys.add_gear_pair(r1, r2, r=-2)
-#sys.add_belt(r1, r2, r1=2.0)
-#sys.add_gear_rack(r1, p1, pressure_angle=0)
+gp = sys.add_gear_pair(r1, r2, r=-1/2, pressure_angle=0)
+#sys.add_belt(r1, r2, r1=2.0, t0=10)
+#sys.add_gear_rack(r1, p1, pressure_angle=np.pi/4)
 
 sys.add_gravity((0, -10))
 
@@ -25,7 +25,7 @@ r1.work()
 
 
 sys.determine_computation_order()
-n = 21
+n = 101
 sys.set_sim_parameters(n, 2)
 
 #%%
@@ -43,9 +43,33 @@ plt.show()
 
 #%%
 
+# gear pair
 sys.solve_dynamics()
+
+#plt.plot(angle, r1.get_torque())
+plt.plot(angle, r1.get_force()) # résultat opposé attendu : -45 au début puis 0 et +45 à la fin
+#plt.plot(angle, r2.get_force()) # résultat attendu : angle = 0 : +75, angle = pi, +30, angle = 2pi : -15
+
+plt.show()
 
 #%%
 
-plt.plot(angle, r1.get_torque())
+# gear rack
+sys.solve_dynamics()
+
+#plt.plot(angle, r1.get_torque())
+plt.plot(angle, r1.get_force()) # signe inversé en x
+#plt.plot(angle, p1.get_force()) # signe inversé en x
+
+plt.show()
+
+#%%
+
+# belt
+sys.solve_dynamics()
+
+plt.plot(angle, r1.get_torque()) # que des 0
+#plt.plot(angle, r1.get_force()) # que des 0
+#plt.plot(angle, r2.get_force()) # que des 0
+
 plt.show()
