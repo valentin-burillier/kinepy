@@ -70,7 +70,6 @@ class Inertia(SystemInteraction):
 
         # shape (m, n)
         inertia = self._config.solid_physics[..., Config.SOLID_MOMENT_OF_INERTIA, np.newaxis] * np.diff(solid_angles, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
-
         self._config.results.action_values[list(self._action_mapping.values()), :, Config.ACTION_DYN_TORQUE] = inertia
         self._config.results.solid_dynamics[..., Config.SOLID_DYN_TORQUE] -= inertia
 

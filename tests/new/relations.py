@@ -8,10 +8,10 @@ sys = kp.System()
 
 s0 = sys.ground
 s1 = sys.add_solid()
-s2 = sys.add_solid(mass=3)
+s2 = sys.add_solid(mass=3, g=(1, 0))
 
 r1 = sys.add_revolute(s0, s1)
-r2 = sys.add_revolute(s0, s2)
+r2 = sys.add_revolute(s0, s2, p1=(1, 0))
 #p1 = sys.add_prismatic(s0, s2, alpha1=np.pi/2)
 
 gp = sys.add_gear_pair(r1, r2, r=-2)
@@ -25,7 +25,7 @@ r1.work()
 
 
 sys.determine_computation_order()
-n = 101
+n = 21
 sys.set_sim_parameters(n, 2)
 
 #%%
@@ -48,3 +48,4 @@ sys.solve_dynamics()
 #%%
 
 plt.plot(angle, r1.get_torque())
+plt.show()
