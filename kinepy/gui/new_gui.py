@@ -23,40 +23,94 @@ COLORMAP = (
 
 
 class GUIParameters:
+    """
+    Parameters that define how the simulation is rendered
+
+    Attributes:
+      background_color (tuple[int, int, int]): color that fills the background
+      figure_size (tuple[int, int]): size in px of the presenting window
+      scale (np.ndarray[(2,)]): [internal] tranformation of simulation positions to screen positions in px/m
+      translation (np.ndarray[(2,)]): [internal] position of the simulation origin on the screen in px
+    """
     background_color = 16, 16, 16
+    figure_size = 800, 800
     scale = np.array((1, -1))
     translation = np.zeros((2,))
-    figure_size = 800, 800
 
 
 class _GUIObject:
     def draw(self, surface: pg.Surface, solid_values, frame_index, param: GUIParameters, color):
-        pass
+        """
+        Presents itself to the given surface
+        
+        @param surface: surface to be drawn to
+        @param solid_values: positions and orientations to use, corresponds to a solid
+        @param frame_index: represents time
+        @param param: gui parameters to use
+        @param color: color this object should be drawn with
+        """
 
-    def update_bbox(self, bbox, solid_values):
-        pass
+    def update_bbox(self, bbox: np.ndarray, solid_values: np.ndarray):
+        """
+        Enlarges the total area that is needed to draw the simulation to define the view port
+
+        @param bbox: bottom_left and top_right corners of the total area used by the simulation, modified in place
+        @param solid_values: positions and orientations to use, corresponds to a solid
+        """
 
     @staticmethod
     def update_bbox_from_point(bbox, solid_values, point):
+        """
+        Helper for _GUIObject.update_bbox, uses all positions of a point attached to a solid to update the bbox
+        """
+        
+        # TODO: remove those magic values
         positions = solid_values[:, 0:2] + geo.Orientation.add(solid_values[:, 2:4], point)
+
+        # axis 0 is the time axis
         bbox[0:2] = np.minimum(bbox[0:2], np.nanmin(positions, axis=0))
         bbox[2:4] = np.maximum(bbox[2:4], np.nanmax(positions, axis=0))
 
     @staticmethod
     def point_to_screen(solid_values, frame_index, scale, translation, point, grounded=False):
+        """
+        @param solid_values: positions and orientations to use, corresponds to a solid
+        @param frame_index: represents time
+        """
+        # TODO: pass GuiParameters instead of scale and translation
+
         if not grounded:
             return (solid_values[frame_index, 0:2] + geo.Orientation.add(solid_values[frame_index, 2:4], point)) * scale + translation
         else:
+            # we know that orientation in (1, 0) and position is (0, 0), avoids shaking stationnary objects
             return point * scale + translation
 
     def compute_mounting_point(self, scale):
-        pass
+        """
+        Use the computed scale to finish _GUIObject configuration 
+        """
 
     def add_solid_structure(self, solid_obj_list):
-        pass
+        """
+        Registers the _GUIObjects that represent the link from this object to the corresponding solid's origin
+        """
 
 
 class _Symbol(_GUIObject):
+    """
+    Symbol representing a linkage (Revolute, Prismatic, PinSlot) or the ground
+    
+    Attributes:
+        point (np.ndarray): simulation point to be atttached to
+        mesh (np.ndarray): symbol mesh to be drawn
+        grounded (bool): whether this symbol is attached to ground
+        region (int): which direction this point is best pointing at:
+            South: 0
+            East: 1
+            West: 2
+            North: 3
+    """
+
     def __init__(self, point, mesh, mounting_point, grounded: bool):
         self.point = point
         self.mesh = mesh
