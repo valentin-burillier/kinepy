@@ -256,11 +256,11 @@ class Relation:
     def solve_gear_pair(config: Config, relation: int, source: int, target: int, target_type: int, eq1, eq2, is_1_to_2, zero_holder):
         p1, p2 = Joint.get_solid_point(config, (source, True)), Joint.get_solid_point(config, (target, True))
         _r, _pa = config.relation_physics[relation, (Config.RELATION_R, Config.RELATION_PRESSURE_ANGLE)]
-        vec_1_2 = p1 - p2
+        vec_1_2 = p2 - p1
         if is_1_to_2:
-            r1, r2 = _r / (_r - 1), -1 / (_r - 1)
+            r1, r2 = _r / (_r - 1), 1 / (_r - 1)
         else:
-            r1, r2 = 1 / (_r - 1), -_r / (_r - 1)
+            r1, r2 = -1 / (_r - 1), -_r / (_r - 1)
         # ap = p1 + r1 * vec_1_2 = p2 + r2 * vec_1_2
         application_point = p1 + r1 * vec_1_2
 
@@ -270,7 +270,7 @@ class Relation:
         eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (t2 == gear2,), zero_holder)
         torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, p2)
 
-        force = Geometry.det_z(vec_1_2) / r2 / Geometry.sq_mag(vec_1_2) * torque_1_2
+        force = Geometry.z_det(vec_1_2) / r2 / Geometry.sq_mag(vec_1_2) * torque_1_2
         rotation = np.zeros_like(force)
         rotation[:] = 1, np.tan(_pa)
         rotation[..., 1, np.newaxis] *= np.sign(torque_1_2)
