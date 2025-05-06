@@ -334,7 +334,7 @@ class Relation:
         torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, p2)
 
         _f1 = t0 + 0.5 * torque_1_2 / r2
-        _f2 = t0 + 0.5 * torque_1_2 / r2
+        _f2 = t0 - 0.5 * torque_1_2 / r2
 
         vec_2_1 = p1 - p2
         ll = Geometry.sq_mag(vec_2_1)
@@ -353,4 +353,7 @@ class Relation:
         Solid.add_force(config, shaft1, -f1, pa1)
         Solid.add_force(config, shaft1, -f2, pa2)
 
+        eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
+        force_1_2 = sign * Newtons2ndLaw.force(config, eq)
+        Joint.set_force(config, target, force_1_2)
 
