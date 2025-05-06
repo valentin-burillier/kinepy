@@ -14,8 +14,8 @@ r1 = sys.add_revolute(s0, s1)
 r2 = sys.add_revolute(s0, s2, p1=(1, 0))
 #p1 = sys.add_prismatic(s0, s2, alpha1=np.pi/2)
 
-gp = sys.add_gear_pair(r1, r2, r=-1/2, pressure_angle=0)
-#sys.add_belt(r1, r2, r1=2.0, t0=10)
+#gp = sys.add_gear_pair(r1, r2, r=-1/2, pressure_angle=0)
+belt = sys.add_belt(r1, r2, r1=0.4, r2=0.4)#, t0=10)
 #sys.add_gear_rack(r1, p1, pressure_angle=np.pi/4)
 
 sys.add_gravity((0, -10))
@@ -37,8 +37,17 @@ sys.solve_kinematics()
 
 #%%
 
-plt.plot(r1.get_value(), r2.get_value())
+#plt.plot(r1.get_value(), r2.get_value())
 #plt.plot(r1.get_value(), p1.get_value())
+#plt.show()
+
+# belt
+sys.solve_dynamics()
+
+plt.plot(angle, r1.get_torque()) # doit être : +30, 0, -30, 0, +30 / + indépendance de t0
+#plt.plot(angle, r1.get_force()) 
+#plt.plot(angle, r2.get_force()) 
+
 plt.show()
 
 #%%
@@ -65,11 +74,4 @@ plt.show()
 
 #%%
 
-# belt
-sys.solve_dynamics()
 
-plt.plot(angle, r1.get_torque()) # que des 0
-#plt.plot(angle, r1.get_force()) # que des 0
-#plt.plot(angle, r2.get_force()) # que des 0
-
-plt.show()
