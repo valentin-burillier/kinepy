@@ -13,6 +13,7 @@ from kinepy.objects.config import Config, ConfigState
 from kinepy.objects.joints_solid import CompositeType, JointType, PrimitiveJoint, Solid
 import kinepy.strategy.types as strategy
 import time
+import dataclasses
 
 _icon_path = os.path.join(os.path.dirname(__file__), 'logo.ico')
 
@@ -280,6 +281,17 @@ class _SolidStructure(_GUIObject):
 class GUIState(enum.Enum):
     STOPPED, RUNNING, PAUSED = range(3)
 
+class KeyState:
+    def __init__(self):
+        self.down: int = 0
+        self.date: float = 0.0
+
+    LONG_PRESS_TIME = 0.200
+
+    def long_press(self, date):
+        return self.down and date - self.date > KeyState.LONG_PRESS_TIME
+    
+
 class GUI:
     def __init__(self, config: Config):
         self._config = config
@@ -321,12 +333,19 @@ class GUI:
         self._solid_objects[s2][1].append(s := _Symbol.from_prismatic(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
         s.add_solid_structure(self._solid_objects[s2][0])
 
+
+    """
+    Callbacks that add every drawing element corresponding to a CompositeJoint 
+    """
     _composite_additions = {
         CompositeType.PIN_SLOT: _add_pin_slot,
         CompositeType.TRANSLATION: _do_nothing,
         CompositeType.J3DOF: _do_nothing
     }
 
+    """
+    Callbacks that add every drawing element corresponding to a PrimitiveJoint 
+    """
     _joint_additions = {
        JointType.REVOLUTE: _add_revolute,
        JointType.PRISMATIC: _add_prismatic
@@ -354,12 +373,14 @@ class GUI:
 
         # TODO: add user requested hidden joints/solids
 
+        # create empty object layers for each visible solid
         for solid, _ in filter(lambda x: x[1], enumerate(_solid_visibility)):
             self._solid_objects[solid] = [], []
 
         for cj_index, _ in filter(lambda x: x[1], enumerate(_composite_joint_visibility)):
             s1, s2 = self._config.get_composite_solids(cj_index)
             if not _solid_visibility[s1] or not _solid_visibility[s2]:
+                # any invisible solid completely hides the joint
                 continue
             _type = CompositeType(self._config.composite_joint_config[cj_index, Config.COMPOSITE_TYPE])
             self._composite_additions[_type](self, cj_index)
@@ -367,7 +388,7 @@ class GUI:
         for j_index, _ in filter(lambda x: x[1], enumerate(_joint_visibility)):
             s1, s2 = self._config.joint_config[j_index, Config.JOINT_SOLIDS]
             if not _solid_visibility[s1] or not _solid_visibility[s2]:
-                # for relations
+                # any invisible solid completely hides the joint
                 _joint_visibility[j_index] = 0
                 continue
             _type = JointType(self._config.joint_config[j_index, Config.JOINT_TYPE])
@@ -382,16 +403,18 @@ class GUI:
                 # TODO: move this to a background layer
                 self._solid_objects[solid][0].append(_Trace(Solid(self._config, solid).get_point(point)))
 
+        # compute total region occupied by rendered elements
         bbox = np.array([float('inf'), float('inf'), float('-inf'), float('-inf')])
-        for solid, _ in filter(lambda x: x[1], enumerate(_solid_visibility)):
+        for solid, layers in self._solid_objects.items():
             solid_values = self._config.results.solid_values[solid]
 
-            for obj_l in self._solid_objects.get(solid, ([],)):
+            for obj_l in layers:
                 for obj in obj_l:
                     obj.update_bbox(bbox, solid_values)
 
         scale, translation = self._get_transform(bbox, win_size)
 
+        # place fixed-size object (symbols)
         for s_index, layers in self._solid_objects.items():
             for obj_list in layers:
                 for gui_obj in obj_list:
@@ -429,42 +452,72 @@ class GUI:
         pg.display.flip()
 
         __date = time.perf_counter()
-        __remaining_time = 0.0
+        
+        __sim_remaining_time = 0.0
+        __pause_remaining_time = 0.0
+
+        __key_states = {
+            pg.K_LEFT: KeyState(),
+            pg.K_RIGHT: KeyState()
+        }
 
         __state = GUIState.RUNNING
         while __state != GUIState.STOPPED:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     __state = GUIState.STOPPED
-                if event.type == pg.KEYDOWN:
+                elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
+                        __date = time.perf_counter()
                         if __state == GUIState.RUNNING:
+                            __pause_remaining_time = 0.0
                             __state = GUIState.PAUSED
                         elif __state == GUIState.PAUSED:
                             __state = GUIState.RUNNING
-                            __date = time.perf_counter()
-                    elif __state == GUIState.PAUSED:
-                        if event.key == pg.K_LEFT:
-                            __frame_index = (__frame_index - 1) % frame_count
-                            self._display(window, __frame_index)
-                            pg.display.flip()
-                        elif event.key == pg.K_RIGHT:
-                            __frame_index = (__frame_index + 1) % frame_count
-                            self._display(window, __frame_index)
-                            pg.display.flip()
+                    if event.key in __key_states:
+                        __key_states[event.key].down = 1
+                        __key_states[event.key].date = time.perf_counter()
+                    if __state == GUIState.PAUSED:
+                        if event.key not in (pg.K_LEFT, pg.K_RIGHT):
+                            continue
+                        # first press changes right away
+                        __frame_index = (__frame_index + (event.key == pg.K_RIGHT) - (event.key == pg.K_LEFT)) % frame_count
+                        self._display(window, __frame_index)
+                        pg.display.flip()
+                elif event.type == pg.KEYUP and event.key in __key_states:
+                    __key_states[event.key].down = 0
 
             if __state == GUIState.PAUSED:
+                n_date = time.perf_counter()
+                comp_date = __date
+                __date = n_date
+                if not (__key_states[pg.K_LEFT].long_press(n_date) ^ __key_states[pg.K_RIGHT].long_press(n_date)):
+                    __pause_remaining_time = 0
+                    continue
+                if __key_states[pg.K_LEFT].long_press(n_date):
+                    comp_date = max(__key_states[pg.K_LEFT].date + KeyState.LONG_PRESS_TIME, comp_date)
+                if __key_states[pg.K_RIGHT].long_press(n_date):
+                    comp_date = max(__key_states[pg.K_RIGHT].date + KeyState.LONG_PRESS_TIME, comp_date)
+                __pause_remaining_time += n_date - comp_date
+
+                if __pause_remaining_time < 2 * frame_time:
+                    continue
+                time_shift, __pause_remaining_time = divmod(__pause_remaining_time, 2 * frame_time)
+                __frame_index = (__frame_index + int(time_shift) * (__key_states[pg.K_RIGHT].down - __key_states[pg.K_LEFT].down)) % frame_count
+                self._display(window, __frame_index)
+                pg.display.flip()
                 continue
 
             n_date = time.perf_counter()
-            __remaining_time += n_date - __date
+            __sim_remaining_time += n_date - __date
             __date = n_date
 
-            if __remaining_time >= frame_time:
-                time_shift, __remaining_time = divmod(__remaining_time, frame_time)
-                __frame_index = (__frame_index + int(time_shift)) % frame_count
-                self._display(window, __frame_index)
-                pg.display.flip()
+            if __sim_remaining_time < frame_time:
+                continue
+            time_shift, __sim_remaining_time = divmod(__sim_remaining_time, frame_time)
+            __frame_index = (__frame_index + int(time_shift)) % frame_count
+            self._display(window, __frame_index)
+            pg.display.flip()
 
         pg.quit()
 
