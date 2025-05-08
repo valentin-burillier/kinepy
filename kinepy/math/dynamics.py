@@ -340,6 +340,8 @@ class Relation:
         ll = Geometry.sq_mag(vec_2_1)
         vec_2_1 /= ll
 
+        assert np.all((r1 - r2) ** 2 < ll), "Definitely impossible shaft disposition, one live completely inside the other (r1 - r2) ^ 2 > d ^ 2"
+
         rot = np.array(((ll[0, 0] - (r2 - r1) ** 2) ** 0.5, r1 - r2))
         f1 = Orientation.add(vec_2_1 * _f1, rot)
         f2 = Orientation.sub(vec_2_1 * _f2, rot)
