@@ -75,22 +75,22 @@ class Solid(ConfigView):
 
     def get_origin(self) -> u.Length.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.get(self._config, self._index).swapaxes(0, 1)
+        return geo.Position.get(self._config, self._index).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
 
     def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1)
+        return geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
 
     def get_vector(self, v: u.point_type = (0.0, 0.0)) -> u.point_type:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.local_point(self._config, self._index, np.array(v)).swapaxes(0, 1)
+        return geo.Position.local_point(self._config, self._index, np.array(v)).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
 
     def get_angle(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
         ori = geo.Orientation.get(self._config, self._index)
         _angle = np.arctan2(ori[..., 1], ori[..., 0])
         geo.Orientation.make_angle_continuous(_angle)
-        return _angle
+        return _angle.view(KpArray)._configure(self._config, -1)
 
     def add_action(self, ap: u.Length.point = (0, 0)) -> Action:
         _action_index = self._config.action_config.shape[0]
@@ -155,15 +155,15 @@ class PrimitiveJoint(ConfigView):
 
     def get_value(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint values"
-        return self._get_value()
+        return self._get_value().view(KpArray)._configure(self._config, -1)
 
     def get_force(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
-        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE]
+        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE]._configure(self._config, -2)
 
     def get_torque(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
-        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_TORQUE]
+        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_TORQUE].view(KpArray)._configure(self._config, -1)
 
     def __eq__(self, other: Self):
         return isinstance(other, PrimitiveJoint) and self._config is other._config and self._index == other._index

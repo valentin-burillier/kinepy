@@ -246,6 +246,24 @@ class ReadOnlyArray(np.ndarray):
     def __array_finalize__(self, obj, /):
         self.flags.writeable = False
 
+class KpArray(np.ndarray):
+    _config: Config
+    _time_axis: int
+
+    def __array_finalize__(self, obj, /):
+        self._config = getattr(obj, '_config', None)
+        self._time_axis = getattr(obj, '_config', 0)
+
+    def _configure(self, _config: Config, _time_axis: int):
+        self._config = _config
+        self._time_axis = _time_axis
+        return self
+
+    def derivative(self):
+        return (0.5 * (np.diff(self, axis=self._time_axis, prepend=float('NaN')) + np.diff(self, axis=self._time_axis, append=float('NaN'))) / self._config.frame_time).view(KpArray)._configure(self._config, self._time_axis)
+    
+    def second_derivative(self):
+        return (np.diff(self, 2, axis=self._time_axis, prepend=float('NaN'), append=float('NaN')) / self._config.frame_time / self._config.frame_time).view(KpArray)._configure(self._config, self._time_axis)
 
 def disable_set(prop: property) -> property:
     def getter(self):
