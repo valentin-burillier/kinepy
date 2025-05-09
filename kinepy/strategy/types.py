@@ -3,7 +3,7 @@ from collections.abc import Generator, Callable
 from kinepy.strategy.graph_data import JointType, Graphs, RelationType
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
-from kinepy.objects.config import Config
+from kinepy.objects.config import OldConfig
 
 
 # region Strategy Internal types
@@ -64,10 +64,10 @@ Isomorphism: TypeAlias = tuple[int, ...]
 
 
 class ResolutionStep:
-    def solve_kinematics(self, config: Config):
+    def solve_kinematics(self, config: OldConfig):
         pass
 
-    def solve_dynamics(self, config: Config):
+    def solve_dynamics(self, config: OldConfig):
         pass
 
 
@@ -102,10 +102,10 @@ class GraphStep(ResolutionStep):
     def get_joints(self) -> Generator[int, None, None]:
         return (j for j, _ in self._edges)
 
-    def solve_kinematics(self, config: Config):
+    def solve_kinematics(self, config: OldConfig):
         self.kinematics[self._graph_index.value](config, self._edges, self._eqs, self.solution_index)
 
-    def solve_dynamics(self, config: Config):
+    def solve_dynamics(self, config: OldConfig):
         self.dynamics[self._graph_index.value](config, self._edges, self._eqs, self._zero_holder)
 
 
@@ -129,10 +129,10 @@ class JointStep(ResolutionStep):
         JointType.PRISMATIC: dyn.JointInput.solve_prismatic
     }
 
-    def solve_kinematics(self, config: Config):
+    def solve_kinematics(self, config: OldConfig):
         self.kinematics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
 
-    def solve_dynamics(self, config: Config):
+    def solve_dynamics(self, config: OldConfig):
         self.dynamics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2, self.zero_holder)
 
 
@@ -161,7 +161,7 @@ class RelationStep(ResolutionStep):
         RelationType.BELT: kin.Relation.solve_belt,
     }
 
-    def solve_kinematics(self, config: Config):
+    def solve_kinematics(self, config: OldConfig):
         self.kinematics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2)
 
     dynamics_chooser = {
@@ -172,15 +172,15 @@ class RelationStep(ResolutionStep):
         RelationType.BELT: dyn.Relation.solve_belt
     }
 
-    def solve_dynamics(self, config: Config):
+    def solve_dynamics(self, config: OldConfig):
         self.dynamics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2, self.zero_holder)
 
 
 class JointValueComputationStep(ResolutionStep):
     joint: int
     flags: int
-    value_function: Callable[[Config, int, int, int], None]
-    continuity_function: Callable[[Config, int], None]
+    value_function: Callable[[OldConfig, int, int, int], None]
+    continuity_function: Callable[[OldConfig, int], None]
 
     def __init__(self, joint: int, _type: JointType, flags: int, s1: int, s2: int):
         _type = _type.simple()
@@ -208,9 +208,9 @@ class JointValueComputationStep(ResolutionStep):
         JointType.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
     }
 
-    def solve_kinematics(self, config: Config):
+    def solve_kinematics(self, config: OldConfig):
         self.value_function(config, self.joint, self.s1, self.s2)
         self.continuity_function(config, self.joint)
 
-    def solve_dynamics(self, config: Config):
+    def solve_dynamics(self, config: OldConfig):
         """Nothing to do"""

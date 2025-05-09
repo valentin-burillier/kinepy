@@ -9,16 +9,16 @@ class Action(ConfigView):
         return self._config.action_physics[self._index]
 
     def __get_solid_g(self, indirection: int) -> u.point_type:
-        return self._config.solid_physics[indirection, Config.SOLID_CFG_G]
+        return self._config.solid_physics[indirection, OldConfig.SOLID_CFG_G]
 
     def __get_joint_point(self, indirection: int) -> u.point_type:
-        _solid = self._config.action_config[self._index, Config.ACTION_SOLID]
+        _solid = self._config.action_config[self._index, OldConfig.ACTION_SOLID]
         _j_type, s1, s2 = self._config.joint_config[indirection]
 
         if _solid == s1:
-            _slice = Config.JOINT_P1
+            _slice = OldConfig.JOINT_P1
         elif _solid == s2:
-            _slice = Config.JOINT_P2
+            _slice = OldConfig.JOINT_P2
         else:
             raise ValueError("Action applies on a joint its solid is not constrained by")
         if _j_type == JointType.REVOLUTE:
@@ -35,13 +35,13 @@ class Action(ConfigView):
 
     @property
     def ap(self) -> u.Length.point:
-        _type = ActionMode(self._config.action_config[self._index, Config.ACTION_MODE])
-        _indirection = self._config.action_config[self._index, Config.ACTION_INDIRECTION]
+        _type = ActionMode(self._config.action_config[self._index, OldConfig.ACTION_MODE])
+        _indirection = self._config.action_config[self._index, OldConfig.ACTION_INDIRECTION]
         return self.__getter[_type](_indirection)
 
     @ap.setter
     def ap(self, value: u.Length.point):
-        _type = ActionMode(self._config.action_config[self._index, Config.ACTION_MODE])
+        _type = ActionMode(self._config.action_config[self._index, OldConfig.ACTION_MODE])
         if _type != ActionMode.NO_INDIRECTION:
             raise ValueError("You cannot modify this value from here")
         self._config.invalidate_dynamics()
@@ -49,24 +49,24 @@ class Action(ConfigView):
 
     def set_force(self, value: u.Force.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE] = value
+        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE] = value
 
     def set_force_locally(self, value: u.Length.point):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        _solid = self._config.action_config[self._index, Config.ACTION_SOLID]
-        self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
+        _solid = self._config.action_config[self._index, OldConfig.ACTION_SOLID]
+        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
 
     def get_force(self) -> u.Force.point:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before getting values"
-        return self._config.results.action_values[self._index, :, Config.ACTION_DYN_FORCE]
+        return self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE]
 
     def set_torque(self, value: u.Torque.phy):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        self._config.results.action_values[self._index, :, Config.ACTION_DYN_TORQUE] = value
+        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_TORQUE] = value
 
     def get_torque(self) -> u.Torque.phy:
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before getting values"
-        return self._config.results.action_values[self._index, :, Config.ACTION_DYN_TORQUE]
+        return self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_TORQUE]
 
 
 class InternalAction(Action):

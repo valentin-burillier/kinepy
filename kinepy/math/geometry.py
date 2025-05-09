@@ -1,84 +1,69 @@
 import numpy as np
-from typing import Any
-from kinepy.objects.config import Config
+import kinepy.objects.config as cfg
+import enum
 
-OrientedJoint = tuple[int, bool]
+
+type OrientedJoint = tuple[int, bool]
 
 
 class Joint:
-    solid_indices = Config.JOINT_S2, Config.JOINT_S1
+    class Direction(enum.Enum):
+        TARGET, SOURCE = range(2)
 
     @staticmethod
-    def get_point(config: Config, oriented_joint: OrientedJoint, direction=False):
+    def get_solid(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET) -> int:
         """
-        Get the point according to the edge it represents; direction = False point is source; True point is destination
-
-        shape (2, 1)
-        """
-        j_index, orientation = oriented_joint
-        point_slice = Config.JOINT_P2, Config.JOINT_P1
-        return config.joint_physics[j_index, point_slice[orientation ^ direction]]
-
-    @staticmethod
-    def get_solid_point(config: Config, oriented_joint: OrientedJoint, direction=False):
-        """
-        Get the solid according to the edge it represents; direction = False point is source; True point is destination
-        """
-        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
-        return Position.get(config, _s_index) + Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
-
-    @staticmethod
-    def get_solid_local_point(config: Config, oriented_joint: OrientedJoint, direction=False):
-        """
-        Get the solid according to the edge it represents; direction = False point is source; True point is destination
-        """
-        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
-        return Orientation.add(Orientation.get(config, _s_index), Joint.get_point(config, oriented_joint, direction))
-
-    @staticmethod
-    def get_solid_orientation(config: Config, oriented_joint: OrientedJoint, direction=False):
-        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
-        return Orientation.get(config, _s_index)
-
-    @staticmethod
-    def get_solid_position(config: Config, oriented_joint: OrientedJoint, direction=False):
-        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
-        return Position.get(config, _s_index)
-
-    @staticmethod
-    def get_revolute_application_point(config: Config, joint: OrientedJoint):
-        point = config.joint_physics[joint[0], Config.JOINT_P1]
-        return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], point)
-
-    @staticmethod
-    def get_prismatic_application_point(config: Config, joint: OrientedJoint):
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
-        return Position.point(config, config.joint_config[joint[0], Config.JOINT_S1], dist * Orientation.from_angle(angle + np.pi * 0.5))
-
-    @staticmethod
-    def get_prismatic_normal(config: Config, joint: OrientedJoint):
-        s1 = config.joint_config[joint[0], Config.JOINT_S1]
-        angle, dist = config.joint_physics[joint[0], Config.JOINT_P1]
-        return Position.local_point(config, s1, Orientation.from_angle(angle + np.pi * 0.5))
-
-    @staticmethod
-    def get_solid(config: Config, oriented_joint: OrientedJoint, direction=False) -> int:
-        """
-        Get the solid according to the edge it represents; direction = False point is source; True point is destination
+        Get s1 or s2 depending on joint orientation and the desired direction
         """
         j_index, orientation = oriented_joint
-        return config.joint_config[j_index, Joint.solid_indices[(orientation ^ direction)]]
+        return config.joints.solids[j_index, orientation ^ direction.value]
+
+    @staticmethod
+    def get_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+        """
+        Get p1 or p2 depending on joint orientation and the desired direction
+        """
+        j_index, orientation = oriented_joint
+        point_slice = config.joints.revolute_p1, config.joints.revolute_p2
+        return point_slice[orientation ^ direction.value][j_index]
+
+    @staticmethod
+    def get_solid_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
+        return Position.point(config, _s_index, Joint.get_point(config, oriented_joint, direction))
+
+    @staticmethod
+    def get_solid_vector(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
+        return Position.vector(config, _s_index, Joint.get_point(config, oriented_joint, direction))
+
+    @staticmethod
+    def get_solid_orientation(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
+        return config.solids.orientation[_s_index]
+
+    @staticmethod
+    def get_solid_position(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+        _s_index: int = Joint.get_solid(config, oriented_joint, direction)
+        return config.solids.position[_s_index]
+
+    @staticmethod
+    def get_revolute_application_point(config: cfg.Config, joint: OrientedJoint):
+        point = config.joints.p1[joint[0]]
+        return Position.point(config, config.joints.s1[joint[0]], point)
+
+    @staticmethod
+    def get_prismatic_application_point(config: cfg.Config, joint: OrientedJoint):
+        angle, dist = config.joints.revolute_p1[joint[0]]
+        return Position.point(config, config.joints.s1[joint[0]], dist * Orientation.from_angle(angle + np.pi * 0.5))
+
+    @staticmethod
+    def get_prismatic_normal(config: cfg.Config, joint: OrientedJoint):
+        angle, dist = config.joints.revolute_p1[joint[0]]
+        return Position.vector(config, config.joints.s1[joint[0]], Orientation.from_angle(angle + np.pi * 0.5))
 
 
 class Orientation:
-    @staticmethod
-    def index(solid: Any):
-        return solid, slice(None), slice(2, 4)
-
-    @staticmethod
-    def get(config: Config, solid: Any) -> np.ndarray:
-        return config.results.solid_values[Orientation.index(solid)]
-
     @staticmethod
     def add(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -117,21 +102,12 @@ class Orientation:
 
 class Position:
     @staticmethod
-    def index(solid: Any):
-        return solid, slice(None), slice(0, 2)
+    def vector(config: cfg.Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
+        return Orientation.add(config.solids.orientation[solid], point)
 
     @staticmethod
-    def get(config: Config, solid: Any) -> np.ndarray:
-        return config.results.solid_values[Position.index(solid)]
-
-    @staticmethod
-    def local_point(config: Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
-        ori = Orientation.get(config, solid)
-        return Orientation.add(ori, point)
-
-    @staticmethod
-    def point(config: Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
-        return Position.local_point(config, solid, point) + Position.get(config, solid)
+    def point(config: cfg.Config, solid: int | slice, point: np.ndarray) -> np.ndarray:
+        return Position.vector(config, solid, point) + config.solids.position[solid]
 
 
 class Geometry:
@@ -141,7 +117,7 @@ class Geometry:
 
     @staticmethod
     def det(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-        return np.cross(v1, v2, axis=-1)[..., np.newaxis]
+        return np.cross(v1, v2, axis=-1)[..., np.newaxis] # noqa: False positive, unreachable code with numpy.cross
 
     @staticmethod
     def inv_mag(vec: np.ndarray) -> np.ndarray:
@@ -156,14 +132,13 @@ class Geometry:
         return Geometry.dot(vec, vec) ** 0.5
 
     @staticmethod
-    def move_eq(eq: tuple[int, ...], config: Config, vec: np.ndarray):
-        # shape: (m, 2, n) + (1, 2, n)
-        config.results.solid_values[Position.index(eq)] += vec
+    def move_eq(eq: tuple[int, ...], config: cfg.Config, vec: np.ndarray):
+        config.solids.position[eq] += vec
 
     @staticmethod
-    def rotate_eq(eq: tuple[int, ...], config: Config, rot: np.ndarray):
-        config.results.solid_values[Position.index(eq)] = Orientation.add(Position.get(config, eq), rot[np.newaxis])
-        config.results.solid_values[Orientation.index(eq)] = Orientation.add(Orientation.get(config, eq), rot[np.newaxis])
+    def rotate_eq(eq: tuple[int, ...], config: cfg.Config, rot: np.ndarray):
+        config.solids.position[eq] = Orientation.add(config.solids.position[eq], rot)
+        config.solids.orientation[eq] = Orientation.add(config.solids.orientation[eq], rot)
 
     @staticmethod
     def det_z(vec: np.ndarray) -> np.ndarray:

@@ -1,65 +1,80 @@
-from kinepy.objects.config import *
-from kinepy.objects.action import Action
-import kinepy.units as u
-from kinepy.strategy.graph_data import JointType
+import kinepy.objects.config as cfg
 import kinepy.math.geometry as geo
-import kinepy.strategy.types as strategy
-
-from typing import Self
+import numpy as np
 
 
-@u.UnitSystem.class_
-class Solid(ConfigView):
-    def __new__(cls, config: Config, index: int):
-        if not index:
-            # Ground is a ghost solid no matter the config
-            return ConfigView.__new__(GhostSolid)
-        return ConfigView.__new__(cls)
+class SolidBase(cfg.ConfigView):
+    def _array(self) -> cfg.Solids:
+        return self._config.solids
+    
+    def __new__(cls, config: cfg.Config, index: int):
+        if config.solids.is_ghost[index]:
+            return cfg.ConfigView.__new__(GhostSolid)
+        return cfg.ConfigView.__new__(Solid)
 
-    def _names(self) -> list[str]:
-        return self._config.solid_names
+    _position = cfg.Solids.position()
+    _orientation = cfg.Solids.orientation()
 
-    def _config_arr(self) -> np.ndarray[int]:
-        return self._config.solid_config
+    @cfg.ConfigView.assert_resources
+    def get_origin(self):
+        return self._kp_array(self._position.swapaxes(0, 1))
 
-    def _physics(self) -> np.ndarray[float]:
-        return self._config.solid_physics
+    @cfg.ConfigView.assert_resources
+    def get_point(self, p=(0.0, 0.0)):
+        return self._kp_array(geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1))
 
-    name: str = ConfigView._name()
-    mass: u.Mass.phy = ConfigView._physics_view(Config.SOLID_MASS, u.Mass.phy)
-    moment_of_inertia: u.MomentOfInertia.phy = ConfigView._physics_view(Config.SOLID_MOMENT_OF_INERTIA, u.MomentOfInertia.phy)
-    g: u.Length.point = ConfigView._physics_view(Config.SOLID_CFG_G, u.Length.point)
+    @cfg.ConfigView.assert_resources
+    def get_vector(self, v=(0.0, 0.0)):
+        return self._kp_array(geo.Position.vector(self._config, self._index, np.array(v)).swapaxes(0, 1))
 
-    _3dof: int = ConfigView._config_view(Config.SOLID_3DOF)
+    @cfg.ConfigView.assert_resources
+    def get_angle(self):
+        ori = self._orientation
+        _angle = np.arctan2(ori[..., 1], ori[..., 0])
+        geo.Orientation.make_angle_continuous(_angle)
+        return self._kp_array(_angle)
+
+
+class GhostSolid(SolidBase):
+    """
+    A ghost: no mass, no inertia, you can't see it, you can't touch it... At least it has a name, and you may have the privilege to know its position
+    """
+
+
+class Solid(SolidBase):
+    mass = cfg.Solids.mass()
+    moment_of_inertia = cfg.Solids.moment_of_inertia()
+    g = cfg.Solids.g()
+    _3dof = cfg.Solids.j3dof()
 
     def _get_3dof(self):
         if self._3dof < 0:
-            s_ghost_index = self._config.solid_physics.shape[0]
-            self._config.add_solids(
-                [f'GhostSolid {s_ghost_index}', f'GhostSolid {s_ghost_index + 1}'],
-                np.zeros((2, 4))
-            )
+            self._config.invalidate_config()
 
-            j_ghost_index = self._config.joint_config.shape[0]
-            self._config.add_joints(
-                [f"<{self.name}.x>", f"<{self.name}.y>", f"<{self.name}.angle>"],
-                np.array([
-                    [JointType.J_AXLE.value, 0, s_ghost_index],
-                    [JointType.J_AXLE.value, s_ghost_index, s_ghost_index + 1],
-                    [JointType.GHOST_ANGLE.value, s_ghost_index + 1, self._index]
-                ]),
-                np.array([
-                    [0, 0, 0, 0],
-                    [np.pi * 0.5, 0, np.pi * 0.5, 0],
-                    [0, 0, 0, 0]
-                ])
-            )
-            self._3dof = self._config.composite_joint_config.shape[0]
-            self._config.add_composite(CompositeType.J3DOF.value, (j_ghost_index, j_ghost_index+1, j_ghost_index+2), (s_ghost_index, s_ghost_index+1))
+            # solids
+            ghost_s_indices = self._config.solids.reserve(2)
+            self._config.solids.names[ghost_s_indices] = f'GhostSolid {ghost_s_indices.start}', f'GhostSolid {ghost_s_indices.start + 1}'
+            self._config.solids.j3dof[ghost_s_indices] = -1
+            self._config.solids.is_ghost[ghost_s_indices] = 1
+            self._config.solids.physics_array[ghost_s_indices] = 0
+
+            # joints
+            ghost_j_indices = self._config.joints.reserve(3)
+            # config part
+            self._config.joints.names[ghost_j_indices] = f"<{self.name}.x>", f"<{self.name}.y>", f"<{self.name}.angle>"
+            self._config.joints.type_[ghost_j_indices] = cfg.Joints.Type.J_AXLE, cfg.Joints.Type.J_AXLE, cfg.Joints.Type.GHOST_ANGLE
+            self._config.joints.solids[ghost_j_indices] = (0, ghost_s_indices.start), (ghost_s_indices.start, ghost_s_indices.start+1), (ghost_s_indices.start+1, self._index)
+            # physics part
+            self._config.joints.revolute_p1[ghost_j_indices] = (0, 0), (np.pi * 0.5, 0), (0, 0)
+            self._config.joints.revolute_p2[ghost_j_indices] = (0, 0), (np.pi * 0.5, 0), (0, 0)
+
+            # j3dof
+            self._3dof = self._config.composite_joints.reserve(1).start
+            self._config.composite_joints.names[self._3dof] = f'<{self.name}.3dof>'
+            self._config.composite_joints.type_[self._3dof] = cfg.Composite.Type.J3DOF
+            self._config.composite_joints.first_ghost_solid[self._3dof] = ghost_s_indices.start
+            self._config.composite_joints.first_ghost_joint[self._3dof] = ghost_j_indices.start
         return J3DOF(self._config, self._3dof)
-
-    def __eq__(self, other: Self):
-        return isinstance(other, Solid) and self._config is other._config and self._index == other._index
 
     @property
     def x(self) -> "J3DOFAxle":
@@ -73,67 +88,38 @@ class Solid(ConfigView):
     def angle(self) -> "J3DOFAngle":
         return self._get_3dof().angle
 
-    def get_origin(self) -> u.Length.point:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.get(self._config, self._index).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
-
-    def get_point(self, p: u.Length.point = (0.0, 0.0)) -> u.Length.point:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
-
-    def get_vector(self, v: u.point_type = (0.0, 0.0)) -> u.point_type:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        return geo.Position.local_point(self._config, self._index, np.array(v)).swapaxes(0, 1).view(KpArray)._configure(self._config, -1)
-
-    def get_angle(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters`before reading Solid kinematics"
-        ori = geo.Orientation.get(self._config, self._index)
-        _angle = np.arctan2(ori[..., 1], ori[..., 0])
-        geo.Orientation.make_angle_continuous(_angle)
-        return _angle.view(KpArray)._configure(self._config, -1)
-
-    def add_action(self, ap: u.Length.point = (0, 0)) -> Action:
-        _action_index = self._config.action_config.shape[0]
-        self._config.add_actions(
-            np.array([[self._index, ActionMode.NO_INDIRECTION.value, 0]]),
-            np.array([ap])
-        )
-        return Action(self._config, _action_index)
+    # def add_action(self, ap=(0, 0)) -> Action:
+    #     self._config.invalidate_config()
+    #     _action_index = self._config.action_config.shape[0]
+    #     self._config.add_actions(
+    #         np.array([[self._index, ActionMode.NO_INDIRECTION.value, 0]]),
+    #         np.array([ap])
+    #     )
+    #     return Action(self._config, _action_index)
 
 
-class PrimitiveJoint(ConfigView):
-    def __new__(cls, config, index):
-        _dict: dict[JointType, type[PrimitiveJoint]] = {
-            JointType.REVOLUTE: Revolute,
-            JointType.PRISMATIC: Prismatic,
-            JointType.GHOST_ANGLE: GhostAngle,
-            JointType.X: _X,
-            JointType.Y: TranslationAxleY,
-            JointType.J_AXLE: J3DOFAxle
+class Joint(cfg.ConfigView):
+    def _array(self) -> cfg.Joints:
+        return self._config.joints
+
+    def __new__(cls, config: cfg.Config, index: int):
+        _dict: dict[cfg.Joints.Type, type[Joint]] = {
+            cfg.Joints.Type.REVOLUTE: Revolute,
+            cfg.Joints.Type.PRISMATIC: Prismatic,
+            cfg.Joints.Type.GHOST_ANGLE: GhostAngle,
+            cfg.Joints.Type.X: _X,
+            cfg.Joints.Type.Y: TranslationAxleY,
+            cfg.Joints.Type.J_AXLE: J3DOFAxle
         }
-        return ConfigView.__new__(_dict.get(JointType(config.joint_config[index, Config.JOINT_TYPE]), cls))
+        return cfg.ConfigView.__new__(_dict.get(cfg.Joints.Type(config.joints.type_[index]), cls))
 
-    def _names(self) -> list[str]:
-        return self._config.joint_names
+    _type = cfg.Joints.type_()
+    _s1 = cfg.Joints.s1()
+    _s2 = cfg.Joints.s2()
 
-    def _config_arr(self) -> np.ndarray[int]:
-        return self._config.joint_config
-
-    def _physics(self) -> np.ndarray[float]:
-        return self._config.joint_physics
-
-    name: str = ConfigView._name()
-    _type = ConfigView._config_view(Config.JOINT_TYPE)
-    _s1 = ConfigView._config_view(Config.JOINT_S1)
-    _s2 = ConfigView._config_view(Config.JOINT_S2)
-
-    @property
-    def s1(self) -> Solid:
-        return Solid(self._config, self._s1)
-
-    @property
-    def s2(self) -> Solid:
-        return Solid(self._config, self._s2)
+    _force = cfg.Joints.force()
+    _torque = cfg.Joints.torque()
+    _value = cfg.Joints.value()
 
     def pilot(self):
         self._config.invalidate_config()
@@ -143,94 +129,61 @@ class PrimitiveJoint(ConfigView):
         self._config.invalidate_config()
         self._config.working_joints = np.r_[self._config.working_joints, self._index]
 
+    @cfg.ConfigView.assert_resources
     def set_input(self, value):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting Joint values"
-        self._config.results.joint_values[self._index] = value
+        self._value = value
 
-    def _get_value(self) -> np.ndarray:
-        if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
-            strategy.JointValueComputationStep(self._index, JointType(self._type), self._config.joint_states[self._index], self.s1._index, self.s2._index).solve_kinematics(self._config)
-            self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
-        return self._config.results.joint_values[self._index]
+    # def _get_value(self) -> np.ndarray:
+    #     if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
+    #         strategy.JointValueComputationStep(self._index, JointType(self._type), self._config.joint_states[self._index], self._s1, self._s2).solve_kinematics(self._config)
+    #         self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
+    #     return self._value
 
+    @cfg.ConfigView.assert_resources
     def get_value(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint values"
-        return self._get_value().view(KpArray)._configure(self._config, -1)
+        return self._kp_array(self._get_value())
 
+    @cfg.ConfigView.assert_resources
     def get_force(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
-        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE].view(KpArray)._configure(self._config, -2)
+        return self._kp_array(self._force, axis=0)
 
+    @cfg.ConfigView.assert_resources
     def get_torque(self):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
-        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_TORQUE].view(KpArray)._configure(self._config, -1)
-
-    def __eq__(self, other: Self):
-        return isinstance(other, PrimitiveJoint) and self._config is other._config and self._index == other._index
-
-
-@u.UnitSystem.class_
-class Revolute(PrimitiveJoint):
-    p1: u.Length.point = ConfigView._physics_view(Config.JOINT_P1, u.Length.point)
-    p2: u.Length.point = ConfigView._physics_view(Config.JOINT_P2, u.Length.point)
-
-    def set_input(self, value: u.Angle.phy):
-        return PrimitiveJoint.set_input(self, value)
-
-    def get_value(self) -> u.Angle.phy:
-        return PrimitiveJoint.get_value(self)
-
-
-@u.UnitSystem.class_
-class Prismatic(PrimitiveJoint):
-    distance1: u.Length.phy = ConfigView._physics_view(Config.JOINT_D1, u.Length.phy)
-    distance2: u.Length.phy = ConfigView._physics_view(Config.JOINT_D2, u.Length.phy)
-
-    angle1: u.Angle.phy = ConfigView._physics_view(Config.JOINT_A1, u.Angle.phy)
-    angle2: u.Angle.phy = ConfigView._physics_view(Config.JOINT_A2, u.Angle.phy)
-
-    def set_input(self, value: u.Length.phy):
-        return PrimitiveJoint.set_input(self, value)
-
-    def get_value(self) -> u.Length.phy:
-        return PrimitiveJoint.get_value(self)
-
-
-class GhostSolid(Solid):
-    mass: u.Mass.phy = disable_set(Solid.mass)
-    moment_of_inertia: u.MomentOfInertia.phy = disable_set(Solid.moment_of_inertia)
-    g: u.Length.point = disable_set(Solid.g)
-
-    def _get_3dof(self):
-        raise ValueError("Ghost solids can't be controlled this way")
-
-
-class CompositeType(enum.Enum):
-    PIN_SLOT, TRANSLATION, J3DOF = range(3)
-
-
-class CompositeJoint(ConfigView):
-    def _config_arr(self) -> np.ndarray[int]:
-        return self._config.composite_joint_config
-
-    def _joint(self, index) -> int:
-        return int(self._config_arr()[self._index, Config.COMPOSITE_JOINTS][index])
-
-    _ghost_counts = {
-        CompositeType.PIN_SLOT: 2,
-        CompositeType.TRANSLATION: 2,
-        CompositeType.J3DOF: 3
-    }
-
-    _type = ConfigView._config_view(Config.COMPOSITE_TYPE)
+        return self._kp_array(self._torque)
 
     @property
-    def s1(self) -> Solid:
-        return PrimitiveJoint(self._config, self._joint(0)).s1
+    def s1(self) -> SolidBase:
+        return SolidBase(self._config, self._s1)
 
     @property
-    def s2(self) -> Solid:
-        return PrimitiveJoint(self._config, self._joint(self._ghost_counts[CompositeType(self._type)] - 1)).s2
+    def s2(self) -> SolidBase:
+        return SolidBase(self._config, self._s2)
+
+
+class Revolute(Joint):
+    p1 = cfg.Joints.revolute_p1()
+    p2 = cfg.Joints.revolute_p2()
+
+
+class Prismatic(Joint):
+    angle1 = cfg.Joints.prismatic_angle1()
+    angle2 = cfg.Joints.prismatic_angle2()
+    distance1 = cfg.Joints.prismatic_distance1()
+    distance2 = cfg.Joints.prismatic_distance2()
+
+
+class CompositeJoint(cfg.ConfigView):
+    _type = cfg.Composite.type_()
+    _first_solid = cfg.Composite.first_ghost_solid()
+    _first_joint = cfg.Composite.first_ghost_joint()
+
+    @property
+    def s1(self) -> SolidBase:
+        return Joint(self._config, self._first_joint).s1
+
+    @property
+    def s2(self) -> SolidBase:
+        return Joint(self._config, self._first_joint + cfg.Composite.Type(self._type).ghost_count).s2
 
     @classmethod
     def _forward_property(cls, joint_prop: property, prop: property) -> property:
@@ -243,27 +196,17 @@ class CompositeJoint(ConfigView):
         return property(getter, setter)
 
 
-class _X(Prismatic):
-    angle1: u.Angle.phy = mirror_other(Prismatic.angle1, Prismatic.angle2)
-    angle2: u.Angle.phy = mirror_other(Prismatic.angle2, Prismatic.angle1)
-
-    distance2 = disable_set(Prismatic.distance2)
-
-    @property
-    def s2(self) -> Solid:
-        return GhostSolid(self._config, self._s2)
+class _X(Joint):
+    angle1 = cfg.mirror_other(Prismatic.angle1, Prismatic.angle2)
+    distance1 = Prismatic.distance1
 
 
 PinSlotSliding = _X
 TranslationAxleX = _X
 
 
-class GhostAngle(Revolute):
-    p1 = disable_set(Revolute.p1)
-
-    @property
-    def s1(self) -> Solid:
-        return GhostSolid(self._config, self._s1)
+class GhostAngle(Joint):
+    p2 = Revolute.p2
 
 
 PinSlotAngle = GhostAngle
@@ -274,11 +217,11 @@ class PinSlot(CompositeJoint):
 
     @property
     def sliding(self) -> PinSlotSliding:
-        return PinSlotSliding(self._config, self._joint(self._sliding))
+        return PinSlotSliding(self._config, self._first_joint + self._sliding)
 
     @property
     def angle(self) -> PinSlotAngle:
-        return PinSlotAngle(self._config, self._joint(self._angle))
+        return PinSlotAngle(self._config, self._first_joint + self._angle)
 
     angle1 = CompositeJoint._forward_property(sliding, _X.angle1)
     distance1 = CompositeJoint._forward_property(sliding, _X.distance1)
@@ -286,53 +229,38 @@ class PinSlot(CompositeJoint):
     p2 = CompositeJoint._forward_property(angle, PinSlotAngle.p2)
 
 
-class TranslationAxleY(Prismatic):
-    distance1 = disable_set(Prismatic.distance1)
-
-    @property
-    def s1(self) -> Solid:
-        return GhostSolid(self._config, self._s1)
+class TranslationAxleY(Joint):
+    angle1 = Prismatic.angle1
+    angle2 = Prismatic.angle2
+    distance2 = Prismatic.distance2
 
 
-@u.UnitSystem.class_
 class Translation(CompositeJoint):
     _x, _y = range(2)
 
     @property
     def x(self) -> TranslationAxleX:
-        return TranslationAxleX(self._config, self._joint(self._x))
+        return TranslationAxleX(self._config, self._first_joint + self._x)
 
     @property
     def y(self) -> TranslationAxleY:
-        return TranslationAxleY(self._config, self._joint(self._y))
+        return TranslationAxleY(self._config, self._first_joint + self._y)
 
     @property
-    def angle_diff(self) -> u.Angle.phy:
+    def angle_diff(self):
         _y = self.y
-        return np.diff(_y._config.joint_physics[_y._index, [Config.JOINT_A1, Config.JOINT_A2]])
+        return self.y.angle2 - self.y.angle1
 
     @angle_diff.setter
-    def angle_diff(self, value: u.Angle.phy):
-        _y = self.y
-        _y._config.joint_physics[_y._index, Config.JOINT_A2] = _y._config.joint_physics[_y._index, Config.JOINT_A1] + value
+    def angle_diff(self, value):
+        self.y.angle2 = self.y.angle1 + value
 
     angle1 = CompositeJoint._forward_property(x, _X.angle1)
     angle2 = CompositeJoint._forward_property(y, TranslationAxleY.angle1)
 
 
-class J3DOFAxle(Prismatic):
-    angle1 = disable_set(Prismatic.angle1)
-    angle2 = disable_set(Prismatic.angle2)
-    distance1 = disable_set(Prismatic.distance1)
-    distance2 = disable_set(Prismatic.distance2)
-
-    @property
-    def s1(self) -> Solid:
-        return GhostSolid(self._config, self._s1)
-
-    @property
-    def s2(self) -> Solid:
-        return GhostSolid(self._config, self._s2)
+class J3DOFAxle(Joint):
+    pass
 
 
 J3DOFAngle = GhostAngle
@@ -343,14 +271,14 @@ class J3DOF(CompositeJoint):
 
     @property
     def x(self) -> J3DOFAxle:
-        return J3DOFAxle(self._config, self._joint(self._x))
+        return J3DOFAxle(self._config, self._first_joint + self._x)
 
     @property
     def y(self) -> J3DOFAxle:
-        return J3DOFAxle(self._config, self._joint(self._y))
+        return J3DOFAxle(self._config, self._first_joint + self._y)
 
     @property
     def angle(self) -> J3DOFAngle:
-        return J3DOFAngle(self._config, self._joint(self._angle))
+        return J3DOFAngle(self._config, self._first_joint + self._angle)
 
     p2 = CompositeJoint._forward_property(angle, J3DOFAngle.p2)

@@ -1,5 +1,5 @@
 import unittest
-from kinepy.objects.config import Config
+from kinepy.objects.config import OldConfig
 import kinepy.exceptions as kp_exs
 import kinepy.strategy.algorithm as algo
 import kinepy.strategy.graph_data as graph_data
@@ -148,7 +148,7 @@ class GraphOperationsTests(unittest.TestCase):
     def test_bad_configurations(self):
         strategy = []
 
-        conf = Config()
+        conf = OldConfig()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             ['', ''],
@@ -179,7 +179,7 @@ class GraphOperationsTests(unittest.TestCase):
     def test_std_graphs(self) -> None:
         strategy = []
 
-        conf = Config()
+        conf = OldConfig()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             ['', '', ''],
@@ -198,7 +198,7 @@ class GraphOperationsTests(unittest.TestCase):
         step: algo.GraphStep = strategy[0]
         self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRR)
 
-        conf = Config()
+        conf = OldConfig()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             ['', '', ''],
@@ -217,7 +217,7 @@ class GraphOperationsTests(unittest.TestCase):
         step: algo.GraphStep = strategy[0]
         self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRP)
 
-        conf = Config()
+        conf = OldConfig()
         conf.add_solids(['', ''], np.zeros([2, 4]))
         conf.add_joints(
             ['', '', ''],

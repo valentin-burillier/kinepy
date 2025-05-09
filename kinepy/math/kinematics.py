@@ -1,17 +1,17 @@
 import numpy as np
 
 from kinepy.math.geometry import *
-from kinepy.objects.config import Config
+from kinepy.objects.config import OldConfig
 from kinepy.strategy.graph_data import JointType
 
 
 class JointValueComputation:
     @staticmethod
-    def do_not_compute_value(config: Config, joint: int, s1: int, s2: int) -> None:
+    def do_not_compute_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
         pass
 
     @staticmethod
-    def compute_revolute_value(config: Config, joint: int, s1: int, s2: int) -> None:
+    def compute_revolute_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
         s1_orientation = Orientation.get(config, s1)
         s2_orientation = Orientation.get(config, s2)
 
@@ -19,26 +19,26 @@ class JointValueComputation:
         config.results.joint_values[joint] = np.arctan2(diff[..., 1], diff[..., 0])
 
     @staticmethod
-    def compute_prismatic_value(config: Config, joint: int, s1: int, s2: int) -> None:
-        angle = config.joint_physics[joint, (Config.JOINT_A1,)]
+    def compute_prismatic_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
+        angle = config.joint_physics[joint, (OldConfig.JOINT_A1,)]
         director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
         config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))[..., 0]
 
     @staticmethod
-    def do_not_compute_continuity(config: Config, joint: int):
+    def do_not_compute_continuity(config: OldConfig, joint: int):
         pass
 
     @staticmethod
-    def compute_revolute_continuity(config: Config, joint: int):
+    def compute_revolute_continuity(config: OldConfig, joint: int):
         Orientation.make_angle_continuous(config.results.joint_values[joint])
 
 
 class JointInput:
     @staticmethod
-    def solve_revolute(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+    def solve_revolute(config: OldConfig, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_point = Position.point(config, s1, config.joint_physics[joint, Config.JOINT_P1])
-        s2_point = Position.point(config, s2, config.joint_physics[joint, Config.JOINT_P2])
+        s1_point = Position.point(config, s1, config.joint_physics[joint, OldConfig.JOINT_P1])
+        s2_point = Position.point(config, s2, config.joint_physics[joint, OldConfig.JOINT_P2])
 
         s1_ori = Orientation.get(config, s1)
         s2_ori = Orientation.get(config, s2)
@@ -51,7 +51,7 @@ class JointInput:
         Geometry.move_eq(eq2, config, s1_point)
 
     @staticmethod
-    def solve_prismatic(config: Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+    def solve_prismatic(config: OldConfig, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
         angle1, distance1, angle2, distance2 = config.joint_physics[joint]
         s1_point = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle1))
         s2_point = Orientation.add(Orientation.get(config, s2), Orientation.from_angle(angle2))
@@ -65,12 +65,12 @@ class JointInput:
 
 class System:
     @staticmethod
-    def set_up(config: Config):
+    def set_up(config: OldConfig):
         config.results.solid_values[:] = 0.0, 0.0, 1.0, 0.0
         config.joint_states[:] = config.final_joint_states
 
     @staticmethod
-    def clean_up(config: Config):
+    def clean_up(config: OldConfig):
         eq = tuple(range(config.solid_physics.shape[0]))
         Geometry.move_eq(eq, config, -Position.get(config, 0))
         Geometry.rotate_eq(eq, config, Orientation.get(config, 0) * np.array([1, -1]))
@@ -78,7 +78,7 @@ class System:
 
 class Graph:
     @staticmethod
-    def solve_rrr(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_rrr(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -113,7 +113,7 @@ class Graph:
         Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
 
     @staticmethod
-    def solve_rrp(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_rrp(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -149,7 +149,7 @@ class Graph:
         Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
 
     @staticmethod
-    def solve_ppr(config: Config, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_ppr(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -198,15 +198,15 @@ class Relation:
     }
 
     @staticmethod
-    def solve_standard_relation(config: Config, relation: int, source: int, destination: int, destination_type: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
-        v0, r = config.relation_physics[relation, [Config.RELATION_V0, Config.RELATION_R]]
+    def solve_standard_relation(config: OldConfig, relation: int, source: int, destination: int, destination_type: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0, r = config.relation_physics[relation, [OldConfig.RELATION_V0, OldConfig.RELATION_R]]
         config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r, v0)
-        s1, s2 = config.joint_config[destination, Config.JOINT_SOLIDS]
+        s1, s2 = config.joint_config[destination, OldConfig.JOINT_SOLIDS]
         Relation.joint_solvers[destination_type](config, s1, s2, destination, eq1, eq2)
 
     @staticmethod
-    def solve_belt(config: Config, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
-        v0, r1, r2 = config.relation_physics[relation, [Config.RELATION_V0, Config.RELATION_R1, Config.RELATION_R2]]
+    def solve_belt(config: OldConfig, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0, r1, r2 = config.relation_physics[relation, [OldConfig.RELATION_V0, OldConfig.RELATION_R1, OldConfig.RELATION_R2]]
         config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r1 / r2, v0)
-        s1, s2 = config.joint_config[destination, Config.JOINT_SOLIDS]
+        s1, s2 = config.joint_config[destination, OldConfig.JOINT_SOLIDS]
         JointInput.solve_revolute(config, s1, s2, destination, eq1, eq2)

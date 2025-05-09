@@ -1,6 +1,6 @@
 import numpy as np
 
-from kinepy.objects.config import Config, ConfigState, ActionMode
+from kinepy.objects.config import OldConfig, ConfigState, ActionMode
 from kinepy.objects.action import Action, InternalAction
 import kinepy.math.dynamics as dyn
 from kinepy.objects.joints_solid import Solid, Revolute
@@ -10,7 +10,7 @@ import kinepy.units as u
 
 @u.UnitSystem.class_
 class Interaction:
-    def __init__(self, config: Config, action_mapping: dict):
+    def __init__(self, config: OldConfig, action_mapping: dict):
         self._config = config
         self._action_mapping: dict[int, int] = action_mapping
 
@@ -48,14 +48,14 @@ class SystemInteraction(Interaction):
 class Gravity(SystemInteraction):
     g: u.Acceleration.point
 
-    def __init__(self,  config: Config, action_mapping: np.array, g: u.Acceleration.point = (0.0, -u.Acceleration.G.value)):
+    def __init__(self, config: OldConfig, action_mapping: np.array, g: u.Acceleration.point = (0.0, -u.Acceleration.G.value)):
         Interaction.__init__(self, config, action_mapping)
         self._g = g
 
     def _set_actions(self):
-        g = self._config.solid_physics[:, Config.SOLID_MASS, np.newaxis, np.newaxis] * self._g
-        self._config.results.action_values[list(self._action_mapping.values()), :, Config.ACTION_DYN_FORCE] = g
-        self._config.results.solid_dynamics[...,  Config.SOLID_DYN_FORCE] += g
+        g = self._config.solid_physics[:, OldConfig.SOLID_MASS, np.newaxis, np.newaxis] * self._g
+        self._config.results.action_values[list(self._action_mapping.values()), :, OldConfig.ACTION_DYN_FORCE] = g
+        self._config.results.solid_dynamics[...,  OldConfig.SOLID_DYN_FORCE] += g
 
 
 class Inertia(SystemInteraction):
@@ -69,15 +69,15 @@ class Inertia(SystemInteraction):
         geo.Orientation.make_angle_continuous(solid_angles)
 
         # shape (m, n)
-        inertia = self._config.solid_physics[..., Config.SOLID_MOMENT_OF_INERTIA, np.newaxis] * np.diff(solid_angles, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
-        self._config.results.action_values[list(self._action_mapping.values()), :, Config.ACTION_DYN_TORQUE] = inertia
-        self._config.results.solid_dynamics[..., Config.SOLID_DYN_TORQUE] -= inertia
+        inertia = self._config.solid_physics[..., OldConfig.SOLID_MOMENT_OF_INERTIA, np.newaxis] * np.diff(solid_angles, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.action_values[list(self._action_mapping.values()), :, OldConfig.ACTION_DYN_TORQUE] = inertia
+        self._config.results.solid_dynamics[..., OldConfig.SOLID_DYN_TORQUE] -= inertia
 
         # shape (m, n, 2)
-        solid_g = self._config.results.solid_dynamics[..., Config.SOLID_DYN_G]
-        inertia = self._config.solid_physics[..., Config.SOLID_MASS, np.newaxis, np.newaxis] * np.diff(solid_g, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
-        self._config.results.action_values[list(self._action_mapping.values()), :, Config.ACTION_DYN_FORCE] = inertia
-        self._config.results.solid_dynamics[..., Config.SOLID_DYN_FORCE] -= inertia
+        solid_g = self._config.results.solid_dynamics[..., OldConfig.SOLID_DYN_G]
+        inertia = self._config.solid_physics[..., OldConfig.SOLID_MASS, np.newaxis, np.newaxis] * np.diff(solid_g, n=2, axis=1, prepend=float('NaN'), append=float('NaN')) * self._config.frame_time ** -2
+        self._config.results.action_values[list(self._action_mapping.values()), :, OldConfig.ACTION_DYN_FORCE] = inertia
+        self._config.results.solid_dynamics[..., OldConfig.SOLID_DYN_FORCE] -= inertia
 
 
 @u.UnitSystem.class_
@@ -88,7 +88,7 @@ class LinearSpring(Interaction):
     p1: u.Length.point
     p2: u.Length.point
 
-    def __init__(self, config: Config, action_mapping: np.array, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0):
+    def __init__(self, config: OldConfig, action_mapping: np.array, s1: Solid, s2: Solid, p1: u.Length.point = (0.0, 0.0), p2: u.Length.point = (0.0, 0.0), k: u.SpringConstant.phy = 0.0, l0: u.Length.phy = 0.0):
         Interaction.__init__(self, config, action_mapping)
         self._k = k
         self._l0 = l0
@@ -107,10 +107,10 @@ class LinearSpring(Interaction):
         length = geo.Geometry.mag(vector)
         unit = vector / length
         force = (length - self.l0) * self.k * unit
-        self._config.results.action_values[self._action_mapping[self._s1], :, Config.ACTION_DYN_FORCE] = force
-        self._config.results.solid_dynamics[self._s1, :, Config.SOLID_DYN_FORCE] += force
-        self._config.results.action_values[self._action_mapping[self._s2], :, Config.ACTION_DYN_FORCE] = -force
-        self._config.results.solid_dynamics[self._s2, :, Config.SOLID_DYN_FORCE] -= force
+        self._config.results.action_values[self._action_mapping[self._s1], :, OldConfig.ACTION_DYN_FORCE] = force
+        self._config.results.solid_dynamics[self._s1, :, OldConfig.SOLID_DYN_FORCE] += force
+        self._config.results.action_values[self._action_mapping[self._s2], :, OldConfig.ACTION_DYN_FORCE] = -force
+        self._config.results.solid_dynamics[self._s2, :, OldConfig.SOLID_DYN_FORCE] -= force
 
 
 @u.UnitSystem.class_
@@ -118,7 +118,7 @@ class TwistingSpring(Interaction):
     k: u.Torque.phy
     a0: u.Angle.phy
 
-    def __init__(self, config: Config, action_mapping: np.array, r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
+    def __init__(self, config: OldConfig, action_mapping: np.array, r: Revolute, k: u.Torque.phy = 0.0, a0: u.Angle.phy = 0.0):
         Interaction.__init__(self, config, action_mapping)
         self._k = k
         self._a0 = a0
@@ -126,7 +126,7 @@ class TwistingSpring(Interaction):
 
     def _set_actions(self):
         torque = (self.r.get_value() - self._a0) * self._k
-        self._config.results.action_values[self._action_mapping[self.r._s1], :, Config.ACTION_DYN_TORQUE] = torque
-        self._config.results.solid_dynamics[self.r._s1, :, Config.SOLID_DYN_TORQUE] += torque
-        self._config.results.action_values[self._action_mapping[self.r._s2], :, Config.ACTION_DYN_TORQUE] = -torque
-        self._config.results.solid_dynamics[self.r._s2, :, Config.SOLID_DYN_TORQUE] -= torque
+        self._config.results.action_values[self._action_mapping[self.r._s1], :, OldConfig.ACTION_DYN_TORQUE] = torque
+        self._config.results.solid_dynamics[self.r._s1, :, OldConfig.SOLID_DYN_TORQUE] += torque
+        self._config.results.action_values[self._action_mapping[self.r._s2], :, OldConfig.ACTION_DYN_TORQUE] = -torque
+        self._config.results.solid_dynamics[self.r._s2, :, OldConfig.SOLID_DYN_TORQUE] -= torque

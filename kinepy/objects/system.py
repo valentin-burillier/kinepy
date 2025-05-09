@@ -1,4 +1,4 @@
-from kinepy.objects.config import Config, np, ConfigState, ActionMode
+from kinepy.objects.config import OldConfig, np, ConfigState, ActionMode
 import kinepy.units as u
 from kinepy.objects.joints_solid import Solid, Prismatic, Revolute, PinSlot, Translation, PrimitiveJoint, CompositeType
 from kinepy.strategy.graph_data import JointType, RelationType
@@ -14,7 +14,7 @@ from kinepy.gui.new_gui import GUI
 @u.UnitSystem.class_
 class System:
     def __init__(self):
-        self.__config = Config()
+        self.__config = OldConfig()
     
         # TODO: System should not hold any data, Config should hold everything
         self._kinematic_strategy: list[strategy.ResolutionStep] = []

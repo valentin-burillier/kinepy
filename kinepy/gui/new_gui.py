@@ -9,7 +9,7 @@ import pygame as pg
 import PIL.Image as im
 import kinepy.gui.new_meshes as meshes
 import kinepy.math.geometry as geo
-from kinepy.objects.config import Config, ConfigState
+from kinepy.objects.config import OldConfig, ConfigState
 from kinepy.objects.joints_solid import CompositeType, JointType, PrimitiveJoint, Solid
 import kinepy.strategy.types as strategy
 import time
@@ -130,9 +130,9 @@ class _Symbol(_GUIObject):
         pg.draw.polygon(surface, color, mesh, 3)
 
     @classmethod
-    def from_revolute(cls, r_index, config: Config, mesh, mounting_point):
-        s1, s2 = config.joint_config[r_index, Config.JOINT_SOLIDS]
-        point = config.joint_physics[r_index, Config.JOINT_P2]
+    def from_revolute(cls, r_index, config: OldConfig, mesh, mounting_point):
+        s1, s2 = config.joint_config[r_index, OldConfig.JOINT_SOLIDS]
+        point = config.joint_physics[r_index, OldConfig.JOINT_P2]
 
         if mesh is None:
             return _RevoluteSymbol(point, None, None, not s2)
@@ -150,9 +150,9 @@ class _Symbol(_GUIObject):
         return cls(point, mesh, mounting_point, not s2)
 
     @classmethod
-    def from_prismatic(cls, p_index, config: Config, mesh, mounting_point):
-        s1, s2 = config.joint_config[p_index, Config.JOINT_SOLIDS]
-        angle, dist = config.joint_physics[p_index, Config.JOINT_P2]
+    def from_prismatic(cls, p_index, config: OldConfig, mesh, mounting_point):
+        s1, s2 = config.joint_config[p_index, OldConfig.JOINT_SOLIDS]
+        angle, dist = config.joint_physics[p_index, OldConfig.JOINT_P2]
         angle = (angle + np.pi) % (2 * np.pi) - np.pi
 
         if not s2:
@@ -218,9 +218,9 @@ class _Sliding(_GUIObject):
         pg.draw.line(surface, color, start, end, 3)
 
     @classmethod
-    def from_prismatic(cls, p_index, config: Config):
-        s1, s2 = config.joint_config[p_index, Config.JOINT_SOLIDS]
-        angle, dist = config.joint_physics[p_index, Config.JOINT_P1]
+    def from_prismatic(cls, p_index, config: OldConfig):
+        s1, s2 = config.joint_config[p_index, OldConfig.JOINT_SOLIDS]
+        angle, dist = config.joint_physics[p_index, OldConfig.JOINT_P1]
         point = geo.Orientation.from_angle(np.array(angle + np.pi * 0.5)) * dist
         v_dir = geo.Orientation.from_angle(np.array(angle))
 
@@ -270,9 +270,9 @@ class _SolidStructure(_GUIObject):
         pg.draw.lines(surface, color, False, line, 3)
 
     @classmethod
-    def from_revolute(cls, r_index, config: Config):
-        s1, s2 = config.joint_config[r_index, Config.JOINT_SOLIDS]
-        point = config.joint_physics[r_index, Config.JOINT_P1]
+    def from_revolute(cls, r_index, config: OldConfig):
+        s1, s2 = config.joint_config[r_index, OldConfig.JOINT_SOLIDS]
+        point = config.joint_physics[r_index, OldConfig.JOINT_P1]
 
         s = cls()
         s.update(point, not s1)
@@ -293,7 +293,7 @@ class KeyState:
     
 
 class GUI:
-    def __init__(self, config: Config):
+    def __init__(self, config: OldConfig):
         self._config = config
 
         # layer 1: ground markers, tree branches, sliders; layer 2: joint symbols, single point symbols
@@ -311,7 +311,7 @@ class GUI:
 
     def _add_pin_slot(self, index: int):
         s1, s2 = self._config.get_composite_solids(index)
-        p, r, _ = self._config.composite_joint_config[index, Config.COMPOSITE_JOINTS]
+        p, r, _ = self._config.composite_joint_config[index, OldConfig.COMPOSITE_JOINTS]
 
         self._solid_objects[s1][0].append(s := _Sliding.from_prismatic(p, self._config))
         s.add_solid_structure(self._solid_objects[s1][0])
@@ -319,7 +319,7 @@ class GUI:
         s.add_solid_structure(self._solid_objects[s2][0])
 
     def _add_revolute(self, index: int):
-        s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
+        s1, s2 = self._config.joint_config[index, OldConfig.JOINT_SOLIDS]
 
         self._solid_objects[s1][0].append(struct := _SolidStructure.from_revolute(index, self._config))
         self._solid_objects[s2][1].append(symbol := _Symbol.from_revolute(index, self._config, None, meshes.REVOLUTE_MOUNTING_POINT))
@@ -327,7 +327,7 @@ class GUI:
         symbol.distant_relative = struct
 
     def _add_prismatic(self, index: int):
-        s1, s2 = self._config.joint_config[index, Config.JOINT_SOLIDS]
+        s1, s2 = self._config.joint_config[index, OldConfig.JOINT_SOLIDS]
         self._solid_objects[s1][0].append(s := _Sliding.from_prismatic(index, self._config))
         s.add_solid_structure(self._solid_objects[s1][0])
         self._solid_objects[s2][1].append(s := _Symbol.from_prismatic(index, self._config, meshes.PRISMATIC, meshes.PRISMATIC_MOUNTING_POINT))
@@ -382,16 +382,16 @@ class GUI:
             if not _solid_visibility[s1] or not _solid_visibility[s2]:
                 # any invisible solid completely hides the joint
                 continue
-            _type = CompositeType(self._config.composite_joint_config[cj_index, Config.COMPOSITE_TYPE])
+            _type = CompositeType(self._config.composite_joint_config[cj_index, OldConfig.COMPOSITE_TYPE])
             self._composite_additions[_type](self, cj_index)
 
         for j_index, _ in filter(lambda x: x[1], enumerate(_joint_visibility)):
-            s1, s2 = self._config.joint_config[j_index, Config.JOINT_SOLIDS]
+            s1, s2 = self._config.joint_config[j_index, OldConfig.JOINT_SOLIDS]
             if not _solid_visibility[s1] or not _solid_visibility[s2]:
                 # any invisible solid completely hides the joint
                 _joint_visibility[j_index] = 0
                 continue
-            _type = JointType(self._config.joint_config[j_index, Config.JOINT_TYPE])
+            _type = JointType(self._config.joint_config[j_index, OldConfig.JOINT_TYPE])
             self._joint_additions[_type](self, j_index)
 
         for solid, point, trace in self._wild_points:
