@@ -159,7 +159,7 @@ class PrimitiveJoint(ConfigView):
 
     def get_force(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"
-        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE]._configure(self._config, -2)
+        return self._config.results.joint_dynamics[self._index, :, Config.JOINT_DYN_FORCE].view(KpArray)._configure(self._config, -2)
 
     def get_torque(self):
         assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before reading Joint dynamics"

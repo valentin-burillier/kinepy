@@ -15,7 +15,8 @@ from kinepy.gui.new_gui import GUI
 class System:
     def __init__(self):
         self.__config = Config()
-
+    
+        # TODO: System should not hold any data
         self._kinematic_strategy: list[strategy.ResolutionStep] = []
         self._dynamic_strategy: list[strategy.ResolutionStep] = []
 
@@ -169,15 +170,15 @@ class System:
         )
         return GearRack(self.__config, index)
 
-    def add_belt(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r1: u.Length.phy = 1.0, r2: u.Length.phy = 1.0, t0: u.Force.phy = 0.0, shaft1: Solid | None = None, shaft2: Solid | None = None):
+    def add_belt(self, j1: Revolute, j2: Revolute, v0: u.Angle.phy = 0.0, r1: u.Length.phy = 1.0, r2: u.Length.phy = 1.0, t0: u.Force.phy = 0.0, pulley1: Solid | None = None, pulley2: Solid | None = None):
         index = self.__config.relation_config.shape[0]
         self.__config.add_relations(
-            np.array([[RelationType.BELT.value, j1._index, j2._index, -1 if shaft1 is None else shaft1._index, -1 if shaft2 is None else shaft2._index]]),
+            np.array([[RelationType.BELT.value, j1._index, j2._index, -1 if pulley1 is None else pulley1._index, -1 if pulley2 is None else pulley2._index]]),
             np.array([[v0, r1, r2, t0]])
         )
         return Belt(self.__config, index)
 
-    def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+    def add_distant_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0=0.0, r=1.0):
         index = self.__config.relation_config.shape[0]
         self.__config.add_relations(
             np.array([[RelationType.DISTANT.value, j1._index, j2._index, -1, -1]]),
@@ -185,7 +186,7 @@ class System:
         )
         return Distant(self.__config, index)
 
-    def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0: u.Angle.phy = 0.0, r: u.Dimensionless.phy = 1.0):
+    def add_effortless_relation(self, j1: PrimitiveJoint, j2: PrimitiveJoint, v0=0.0, r=1.0):
         index = self.__config.relation_config.shape[0]
         self.__config.add_relations(
             np.array([[RelationType.EFFORTLESS.value, j1._index, j2._index, -1, -1]]),
