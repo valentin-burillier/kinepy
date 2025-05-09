@@ -234,7 +234,7 @@ class InterfaceTests(unittest.TestCase):
         s2 = sys.add_solid()
 
         r1 = sys.add_revolute(s0, s1)
-        r2 = sys.add_revolute(s0, s2)
+        r2 = sys.add_revolute(s0, s2, p1=(4, 0))
 
         b = sys.add_belt(r1, r2)
         b.t0 = 1

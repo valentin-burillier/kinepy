@@ -14,6 +14,189 @@ class Result:
     action_values: np.ndarray
 
 
+class ActionMode(enum.Enum):
+    NO_INDIRECTION, SOLID_G, JOINT_POINT = range(3)
+
+
+class PropertyType(enum.Enum):
+    CONFIG, PHYSICS, RESULT = range(3)
+
+    @property
+    def array_name(self):
+        return f'{self.name.lower()}_array'
+    
+    @property
+    def count_name(self):
+        return f'_{self.name.lower()}_count'
+
+class ArrayProperty(property):
+    stop: int
+    type_: PropertyType
+
+    def __init__(self, type_: PropertyType, index: int | slice):
+        arr = type_.array_name
+        self.type_ = type_
+        self.stop = index+1 if isinstance(index, int) else index.stop
+
+        def getter(self) -> np.ndarray:
+            return getattr(self, arr)[..., index]
+        property.__init__(self, getter)
+    
+    @staticmethod
+    def check(obj):
+        for type_ in PropertyType:
+            assert hasattr(obj, type_.array_name), f"[Internal] Wrong initialisation: {obj} has no attribute {type_.array_name}"
+
+class MetaArray(type):
+    def __new__(mcs, name: str, bases: tuple[type, ...], dict_: dict[str]):
+        _array_counts = {type_: 0 for type_ in PropertyType}
+
+        for obj in dict_.values():
+            if not isinstance(obj, ArrayProperty):
+                continue
+            _array_counts[obj.type_] = max(_array_counts[obj.type_], obj.stop)
+
+        for type_, size in _array_counts.items():
+            dict_[type_.count_name] = size
+        
+        return type.__new__(mcs, name, bases, dict_)
+
+
+class ConfigArray(metaclass=MetaArray):
+    _config_count: int
+    _physics_count: int
+    _result_count: int
+
+    def __init__(self):
+        self.names = []
+
+        self.config_array = np.array((0, self._config_count), int)
+        self.physics_array = np.array((0, self._physics_count), float)
+        self.result_array = np.array((0, 0, self._result_count), float)
+        ArrayProperty.check(self)
+
+    @property
+    def count(self) -> int:
+        return len(self.names)
+
+    def allocate_results(self, frame_count):
+        self.result_array.resize((self.count, frame_count, self._result_count))
+
+    def add(self, names: list[str], config: np.ndarray, phy: np.ndarray):
+        assert config.shape[1] == self._config_count, "Wrong config attributes shape"
+        assert phy.shape[1] == self._physics_count, "Wrong physical attributes shape"
+        assert len(names) == phy.shape[0] == phy.shape[1]
+
+        self.names.extend(names)
+        self.config_array = np.r_[self.config_array, config]
+        self.physics_array = np.r_[self.physics_array, phy]
+    
+    def reserve(self, size) -> slice:
+        result = slice(self.count, self.count + size)
+        self.names.extend(('',) * size)
+
+        for arr in self.config_array, self.physics_array:
+            arr.resize((self.count, *arr.shape[1:]))
+
+        return result
+
+class SolidArray(ConfigArray):
+    # Config attributes
+    j3dof = ArrayProperty(PropertyType.CONFIG, 0)
+
+    # Physics attributes
+    mass = ArrayProperty(PropertyType.PHYSICS, 0)
+    moment_of_inertia = ArrayProperty(PropertyType.PHYSICS, 1)
+    g = ArrayProperty(PropertyType.PHYSICS, slice(2, 4))
+
+    # Result attributes
+    position = ArrayProperty(PropertyType.RESULT, slice(0, 2))
+    orienation = ArrayProperty(PropertyType.RESULT, slice(2, 4))
+    g_value = ArrayProperty(PropertyType.RESULT, slice(4, 6))
+    newtons_2nd_law_force = ArrayProperty(PropertyType.RESULT, slice(6, 8))
+    newtons_2nd_law_torque = ArrayProperty(PropertyType.RESULT, 8)
+
+
+class JointArray(ConfigArray):
+    # Config attributes
+    type_ = ArrayProperty(PropertyType.CONFIG, 0)
+    s1 = ArrayProperty(PropertyType.CONFIG, 1)
+    s2 = ArrayProperty(PropertyType.CONFIG, 2)
+    solids = ArrayProperty(PropertyType.CONFIG, slice(1, 3))
+
+    # Physics attributes
+    revolute_p1 = ArrayProperty(PropertyType.PHYSICS, slice(0, 2))
+    revolute_p2 = ArrayProperty(PropertyType.PHYSICS, slice(2, 4))
+    
+    prismatic_angle1 = ArrayProperty(PropertyType.PHYSICS, 0)
+    prismatic_distance1 = ArrayProperty(PropertyType.PHYSICS, 1)
+    prismatic_angle2 = ArrayProperty(PropertyType.PHYSICS, 2)
+    prismatic_distance2 = ArrayProperty(PropertyType.PHYSICS, 3)
+
+    # Result attributes
+    value = ArrayProperty(PropertyType.RESULT, 0)
+    force = ArrayProperty(PropertyType.RESULT, slice(1, 3))
+    torque = ArrayProperty(PropertyType.RESULT, 3)
+
+
+class CompositeJointArray(ConfigArray):
+    # Config attributes
+    type_ = ArrayProperty(PropertyType.CONFIG, 0)
+    ghost_solids = ArrayProperty(PropertyType.CONFIG, slice(1, 3))
+    ghost_joints = ArrayProperty(PropertyType.CONFIG, slice(3, 6))
+
+
+class RelationArray(ConfigArray):
+    # Config attributes
+    type_ = ArrayProperty(PropertyType.CONFIG, 0)
+    j1 = ArrayProperty(PropertyType.CONFIG, 1)
+    j2 = ArrayProperty(PropertyType.CONFIG, 2)
+    joints = ArrayProperty(PropertyType.CONFIG, slice(1, 3))
+    g1 = ArrayProperty(PropertyType.CONFIG, 3)
+    g2 = ArrayProperty(PropertyType.CONFIG, 4)
+    first_action = ArrayProperty(PropertyType.CONFIG, 5)
+
+    # Physics attributes
+    v0 = ArrayProperty(PropertyType.PHYSICS, 0)
+    r = ArrayProperty(PropertyType.PHYSICS, 1)
+    gear_pressure_angle = ArrayProperty(PropertyType.PHYSICS, 2)
+
+    belt_r1 = ArrayProperty(PropertyType.PHYSICS, 1)
+    belt_r2 = ArrayProperty(PropertyType.PHYSICS, 2)
+    belt_t0 = ArrayProperty(PropertyType.PHYSICS, 3)
+
+
+class ActionArray(ConfigArray):
+    # Config attributes
+    type_ = ArrayProperty(PropertyType.CONFIG, 0)
+    object_reference = ArrayProperty(PropertyType.CONFIG, 1) # object might have to move because of solids added after
+    custom_solid = ArrayProperty(PropertyType.CONFIG, 2)
+
+    # Physics attributes
+    custom_point = ArrayProperty(PropertyType.PHYSICS, slice(0, 2))
+
+    # Result attributes
+    force = ArrayProperty(PropertyType.RESULT, slice(0, 2))
+    torque = ArrayProperty(PropertyType.RESULT, 2)
+    application_point = ArrayProperty(PropertyType.RESULT, slice(3, 5))
+
+class InteractionArray(ConfigArray):
+    # Config attributes
+    type_ = ArrayProperty(PropertyType.CONFIG, 0)
+    first_action = ArrayProperty(PropertyType.CONFIG, 1)
+    twisting_spring_revolute = ArrayProperty(PropertyType.CONFIG, 2)
+    linear_spring_s1 = ArrayProperty(PropertyType.CONFIG, 2)
+    linear_spring_s2 = ArrayProperty(PropertyType.CONFIG, 3)
+
+    # Physics attributes
+    g_fields = ArrayProperty(PropertyType.PHYSICS, slice(0, 2))
+    spring_stiffness = ArrayProperty(PropertyType.PHYSICS, 1)
+    spring_equilibrium_position = ArrayProperty(PropertyType.PHYSICS, 2)
+    linear_spring_p1 = ArrayProperty(PropertyType.PHYSICS, slice(3, 5))
+    linear_spring_p2 = ArrayProperty(PropertyType.PHYSICS, slice(5, 7))
+
+    
+
 class ConfigState(enum.Enum):
     NO_READ_ALLOWED, STRATEGY_OK, ALLOCATED_RESOURCES, KINEMATICS_OK, DYNAMICS_OK = range(5)
 
@@ -27,11 +210,48 @@ class ConfigState(enum.Enum):
         return self.value > other.value
 
 
-class ActionMode(enum.Enum):
-    NO_INDIRECTION, SOLID_G, JOINT_POINT = range(3)
+class NewConfig:
+    def __init__(self):
+        self.state = ConfigState.NO_READ_ALLOWED
+        self.frame_time = 0.0
+        self.frame_count = 0
 
+        # Data
+        self.solids = SolidArray()
+        self.joints = JointArray()
+        self.composite_joints = CompositeJointArray()
+        self.relations = RelationArray()
+        self.actions = ActionArray()
+        self.interactions = InteractionArray()
+
+        # External configuration
+        self.piloted_joints = np.zeros((0,), int)
+        self.working_joints = np.zeros((0,), int)
+
+        # Strategy states
+        self.joint_states = []
+        self.final_joint_states = []
+        self.kinematics_strategy = []
+        self.dynamics_strategy = []
+
+    def invalidate_config(self):
+        self.state = ConfigState.NO_READ_ALLOWED
+
+    def invalidate_kinematics(self):
+        self.state = min(ConfigState.ALLOCATED_RESOURCES, self.state)
+
+    def invalidate_dynamics(self):
+        self.state = min(ConfigState.KINEMATICS_OK, self.state)
+
+    def allocate_resources(self, frame_count):
+        self.state = ConfigState.ALLOCATED_RESOURCES
+        for arr in self.solids, self.joints, self.composite_joints, self.relations, self.actions:
+            arr.allocate_results(frame_count)
 
 class Config:
+
+    # TODO: this constants garbage has to go, i have been mistaken more than once
+
     SOLID_3DOF = 0
     SOLID_MASS = 0
     SOLID_MOMENT_OF_INERTIA = 1
@@ -242,32 +462,35 @@ class ConfigView:
         return property(getter)
 
 
-class ReadOnlyArray(np.ndarray):
-    def __array_finalize__(self, obj, /):
-        self.flags.writeable = False
-
 class KpArray(np.ndarray):
+    """
+    Specialized ndarray that offers time derivatives
+    """
     _config: Config
     _time_axis: int
 
     def __array_finalize__(self, obj, /):
         self._config = getattr(obj, '_config', None)
-        self._time_axis = getattr(obj, '_config', 0)
+        self._time_axis = getattr(obj, '_time_axis', 0)
 
     def _configure(self, _config: Config, _time_axis: int):
         self._config = _config
         self._time_axis = _time_axis
         return self
 
+    def _inherit(self, arr: np.ndarray):
+        return arr.view(self.__class__)._configure(self._config, self._time_axis)
+
     def derivative(self):
-        return (0.5 * (np.diff(self, axis=self._time_axis, prepend=float('NaN')) + np.diff(self, axis=self._time_axis, append=float('NaN'))) / self._config.frame_time).view(KpArray)._configure(self._config, self._time_axis)
+        return self._inherit(0.5 * (np.diff(self, axis=self._time_axis, prepend=float('NaN')) + np.diff(self, axis=self._time_axis, append=float('NaN'))) / self._config.frame_time)
     
     def second_derivative(self):
-        return (np.diff(self, 2, axis=self._time_axis, prepend=float('NaN'), append=float('NaN')) / self._config.frame_time / self._config.frame_time).view(KpArray)._configure(self._config, self._time_axis)
+        return self._inherit(np.diff(self, 2, axis=self._time_axis, prepend=float('NaN'), append=float('NaN')) / self._config.frame_time / self._config.frame_time)
+
 
 def disable_set(prop: property) -> property:
     def getter(self):
-        return prop.__get__(self).view(ReadOnlyArray)
+        return prop.__get__(self).copy()
     return property(getter)
 
 

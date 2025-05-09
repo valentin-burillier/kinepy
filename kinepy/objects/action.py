@@ -80,7 +80,7 @@ class InternalAction(Action):
     set_torque = __do_not_set
 
     def get_force(self) -> u.Force.point:
-        return Action.get_force(self).view(ReadOnlyArray)
+        return Action.get_force(self).copy()
 
     def get_torque(self) -> u.Torque.phy:
-        return Action.get_torque(self).view(ReadOnlyArray)
+        return Action.get_torque(self).copy()
