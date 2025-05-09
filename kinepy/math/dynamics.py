@@ -333,8 +333,8 @@ class Relation:
         eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (pulley2 == t2,), zero_holder)
         torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, p2)
 
-        _f1 = t0 + 0.5 * torque_1_2 / r2
-        _f2 = t0 - 0.5 * torque_1_2 / r2
+        _f1 = t0 - 0.5 * torque_1_2 / r2
+        _f2 = t0 + 0.5 * torque_1_2 / r2
 
         vec_2_1 = p1 - p2
         ll = Geometry.sq_mag(vec_2_1)
@@ -343,11 +343,11 @@ class Relation:
         assert np.all((r1 - r2) ** 2 <= ll), "Definitely impossible pulley disposition: (r1 - r2) ^ 2 > d ^ 2"
 
         rot = np.array(((ll[0, 0] - (r2 - r1) ** 2) ** 0.5, r1 - r2))
-        f1 = Orientation.add(vec_2_1 * _f1, rot)
-        f2 = Orientation.sub(vec_2_1 * _f2, rot)
+        f1 = Orientation.sub(vec_2_1 * _f1, rot)
+        f2 = Orientation.add(vec_2_1 * _f2, rot)
 
-        pa1 = p2 + Orientation.add(Geometry.z_det(vec_2_1), rot)
-        pa2 = p2 + Orientation.sub(Geometry.det_z(vec_2_1), rot)
+        pa1 = p2 + Orientation.add(r2 * Geometry.z_det(vec_2_1), rot)
+        pa2 = p2 + Orientation.sub(r2 * Geometry.det_z(vec_2_1), rot)
 
         Solid.add_force(config, pulley2, f1, pa1)
         Solid.add_force(config, pulley2, f2, pa2)
