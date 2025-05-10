@@ -1,6 +1,10 @@
 import kinepy.objects.config as cfg
 import kinepy.strategy.graph_data as gd
+import kinepy.math.kinematics as kin
+import kinepy.math.dynamics as dyn
+
 import typing
+import collections.abc
 
 # region Strategy Internal types
 
@@ -106,7 +110,7 @@ class GraphStep(ResolutionStep):
     def solution_count(self) -> int:
         return self._graph_index.solutions
 
-    def get_joints(self) -> Generator[int, None, None]:
+    def get_joints(self) -> collections.abc.Iterable[int]:
         return (j for j, _ in self._edges)
 
     def solve_kinematics(self, config: cfg.Config):
@@ -151,8 +155,8 @@ class RelationStep(ResolutionStep):
 
     def __init__(self, relation: int, rtype: int, is_1_to_2: bool, source: int, target: int, target_type: int, eq1: tuple[int], eq2: tuple[int]):
         self.relation = relation
-        self.relation_type = RelationType(rtype)
-        self.target_type = JointType(target_type).simple().value
+        self.relation_type = cfg.Relations.Type(rtype)
+        self.target_type = cfg.Joints.Type(target_type).primitive()
         self.is_1_to_2 = is_1_to_2
         self.source = source
         self.target = target
@@ -186,11 +190,9 @@ class RelationStep(ResolutionStep):
 class JointValueComputationStep(ResolutionStep):
     joint: int
     flags: int
-    value_function: Callable[[cfg.Config, int, int, int], None]
-    continuity_function: Callable[[cfg.Config, int], None]
 
-    def __init__(self, joint: int, _type: JointType, flags: int, s1: int, s2: int):
-        _type = _type.simple()
+    def __init__(self, joint: int, _type: cfg.Joints.Type, flags: int, s1: int, s2: int):
+        _type = _type.primitive()
         self.s1, self.s2 = s1, s2
         self.joint = joint
         self.flags = flags
@@ -206,13 +208,13 @@ class JointValueComputationStep(ResolutionStep):
             self.continuity_function = self.continuity_chooser[_type]
 
     value_chooser = {
-        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_value,
-        JointType.PRISMATIC: kin.JointValueComputation.compute_prismatic_value
+        cfg.Joints.Type.REVOLUTE: kin.JointValueComputation.compute_revolute_value,
+        cfg.Joints.Type.PRISMATIC: kin.JointValueComputation.compute_prismatic_value
     }
 
     continuity_chooser = {
-        JointType.REVOLUTE: kin.JointValueComputation.compute_revolute_continuity,
-        JointType.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
+        cfg.Joints.Type.REVOLUTE: kin.JointValueComputation.compute_revolute_continuity,
+        cfg.Joints.Type.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
     }
 
     def solve_kinematics(self, config: cfg.Config):

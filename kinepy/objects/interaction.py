@@ -16,8 +16,8 @@ class Interaction(cfg.ConfigView):
             cfg.Interactions.Type.LINEAR_SPRING: LinearSpring,
             cfg.Interactions.Type.TWISTING_SPRING: TwistingSpring
         }
-        final_type = _dict[cfg.Interactions.Type(config.relations.type_[index])]
-        cls._create_subclass(final_type)
+        final_type = _dict[cfg.Interactions.Type(config.interactions.type_[index])]
+        return cls._create_subclass(final_type)
 
 
 class UniversalInteraction(Interaction):

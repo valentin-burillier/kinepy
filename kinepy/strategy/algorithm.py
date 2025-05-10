@@ -381,6 +381,7 @@ def register_relation_step(config: cfg.Config, relation_node: types.RelationGrap
 def determine_computation_order(config: cfg.Config, input_joints: np.ndarray[int], strategy_output: list[types.ResolutionStep]) -> None:
     strategy_output.clear()
 
+    # TODO: be careful, dynamics strategy may override kinematics joints states
     joint_states = config.final_joint_states
     joint_states[:] = [0] * config.joints.count
     joint_queue: list[int] = []
@@ -425,3 +426,14 @@ def determine_computation_order(config: cfg.Config, input_joints: np.ndarray[int
 
     if len(eqs) > 1:
         raise ex.SystemConfigurationError("Could not solve entire system")
+
+    # make revolute value is computed for TwistingSpring
+    for index, type_ in enumerate(config.interactions.type_):
+        if cfg.Interactions.Type(type_) != cfg.Interactions.Type.TWISTING_SPRING:
+            continue
+        r = config.interactions.twisting_spring_revolute[index]
+        if types.JointFlags.relation_ready(joint_states[r]):
+            continue
+        s1, s2 = config.joints.solids[r]
+        strategy_output.append(types.JointValueComputationStep(r, cfg.Joints.Type.REVOLUTE, joint_states[r] & types.JointFlags.RELATION_READY, s1, s2))
+        joint_states[r] |= types.JointFlags.RELATION_READY

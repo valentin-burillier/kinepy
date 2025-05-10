@@ -1,19 +1,95 @@
 import kinepy.objects.config as cfg
 import kinepy.math.geometry as geo
+import kinepy.math.calculus as cal
 
 import numpy as np
+
+
+class Interaction:
+    @staticmethod
+    def gravity(config: cfg.Config, index):
+        first_index = config.interactions.first_action[index]
+        actions = slice(first_index, first_index+config.solids.count)
+
+        config.actions.application_point[actions] = config.solids.g_value[:]
+        config.actions.force[actions] = config.solids.mass[:, np.newaxis, np.newaxis] * config.interactions.g_fields[index]
+        config.actions.torque[actions] = 0.0
+
+    @staticmethod
+    def inertia(config: cfg.Config, index):
+        first_index = config.interactions.first_action[index]
+        actions = slice(first_index, first_index+config.solids.count)
+
+        config.actions.application_point[actions] = config.solids.g_value[:]
+
+        ori = config.solids.orientation
+        _angle = np.arctan2(ori[..., 1], ori[..., 0])
+        geo.Orientation.make_angle_continuous(_angle)
+        config.actions.torque[actions] = cal.Derivation.second_derivative(_angle, -1, config.frame_time) * config.solids.moment_of_inertia[:, np.newaxis]
+        config.actions.force[actions] = cal.Derivation.second_derivative(config.solids.g_value, -2, config.frame_time) * config.solids.mass[:, np.newaxis, np.newaxis]
+
+    @staticmethod
+    def linear_spring(config: cfg.Config, index):
+        first_index = config.interactions.first_action[index]
+        actions = slice(first_index, first_index+2)
+
+        p1 = geo.Position.point(config, config.interactions.linear_spring_s1[index], config.interactions.linear_spring_p1[index])
+        p2 = geo.Position.point(config, config.interactions.linear_spring_s2[index], config.interactions.linear_spring_p2[index])
+        config.actions.application_point[actions] = p1, p2
+
+        vec_1_2 = p2 - p1
+        length = geo.Geometry.mag(vec_1_2)
+        force_1_2 = -vec_1_2 * (length - config.interactions.spring_equilibrium_position[index]) * config.interactions.spring_stiffness[index] / length
+
+        config.actions.force[actions] = (
+            -force_1_2,
+            force_1_2,
+        )
+        config.actions.torque[actions] = 0.0
+
+    @staticmethod
+    def twisting_spring(config: cfg.Config, index):
+        first_index = config.interactions.first_action[index]
+        actions = slice(first_index, first_index+2)
+
+        r = config.interactions.twisting_spring_revolute[index]
+        angle = config.joints.value[r]
+        torque_1_2 = -(angle - config.interactions.spring_equilibrium_position[index]) * config.interactions.spring_stiffness[index]
+
+        config.actions.torque[actions] = -torque_1_2, torque_1_2
+        config.actions.force[actions] = 0.0
+
+        p1 = geo.Position.point(config, config.joints.s1[r], config.joints.revolute_p1[r])
+        config.actions.application_point[actions] = p1, p1
+
+    mapping = dict(zip(cfg.Interactions.Type, (gravity, inertia, linear_spring, twisting_spring)))
 
 
 class System:
     @staticmethod
     def set_up(config: cfg.Config):
         # OG
-        config.solids.newtons_2nd_law_forces[:] = 0.0
+        config.solids.newtons_2nd_law_force[:] = 0.0
         config.solids.newtons_2nd_law_torque[:] = 0.0
-        config.solids.g_value[:] = geo.Position.point(config, slice(None), config.solids.g)
+        config.solids.g_value[:] = geo.Position.point(config, slice(None), config.solids.g[:, np.newaxis, :])
 
         config.joints.force[:] = 0.0
         config.joints.torque[:] = 0.0
+
+        for index, type_ in enumerate(config.interactions.type_):
+            Interaction.mapping[cfg.Interactions.Type(type_)](config, index)
+
+        user_actions = config.actions.type_ == cfg.Actions.Type.USER
+        ap = config.actions.user_point[user_actions, np.newaxis, :]
+        solids = config.actions.solid[user_actions]
+        config.actions.application_point[user_actions] = geo.Position.point(config, solids, ap)
+
+        for index, type_ in enumerate(config.actions.type_):
+            t = cfg.Actions.Type(type_)
+            if t == cfg.Actions.Type.INTERNAL_OUTPUT:
+                continue
+            Solid.add_action(config, config.actions.solid[index], config.actions.force[index], config.actions.torque[index, :, np.newaxis], config.actions.application_point[index])
+
 
     @staticmethod
     def clean_up(config: cfg.Config):
@@ -27,14 +103,14 @@ class Newtons2ndLaw:
     def force(config: cfg.Config, eq: tuple[int, ...]) -> np.ndarray:
         # -(sum(known_forces) - m.a) = sum(unknown_forces(Ext/eq))
         assert 0 not in eq, Newtons2ndLaw._ground_is_not_a_free_body
-        return -np.sum(config.solids.newtons_2nd_law_force[eq], axis=0)
+        return -np.sum(config.solids.newtons_2nd_law_force[eq, ...], axis=0)
 
     @staticmethod
     def torque(config: cfg.Config, eq: tuple[int, ...], point: np.ndarray) -> np.ndarray:
         # -(sum(known_torques(g) - J.aa + pg x (sum(known_forces) - m.a)) = sum(unknown_torques(p))
         assert 0 not in eq, Newtons2ndLaw._ground_is_not_a_free_body
         # babar
-        return -np.sum(config.solids.newtons_2nd_law_torque[eq, :, np.newaxis] + geo.Geometry.det(config.solids.g_value[eq] - point, config.solids.newtons_2nd_law_force[eq]), axis=0)
+        return -np.sum(config.solids.newtons_2nd_law_torque[eq, :, np.newaxis] + geo.Geometry.det(config.solids.g_value[eq, ...] - point, config.solids.newtons_2nd_law_force[eq, ...]), axis=0)
 
     @staticmethod
     def select_group(all_eqs: tuple[tuple[int, ...], ...], target_indices: tuple[int, ...], ground_eq: int) -> tuple[tuple[int, ...], float]:

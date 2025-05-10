@@ -1,5 +1,6 @@
 import kinepy.objects.config as cfg
 import kinepy.math.geometry as geo
+import kinepy.strategy.types as strategy
 import numpy as np
 
 
@@ -124,11 +125,11 @@ class Joint(cfg.ConfigView):
     def set_input(self, value):
         self._value = value
 
-    # def _get_value(self) -> np.ndarray:
-    #     if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
-    #         strategy.JointValueComputationStep(self._index, JointType(self._type), self._config.joint_states[self._index], self._s1, self._s2).solve_kinematics(self._config)
-    #         self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
-    #     return self._value
+    def _get_value(self) -> np.ndarray:
+        if self._config.joint_states[self._index] ^ strategy.JointFlags.READY_FOR_USER:
+            strategy.JointValueComputationStep(self._index, cfg.Joints.Type(self._type), self._config.joint_states[self._index], self._s1, self._s2).solve_kinematics(self._config)
+            self._config.joint_states[self._index] = strategy.JointFlags.READY_FOR_USER
+        return self._value
 
     @cfg.ConfigView.assert_resources
     def get_value(self):

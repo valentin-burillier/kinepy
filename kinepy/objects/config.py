@@ -2,6 +2,7 @@ import typing
 import numpy as np
 import enum
 import functools
+import kinepy.math.calculus as cal
 
 
 class IntEnum(enum.Enum):
@@ -71,9 +72,9 @@ class ConfigArray(metaclass=MetaArray):
     def __init__(self):
         self.names = []
 
-        self.config_array = np.array((0, self._config_count), int)
-        self.physics_array = np.array((0, self._physics_count), float)
-        self.result_array = np.array((0, 0, self._result_count), float)
+        self.config_array = np.zeros((0, self._config_count), int)
+        self.physics_array = np.zeros((0, self._physics_count), float)
+        self.result_array = np.zeros((0, 0, self._result_count), float)
         KpProperty.check(self)
 
     @property
@@ -87,8 +88,8 @@ class ConfigArray(metaclass=MetaArray):
         result = slice(self.count, self.count + size)
         self.names.extend(('',) * size)
 
-        for arr in self.config_array, self.physics_array:
-            arr.resize((self.count, *arr.shape[1:]))
+        self.config_array.resize((self.count, self._config_count), refcheck=False)
+        self.physics_array.resize((self.count, self._physics_count), refcheck=False)
 
         return result
 
@@ -164,7 +165,7 @@ class Composite(ConfigArray):
 
 
 class Relations(ConfigArray):
-    class Type(enum.Enum):
+    class Type(IntEnum):
         GEAR_PAIR, GEAR_RACK, BELT, DISTANT, EFFORTLESS = range(5)
 
         @property
@@ -196,7 +197,7 @@ class Actions(ConfigArray):
 
     # Config attributes
     type_ = KpProperty.Type.CONFIG(0)
-    user_solid = KpProperty.Type.CONFIG(1)
+    solid = KpProperty.Type.CONFIG(1)
 
     # Physics attributes
     user_point = KpProperty.Type.PHYSICS(slice(0, 2))
@@ -274,6 +275,9 @@ class Config:
     def invalidate_config(self):
         self.state = ConfigState.NO_READ_ALLOWED
 
+    def invalidate_resources(self):
+        self.state = min(ConfigState.STRATEGY_OK, self.state)
+
     def invalidate_kinematics(self):
         self.state = min(ConfigState.ALLOCATED_RESOURCES, self.state)
 
@@ -288,11 +292,15 @@ class Config:
     def assert_no_universal(self):
         assert not self.has_universal_interaction, "Please make sure to declare all your solids and joints before adding a UniversalInteraction (Gravity, Inertia), To be safe you should add them right before calling System.set_sim_parameters"
 
+    def kp_array(self, array, axis):
+        return array.view(KpArray)._configure(self, axis)
+
 
 class ConfigView:
     __slots__ = '_index', '_config'
 
-    def __init__(self, config: Config, index: int | slice):
+    def __init__(self, config: Config, index: int):
+        assert not isinstance(index, slice)
         self._index = index
         self._config = config
 
@@ -327,7 +335,7 @@ class ConfigView:
         return ConfigView.__new__(cls if issubclass(cls, other) else other)
 
     def _kp_array(self, array, axis=-1):
-        return array.view(KpArray)._configure(self._config, axis)
+        return self._config.kp_array(array, axis)
 
 
 class KpArray(np.ndarray):
@@ -350,10 +358,10 @@ class KpArray(np.ndarray):
         return arr.view(self.__class__)._configure(self._config, self._time_axis)
 
     def derivative(self):
-        return self._inherit(0.5 * (np.diff(self, axis=self._time_axis, prepend=float('NaN')) + np.diff(self, axis=self._time_axis, append=float('NaN'))) / self._config.frame_time)
+        return self._inherit(cal.Derivation.derivative(self, self._time_axis, self._config.frame_time))
     
     def second_derivative(self):
-        return self._inherit(np.diff(self, 2, axis=self._time_axis, prepend=float('NaN'), append=float('NaN')) / self._config.frame_time / self._config.frame_time)
+        return self._inherit(cal.Derivation.second_derivative(self, self._time_axis, self._config.frame_time))
 
 
 def disable_set(prop: property) -> property:

@@ -2,6 +2,8 @@ import kinepy.objects.config as cfg
 import kinepy.objects.joints_solid as jo_so
 import kinepy.math.geometry as geo
 
+import numpy as np
+
 
 class Action(cfg.ConfigView):
     def _array(self) -> cfg.Actions:
@@ -13,7 +15,7 @@ class Action(cfg.ConfigView):
             cfg.Actions.Type.INTERNAL_OUTPUT: InternalAction,
             cfg.Actions.Type.USER: UserAction
         }
-        final_type: type[Action] = _dict[cfg.Composite.Type(config.composite_joints.type_[index])]
+        final_type: type[Action] = _dict[cfg.Actions.Type(config.actions.type_[index])]
         return cls._create_subclass(final_type)
 
     _ap = cfg.Actions.application_point()
@@ -41,7 +43,7 @@ class InternalAction(Action):
 
 class UserAction(Action):
     ap = cfg.Actions.user_point()
-    _s = cfg.Actions.user_solid()
+    _s = cfg.Actions.solid()
 
     @property
     def solid(self) -> jo_so.SolidBase:
@@ -59,7 +61,7 @@ class UserAction(Action):
         """
         Force value is described in action's solid's frame of reference
         """
-        self._force = geo.Position.vector(self._config, self._s, value)
+        self._force = geo.Position.vector(self._config, self._s, np.array(value))
 
     @cfg.ConfigView.assert_resources
     def set_torque(self, value):

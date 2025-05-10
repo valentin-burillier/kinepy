@@ -133,12 +133,12 @@ class Geometry:
 
     @staticmethod
     def move_eq(eq: tuple[int, ...], config: cfg.Config, vec: np.ndarray):
-        config.solids.position[eq] += vec
+        config.solids.position[eq, ...] += vec
 
     @staticmethod
     def rotate_eq(eq: tuple[int, ...], config: cfg.Config, rot: np.ndarray):
-        config.solids.position[eq] = Orientation.add(config.solids.position[eq], rot)
-        config.solids.orientation[eq] = Orientation.add(config.solids.orientation[eq], rot)
+        config.solids.position[eq, ...] = Orientation.add(config.solids.position[eq, ...], rot)
+        config.solids.orientation[eq, ...] = Orientation.add(config.solids.orientation[eq, ...], rot)
 
     @staticmethod
     def det_z(vec: np.ndarray) -> np.ndarray:

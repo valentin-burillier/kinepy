@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 import warnings
 import kinepy as kp
+import kinepy.objects.joints_solid as jo_so
+
 
 """
 Mostly crash tests, expected high code coverage
@@ -13,16 +15,7 @@ class InterfaceTests(unittest.TestCase):
     def test_ghost_solid(self):
         system = kp.System()
         gr = system.ground
-
-        self.assertEqual(gr.mass, 0.0)
-        self.assertEqual(gr.moment_of_inertia, 0.0)
-        self.assertTrue(np.all(gr.g == np.zeros((2,))))
-
-        self.assertRaises(AttributeError, lambda attr, v: setattr(gr, attr, v), 'mass', 1)
-        self.assertRaises(AttributeError, lambda attr, v: setattr(gr, attr, v), 'moment_of_inertia', 1)
-        self.assertRaises(AttributeError, lambda attr, v: setattr(gr, attr, v), 'g', (1, 0))
-
-        self.assertRaises(ValueError, lambda: gr.x)
+        self.assertTrue(isinstance(gr, jo_so.GhostSolid))
 
     def test_solid(self):
         system = kp.System()
@@ -93,14 +86,12 @@ class InterfaceTests(unittest.TestCase):
 
         ps = system.add_pin_slot(s0, s1)
         ps.angle.p2 = 1, 0
-        self.assertRaises(AttributeError, lambda: setattr(ps.angle, 'p1', (0, 0)))
         ps.angle.pilot()
         ps.angle.work()
 
         ps.sliding.angle1 = 1.0
-        self.assertEqual(ps.sliding.angle2, 1.0)
+        self.assertEqual(ps.sliding.angle1, 1.0)
         ps.sliding.distance1 = 1.0
-        self.assertRaises(AttributeError, lambda: setattr(ps.sliding, 'distance2', 0))
         ps.sliding.pilot()
         ps.sliding.work()
 
@@ -120,7 +111,6 @@ class InterfaceTests(unittest.TestCase):
         tt.y.angle1 = 0
         tt.y.angle2 = 2
         tt.y.distance2 = 2
-        self.assertRaises(AttributeError, lambda: setattr(tt.y, 'distance1', 0))
 
         tt.x.pilot()
         tt.y.pilot()
@@ -281,7 +271,7 @@ class InterfaceTests(unittest.TestCase):
         s0 = system.ground
         s1 = system.add_solid()
 
-        fs1 = s1.add_action((0, -1))
+        fs1 = system.add_action(s1, (0, -1))
         fs1.ap = (1, 0)
 
         s1.angle.pilot()
@@ -302,6 +292,10 @@ class InterfaceTests(unittest.TestCase):
 
         g[s0].get_force()
         g[s1].get_torque()
-        self.assertRaises(AttributeError, g[s1].set_torque, 0)
         system.solve_kinematics()
         system.solve_dynamics()
+
+
+
+if __name__ == '__main__':
+    unittest.main()

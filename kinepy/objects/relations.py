@@ -15,7 +15,7 @@ class Relation(cfg.ConfigView):
             cfg.Relations.Type.EFFORTLESS: Effortless
         }
         final_type = _dict[cfg.Relations.Type(config.relations.type_[index])]
-        cls._create_subclass(final_type)
+        return cls._create_subclass(final_type)
 
     v0 = cfg.Relations.v0()
 
@@ -79,9 +79,9 @@ class GearRack(_Gear):
 
 class Belt(_Gear):
     _g_name = 'pulley', 'pulley'
-    r1 = cfg.Relations.belt_r1
-    r2 = cfg.Relations.belt_r2
-    t0 = cfg.Relations.belt_t0
+    r1 = cfg.Relations.belt_r1()
+    r2 = cfg.Relations.belt_r2()
+    t0 = cfg.Relations.belt_t0()
 
     pulley1 = _Gear.g_property(_Gear._g1, Relation._j1, 0)
     pulley2 = _Gear.g_property(_Gear._g2, Relation._j2, 1)

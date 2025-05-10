@@ -1,18 +1,20 @@
 import unittest
-from kinepy.objects.config import OldConfig
-import kinepy.exceptions as kp_exs
-import kinepy.strategy.algorithm as algo
-import kinepy.strategy.graph_data as graph_data
 import numpy as np
 
+import kinepy.objects.config as cfg
+import kinepy.strategy.types as types
+import kinepy.strategy.graph_data as gd
+import kinepy.strategy.algorithm as algo
+import kinepy.exceptions as ex
 
-def data_graph_to_user_graph(adj: graph_data.Adjacency) -> algo.JointGraph:
-    result_graph: algo.JointGraph = [[algo.JointGraphNode(v) for v in line] for line in adj]
+
+def data_graph_to_user_graph(adj: gd.Adjacency) -> types.JointGraph:
+    result_graph: types.JointGraph = [[types.JointGraphNode(v) for v in line] for line in adj]
     return result_graph
 
 
-def apply_isomorphism(graph: algo.JointGraph, iso: algo.Isomorphism) -> algo.JointGraph:
-    result = [[algo.JointGraphNode(algo.JointType.EMPTY) for _ in graph] for _ in graph]
+def apply_isomorphism(graph: types.JointGraph, iso: types.Isomorphism) -> types.JointGraph:
+    result = [[types.JointGraphNode(cfg.Joints.Type.EMPTY) for _ in graph] for _ in graph]
 
     for x, line in enumerate(graph):
         new_x = iso[x]
@@ -22,16 +24,16 @@ def apply_isomorphism(graph: algo.JointGraph, iso: algo.Isomorphism) -> algo.Joi
     return result
 
 
-JGN = algo.JointGraphNode
+E, P, R = cfg.Joints.Type.EMPTY, cfg.Joints.Type.PRISMATIC, cfg.Joints.Type.REVOLUTE
 
-example_graph: algo.JointGraph = [
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 2), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 3), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 2), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 5), JGN(algo.JointType.REVOLUTE, 7)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 6)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 3), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 5), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 7), JGN(algo.JointType.REVOLUTE, 6), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)]
+_example_graph = [
+    [(E, -1), (R, 0), (R, 1), (E, -1), (E, -1), (E, -1), (E, -1)],
+    [(R, 0), (E, -1), (E, -1), (R, 2), (E, -1), (R, 3), (E, -1)],
+    [(R, 1), (E, -1), (E, -1), (E, -1), (R, 4), (E, -1), (E, -1)],
+    [(E, -1), (R, 2), (E, -1), (E, -1), (E, -1), (R, 5), (R, 7)],
+    [(E, -1), (E, -1), (R, 4), (E, -1), (E, -1), (R, 8), (R, 6)],
+    [(E, -1), (R, 3), (E, -1), (R, 5), (R, 8), (E, -1), (E, -1)],
+    [(E, -1), (E, -1), (E, -1), (R, 7), (R, 6), (E, -1), (E, -1)]
 ]
 r"""
         0     
@@ -52,14 +54,14 @@ r"""
        \ /     
         6     
 """
+example_graph: types.JointGraph = [[types.JointGraphNode(T, I) for T, I in line] for line in _example_graph]
 
-
-example_graph_merge0: algo.JointGraph = [
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 7)],
-    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.EMPTY), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 8), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 6)],
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 7), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 6), JGN(algo.JointType.EMPTY)]
+_example_graph_merge0 = [
+    [(E, -1), (R, 0), (R, 1), (E, -1), (E, -1)],
+    [(R, 0), (E, -1), (E, -1), (R, 8), (R, 7)],
+    [(R, 1), (E, -1), (E, -1), (R, 4), (E, -1)],
+    [(E, -1), (R, 8), (R, 4), (E, -1), (R, 6)],
+    [(E, -1), (R, 7), (E, -1), (R, 6), (E, -1)]
 ]
 r"""
             0
@@ -73,13 +75,15 @@ r"""
     4 ----- 3
         R6      
 """
-example_eqs_merge0: algo.Eq = (0,), (1, 5, 3), (2,), (4,), (6,)
-example_solid_to_eq_merge0: algo.EqMapping = 0, 1, 2, 1, 3, 1, 4
+example_graph_merge0: types.JointGraph = [[types.JointGraphNode(T, I) for T, I in line] for line in _example_graph_merge0]
+example_eqs_merge0: types.Eq = (0,), (1, 5, 3), (2,), (4,), (6,)
+example_solid_to_eq_merge0: types.EqMapping = 0, 1, 2, 1, 3, 1, 4
 
-example_graph_merge1: algo.JointGraph = [
-    [JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.REVOLUTE, 1)],
-    [JGN(algo.JointType.REVOLUTE, 0), JGN(algo.JointType.EMPTY), JGN(algo.JointType.REVOLUTE, 4)],
-    [JGN(algo.JointType.REVOLUTE, 1), JGN(algo.JointType.REVOLUTE, 4), JGN(algo.JointType.EMPTY), ]
+
+_example_graph_merge1 = [
+    [(E, -1), (R, 0), (R, 1)],
+    [(R, 0), (E, -1), (R, 4)],
+    [(R, 1), (R, 4), (E, -1), ]
 ]
 r"""
         0
@@ -89,8 +93,9 @@ r"""
     1 ----- 2
         R4
 """
-example_eqs_merge1: algo.Eq = (0,), (1, 5, 3, 4, 6), (2,)
-example_solid_to_eq_merge1: algo.EqMapping = 0, 1, 2, 1, 1, 1, 1
+example_graph_merge1: types.JointGraph = [[types.JointGraphNode(T, I) for T, I in line] for line in _example_graph_merge1]
+example_eqs_merge1: types.Eq = (0,), (1, 5, 3, 4, 6), (2,)
+example_solid_to_eq_merge1: types.EqMapping = 0, 1, 2, 1, 1, 1, 1
 
 
 def make_isomorphisms(size):
@@ -108,7 +113,7 @@ class GraphOperationsTests(unittest.TestCase):
         """
         Try to identify each registered graph when simply converted as user graph
         """
-        for g in graph_data.Graphs:
+        for g in gd.Graphs:
             graph = data_graph_to_user_graph(g.adjacency)
             iso = algo.find_isomorphism(graph)
             self.assertFalse(iso is None, f'{g}')
@@ -119,9 +124,9 @@ class GraphOperationsTests(unittest.TestCase):
         """
         Try to identify each registered dyad and triad when shuffled by any isomorphism
         """
-        graph_isomorphisms: tuple[algo.Isomorphism, ...] = 3 * (tuple(make_isomorphisms(3)),) + 10 * (tuple(make_isomorphisms(5)),)
+        graph_isomorphisms: tuple[types.Isomorphism, ...] = 3 * (tuple(make_isomorphisms(3)),) + 10 * (tuple(make_isomorphisms(5)),)
 
-        for g, iso_group in zip(graph_data.Graphs, graph_isomorphisms):
+        for g, iso_group in zip(gd.Graphs, graph_isomorphisms):
             graph = data_graph_to_user_graph(g.adjacency)
             for target_iso in iso_group:
                 _graph = apply_isomorphism(graph, target_iso)
@@ -143,98 +148,85 @@ class GraphOperationsTests(unittest.TestCase):
 
         merged_graph, merged_eqs, merged_mapping = algo.merge(example_graph_merge1, example_eqs_merge1, (1, 2, 0))
         self.assertEqual(merged_mapping, (0,) * 7)
-        self.assertEqual(merged_graph, [[JGN(algo.JointType.EMPTY)]])
+        self.assertEqual(merged_graph, [[types.JointGraphNode(E, -1)]])
 
     def test_bad_configurations(self):
         strategy = []
 
-        conf = OldConfig()
-        conf.add_solids(['', ''], np.zeros([2, 4]))
-        conf.add_joints(
-            ['', ''],
-            np.array([
-                [graph_data.R.value, 0, 1],
-                [graph_data.R.value, 0, 2],
-            ]),
-            np.zeros((2, 4))
+        conf = cfg.Config()
+        conf.solids.reserve(2)
+        joints = conf.joints.reserve(2)
+        conf.joints.type_[joints] = R, R
+        conf.joints.solids[joints] = (
+            (0, 1),
+            (0, 2)
         )
 
         # not enough constraints after inputs
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
+        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
 
         # input on solved joint
-        conf.add_joints(
-            [''],
-            np.array([
-                [graph_data.R.value, 1, 2],
-            ]),
-            np.zeros((1, 4))
+        joints = conf.joints.reserve(1)
+        conf.joints.type_[joints] = R
+        conf.joints.solids[joints] = (
+            (1, 2),
         )
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), strategy)
+        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, np.array([0]), strategy)
 
         # 1 solid too many
-        conf.add_solids([''], np.zeros([1, 4]))
-        self.assertRaises(kp_exs.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
+        conf.solids.reserve(1)
+        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
 
     def test_std_graphs(self) -> None:
         strategy = []
 
-        conf = OldConfig()
-        conf.add_solids(['', ''], np.zeros([2, 4]))
-        conf.add_joints(
-            ['', '', ''],
-            np.array([
-                [graph_data.R.value, 0, 1],
-                [graph_data.R.value, 0, 2],
-                [graph_data.R.value, 1, 2],
-            ]),
-            np.zeros((3, 4))
+        conf = cfg.Config()
+        conf.solids.reserve(2)
+        joints = conf.joints.reserve(3)
+        conf.joints.type_[joints] = R, R, R
+        conf.joints.solids[joints] = (
+            (0, 1),
+            (0, 2),
+            (1, 2)
         )
-
         algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
-        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+        self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
-        step: algo.GraphStep = strategy[0]
-        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRR)
+        step: types.GraphStep = strategy[0]
+        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gRRR)
 
-        conf = OldConfig()
-        conf.add_solids(['', ''], np.zeros([2, 4]))
-        conf.add_joints(
-            ['', '', ''],
-            np.array([
-                [graph_data.R.value, 0, 1],
-                [graph_data.R.value, 0, 2],
-                [graph_data.P.value, 1, 2],
-            ]),
-            np.zeros((3, 4))
+        conf = cfg.Config()
+        conf.solids.reserve(2)
+        joints = conf.joints.reserve(3)
+        conf.joints.type_[joints] = R, R, P
+        conf.joints.solids[joints] = (
+            (0, 1),
+            (0, 2),
+            (1, 2)
         )
-
         algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
-        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+        self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
-        step: algo.GraphStep = strategy[0]
-        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gRRP)
+        step: types.GraphStep = strategy[0]
+        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gRRP)
 
-        conf = OldConfig()
-        conf.add_solids(['', ''], np.zeros([2, 4]))
-        conf.add_joints(
-            ['', '', ''],
-            np.array([
-                [graph_data.P.value, 0, 1],
-                [graph_data.P.value, 0, 2],
-                [graph_data.R.value, 1, 2],
-            ]),
-            np.zeros((3, 4))
+        conf = cfg.Config()
+        conf.solids.reserve(2)
+        joints = conf.joints.reserve(3)
+        conf.joints.type_[joints] = P, P, R
+        conf.joints.solids[joints] = (
+            (0, 1),
+            (0, 2),
+            (1, 2)
         )
-
         algo.determine_computation_order(conf, conf.piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
-        self.assertTrue(isinstance(strategy[0], algo.GraphStep))
+        self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
-        step: algo.GraphStep = strategy[0]
-        self.assertEqual(graph_data.Graphs(step._graph_index), graph_data.Graphs.gPPR)
+        step: types.GraphStep = strategy[0]
+        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gPPR)
 
 
 if __name__ == '__main__':

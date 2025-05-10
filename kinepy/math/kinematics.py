@@ -193,8 +193,8 @@ class Relation:
 
     transformations = backward, forward
     joint_solvers = {
-        cfg.Joints.Type.REVOLUTE.value: JointInput.solve_revolute,
-        cfg.Joints.Type.PRISMATIC.value: JointInput.solve_prismatic
+        cfg.Joints.Type.REVOLUTE: JointInput.solve_revolute,
+        cfg.Joints.Type.PRISMATIC: JointInput.solve_prismatic
     }
 
     @staticmethod
