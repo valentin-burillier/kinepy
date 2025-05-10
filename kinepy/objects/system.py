@@ -297,7 +297,7 @@ class System:
         return 2 * self.__config.joints.count - 3 * (self.__config.solids.count - 1) + len(joint_input) + self.__config.relations.count
 
     @__assert_strategy
-    def set_sim_parameters(self, frame_cnt: int, total_time: float):
+    def set_sim_parameters(self, frame_cnt: int, total_time: float = 0):
         self.__config.allocate_resources(frame_cnt)
         self.__config.frame_time = total_time / (frame_cnt - 1)
 
