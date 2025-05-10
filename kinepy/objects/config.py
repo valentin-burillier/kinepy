@@ -337,6 +337,8 @@ class ConfigView:
     def _kp_array(self, array, axis=-1):
         return self._config.kp_array(array, axis)
 
+    def __eq__(self, other: typing.Self):
+        return self._config is other._config and self._array() is other._array() and self._index == other._index
 
 class KpArray(np.ndarray):
     """

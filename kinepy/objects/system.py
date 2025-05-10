@@ -42,6 +42,9 @@ class System:
     # region Joint
 
     def __add_joint(self, index, _type: cfg.Joints.Type, s1: jo_so.SolidBase, s2: jo_so.SolidBase, physics):
+        if s1 == s2:
+            raise ex.ConstraintOnSameObjectError()
+
         self.__config.invalidate_config()
         # config
         self.__config.joints.type_[index] = _type
