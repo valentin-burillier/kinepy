@@ -9,6 +9,16 @@ class Interaction(cfg.ConfigView):
     def _array(self) -> cfg.Interactions:
         return self._config.interactions
 
+    def __new__(cls, config: cfg.Config, index: int):
+        _dict = {
+            cfg.Interactions.Type.GRAVITY: Gravity,
+            cfg.Interactions.Type.INERTIA: Inertia,
+            cfg.Interactions.Type.LINEAR_SPRING: LinearSpring,
+            cfg.Interactions.Type.TWISTING_SPRING: TwistingSpring
+        }
+        final_type = _dict[cfg.Interactions.Type(config.relations.type_[index])]
+        cls._create_subclass(final_type)
+
 
 class UniversalInteraction(Interaction):
     @cfg.ConfigView.assert_resources
@@ -43,7 +53,6 @@ class LinearSpring(Interaction):
         return jo_so.SolidBase(self._config, self._s2)
 
 
-@u.UnitSystem.class_
 class TwistingSpring(Interaction):
     k = cfg.Interactions.spring_stiffness()
     a0 = cfg.Interactions.spring_equilibrium_position()

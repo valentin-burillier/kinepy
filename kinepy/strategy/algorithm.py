@@ -1,34 +1,36 @@
-from kinepy.strategy.types import *
-import kinepy.strategy.graph_data as graph_data
-import kinepy.exceptions as ex
-from kinepy.objects.config import OldConfig
+import collections.abc
 import numpy as np
 
+import kinepy.objects.config as cfg
+import kinepy.strategy.types as types
+import kinepy.strategy.graph_data as gd
+import kinepy.exceptions as ex
 
-def make_joint_graph(config: OldConfig) -> tuple[JointGraph, Eq, EqMapping]:
+
+def make_joint_graph(config: cfg.Config) -> types.StrategyJointState:
     """
     Create adjacency matrix for joint graph, initial eqs, initial eq mapping (solid_index -> eq_index), compute initial value of degrees
     """
-    n_solid = config.solid_physics.shape[0]
-    result_graph: JointGraph = [[JointGraphNode(JointType.EMPTY) for _ in range(n_solid)] for _ in range(n_solid)]
+    n_solid = config.solids.count
+    result_graph: types.JointGraph = [[types.JointGraphNode(cfg.Joints.Type.EMPTY) for _ in range(n_solid)] for _ in range(n_solid)]
 
-    for index, (_type, _s1, _s2) in enumerate(config.joint_config):
-        result_graph[_s1][_s2].set(index, graph_data.JointType(_type).simple())
-        result_graph[_s2][_s1].set(index, graph_data.JointType(_type).simple())
+    for index, (_type, (_s1, _s2)) in enumerate(zip(config.joints.type_, config.joints.solids)):
+        result_graph[_s1][_s2].set(index, cfg.Joints.Type(_type).primitive())
+        result_graph[_s2][_s1].set(index, cfg.Joints.Type(_type).primitive())
 
     return result_graph, tuple((i,) for i in range(n_solid)), tuple(range(n_solid))
 
 
-def make_relation_graph(config: OldConfig) -> RelationGraph:
+def make_relation_graph(config: cfg.Config) -> types.RelationGraph:
     """
     Create adjacency lists for the relation graph
     """
-    n_joint = config.joint_config.shape[0]
-    result_graph: RelationGraph = [[] for _ in range(n_joint)]
+    n_joint = config.joints.count
+    result_graph: types.RelationGraph = [[] for _ in range(n_joint)]
 
-    for index, (_type, _j1, _j2) in enumerate(config.relation_config[:, OldConfig.RELATION_TYPE_JOINTS]):
-        result_graph[_j1].append(r1 := RelationGraphNode(True, index))
-        result_graph[_j2].append(r2 := RelationGraphNode(False, index))
+    for index, (_j1, _j2) in enumerate(config.relations.joints):
+        result_graph[_j1].append(r1 := types.RelationGraphNode(True, index))
+        result_graph[_j2].append(r2 := types.RelationGraphNode(False, index))
 
         r1.pair = r2
         r2.pair = r1
@@ -36,18 +38,18 @@ def make_relation_graph(config: OldConfig) -> RelationGraph:
     return result_graph
 
 
-def compute_degrees(joint_graph: JointGraph) -> Degrees:
+def compute_degrees(joint_graph: types.JointGraph) -> types.Degrees:
     degrees: list[tuple[int, int]] = []
     for adj in joint_graph:
         results = [0, 0, 0]
         for node in adj:
             results[node.node_type.value] += 1
-        degrees.append((results[JointType.REVOLUTE.value], results[JointType.PRISMATIC.value]))
+        degrees.append((results[cfg.Joints.Type.REVOLUTE.value], results[cfg.Joints.Type.PRISMATIC.value]))
 
     return tuple(degrees)
 
 
-def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> tuple[JointGraph, Eq, EqMapping]:
+def merge(joint_graph: types.JointGraph, eqs: types.Eq, group_to_merge: tuple[int, ...]) -> types.StrategyJointState:
     merge_state: list[bool] = [False] * len(eqs)
     for index in group_to_merge:
         merge_state[index] = True
@@ -59,11 +61,11 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
             new_eqs.append(eq)
         else:
             new_eqs[target_eq] += eq
-    new_eqs: Eq = tuple(new_eqs)
+    new_eqs: types.Eq = tuple(new_eqs)
 
     # region joint_graph merge
 
-    new_joint_graph: JointGraph = [[JointGraphNode(JointType.EMPTY) for _ in new_eqs] for _ in new_eqs]
+    new_joint_graph: types.JointGraph = [[types.JointGraphNode(cfg.Joints.Type.EMPTY) for _ in new_eqs] for _ in new_eqs]
 
     # number of merging vertices met after the merging target; index displacement of non-merging vertices when met
     merge_count = 0
@@ -78,7 +80,7 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
             new_y = target_eq if merge_state[y] else y - merge_count
 
             # edges in the merging group are not ported (empty diagonals)
-            if new_x == new_y or joint_graph[x][y].node_type == graph_data.JointType.EMPTY:
+            if new_x == new_y or joint_graph[x][y].node_type == cfg.Joints.Type.EMPTY:
                 continue
             new_joint_graph[new_x][new_y] = joint_graph[x][y]
             new_joint_graph[new_y][new_x] = joint_graph[x][y]
@@ -95,7 +97,7 @@ def merge(joint_graph: JointGraph, eqs: Eq, group_to_merge: tuple[int, ...]) -> 
     return new_joint_graph, new_eqs, tuple(new_solid_to_eq)
 
 
-def can_match(current_isomorphism: list[int], new_test_graph_vertex: int, new_target_vertex: int, target_graph: JointGraph, test_graph: graph_data.Adjacency) -> bool:
+def can_match(current_isomorphism: list[int], new_test_graph_vertex: int, new_target_vertex: int, target_graph: types.JointGraph, test_graph: gd.Adjacency) -> bool:
     """
     Check if the new vertex can be added to the current_isomorphism by comparing it with all previous vertices
     """
@@ -111,7 +113,7 @@ def isomorphism_heuristic(target_degree: tuple[int, int], test_degree: tuple[int
     return target_degree[0] >= test_degree[0] and target_degree[1] >= test_degree[1]
 
 
-def find_isomorphism_test_graph(target_graph: JointGraph, target_degrees: Degrees, test_graph: graph_data.Adjacency, test_degree: Degrees) -> tuple[bool, Isomorphism]:
+def find_isomorphism_test_graph(target_graph: types.JointGraph, target_degrees: types.Degrees, test_graph: gd.Adjacency, test_degree: types.Degrees) -> tuple[bool, types.Isomorphism]:
     """
     Try to find an isomorphism from test_graph to a subgraph of target_graph.
     The potential isomorphism is built vertex by vertex with backtracking (naive approach with degree heuristic)
@@ -158,13 +160,13 @@ def find_isomorphism_test_graph(target_graph: JointGraph, target_degrees: Degree
     return test_graph_vertex == len(test_graph), tuple(current_isomorphism[:len(test_graph)])
 
 
-def find_isomorphism(target_graph: JointGraph) -> None | tuple[graph_data.Graphs, Isomorphism]:
+def find_isomorphism(target_graph: types.JointGraph) -> None | tuple[gd.Graphs, types.Isomorphism]:
     """
     Try to find a test_graph that is isomorphic to a subgraph of target_graph with its isomorphism
     """
 
     target_degrees = compute_degrees(target_graph)
-    for g in graph_data.Graphs:
+    for g in gd.Graphs:
         is_iso, iso = find_isomorphism_test_graph(target_graph, target_degrees, g.adjacency, g.degrees)
         if not is_iso:
             continue
@@ -173,7 +175,7 @@ def find_isomorphism(target_graph: JointGraph) -> None | tuple[graph_data.Graphs
     return None
 
 
-def register_graph_step(config: OldConfig, graph: graph_data.Graphs, isomorphism: Isomorphism, joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, strategy_output: list[ResolutionStep], joint_states: list[int], joint_queue: list[int], *, before_inputs: bool) -> tuple[JointGraph, Eq, EqMapping]:
+def register_graph_step(config: cfg.Config, graph: gd.Graphs, isomorphism: types.Isomorphism, joint_graph: types.JointGraph, eqs: types.Eq, solid_to_eq: types.EqMapping, strategy_output: list[types.ResolutionStep], joint_states: list[int], joint_queue: list[int], *, before_inputs: bool) -> types.StrategyJointState:
 
     edge_orientations = []
     for src, dest in graph.edges:
@@ -181,12 +183,12 @@ def register_graph_step(config: OldConfig, graph: graph_data.Graphs, isomorphism
 
         edge_joint_index = joint_graph[src_eq][dest_eq].joint_index
 
-        s1, s2 = config.joint_config[edge_joint_index, OldConfig.JOINT_SOLIDS]
+        s1, s2 = config.joints.solids[edge_joint_index]
         joint_src_eq, joint_dest_eq = solid_to_eq[s1], solid_to_eq[s2]
 
         edge_orientations.append((edge_joint_index, joint_src_eq == src_eq))
 
-    step = GraphStep(graph, tuple(edge_orientations), tuple(eqs[i] for i in isomorphism))
+    step = types.GraphStep(graph, tuple(edge_orientations), tuple(eqs[i] for i in isomorphism))
     strategy_output.append(step)
 
     try:
@@ -199,38 +201,39 @@ def register_graph_step(config: OldConfig, graph: graph_data.Graphs, isomorphism
     return merge(joint_graph, eqs, isomorphism)
 
 
-def register_solved_joints(config: OldConfig, joints: Generator[int, None, None], joint_states: list[int], joint_queue: list[int], *, value_is_computed: bool, certain_continuity: bool) -> None:
+def register_solved_joints(config: cfg.Config, joints: collections.abc.Iterable[int], joint_states: list[int], joint_queue: list[int], *, value_is_computed: bool, certain_continuity: bool) -> None:
     for joint in joints:
-        if joint_states[joint] & JointFlags.SOLVED_BIT:
+        if joint_states[joint] & types.JointFlags.SOLVED_BIT:
             raise ex.SystemConfigurationError(f"Trying to solve <joint:{joint}> that is already solved")
-        joint_states[joint] |= JointFlags.SOLVED_BIT | (certain_continuity or graph_data.JointType(config.joint_config[joint, OldConfig.JOINT_TYPE]) == graph_data.JointType.PRISMATIC) * JointFlags.CONTINUOUS_BIT | value_is_computed * JointFlags.COMPUTED_BIT
+        joint_states[joint] |= types.JointFlags.solved_joint(config.joints.type_[joint], value_is_computed, certain_continuity)
         joint_queue.append(joint)
 
 
-def test_gear_conformity(config: OldConfig, relation_node: RelationGraphNode, solid_to_eq: EqMapping) -> bool:
+def test_gear_conformity(config: cfg.Config, relation_node: types.RelationGraphNode, solid_to_eq: types.EqMapping) -> bool:
     rel = relation_node.relation
-    _type, j1, j2 = config.relation_config[rel]
+    _type = config.relations.type_[rel]
+    j1, j2 = config.relations.joints[rel]
 
-    if graph_data.RelationType(_type) in graph_data.GEAR_TYPES:
+    if cfg.Relations.Type(_type).is_gear:
         src, target = (j1, j2) if relation_node.is_1_to_2 else (j2, j1)
         # src is solved: src_eq is unique
-        src_eq: int = solid_to_eq[config.joint_config[src, OldConfig.JOINT_S1]]
+        src_eq: int = solid_to_eq[config.joints.s1[src]]
 
-        ts1, ts2 = config.joint_config[target, OldConfig.JOINT_SOLIDS]
+        ts1, ts2 = config.joints.solids[target]
         eq1, eq2 = solid_to_eq[ts1], solid_to_eq[ts2]
 
         relation_node.common_eq = (eq2 == src_eq) if src_eq in (eq1, eq2) else -1
         inference: int = ts1 if eq1 == src_eq else ts2 if eq2 == src_eq else -1
-        index = OldConfig.RELATION_G2 if relation_node.is_1_to_2 else OldConfig.RELATION_G1
+        array = config.relations.g2 if relation_node.is_1_to_2 else config.relations.g1
 
         if inference != -1:
-            infer_pinion_rack(config, rel, inference, index)
+            infer_pinion_rack(config, rel, inference, array)
 
         return relation_node.common_eq != -1
     return True
 
 
-def find_solved_relations_push_gears(config: OldConfig, relation_graph: RelationGraph, solid_to_eq: EqMapping, joint_queue: list[int], gear_queue: list[RelationGraphNode]) -> Generator[RelationGraphNode, None, None]:
+def find_solved_relations_push_gears(config: cfg.Config, relation_graph: types.RelationGraph, solid_to_eq: types.EqMapping, joint_queue: list[int], gear_queue: list[types.RelationGraphNode]) -> collections.abc.Iterable[types.RelationGraphNode]:
     while joint_queue:
         joint = joint_queue.pop(0)
 
@@ -245,7 +248,7 @@ def find_solved_relations_push_gears(config: OldConfig, relation_graph: Relation
             gear_queue.append(relation_node)
 
 
-def find_solved_relations(relation_graph: RelationGraph, joint_queue: list[int]) -> Generator[RelationGraphNode, None, None]:
+def find_solved_relations(relation_graph: types.RelationGraph, joint_queue: list[int]) -> collections.abc.Iterable[types.RelationGraphNode]:
     while joint_queue:
         joint: int = joint_queue.pop(0)
 
@@ -257,7 +260,7 @@ def find_solved_relations(relation_graph: RelationGraph, joint_queue: list[int])
             yield relation_node
 
 
-def find_solved_relations_with_delayed_gears(config: OldConfig, relation_graph: RelationGraph, solid_to_eq: EqMapping, joint_queue: list[int], gear_queue: list[RelationGraphNode]):
+def find_solved_relations_with_delayed_gears(config: cfg.Config, relation_graph: types.RelationGraph, solid_to_eq: types.EqMapping, joint_queue: list[int], gear_queue: list[types.RelationGraphNode]):
     yield from find_solved_relations_push_gears(config, relation_graph, solid_to_eq, joint_queue, gear_queue)
     queue_tail = 0
     while queue_tail < len(gear_queue):
@@ -274,13 +277,14 @@ def find_solved_relations_with_delayed_gears(config: OldConfig, relation_graph: 
         queue_tail = 0
 
 
-def register_input_joints(config: OldConfig, input_joints: np.ndarray[int], joint_graph: JointGraph, eqs: Eq, solid_to_eq: EqMapping, strategy_output: list[ResolutionStep], joint_states: list[int], joint_queue: list[int]) -> tuple[JointGraph, Eq, EqMapping]:
+def register_input_joints(config: cfg.Config, input_joints: np.ndarray, joint_graph: types.JointGraph, eqs: types.Eq, solid_to_eq: types.EqMapping, strategy_output: list[types.ResolutionStep], joint_states: list[int], joint_queue: list[int]) -> types.StrategyJointState:
     for joint in input_joints:
         joint: int
-        _type, s1, s2 = config.joint_config[joint]
+        _type = config.joints.type_[joint]
+        s1, s2 = config.joints.solids[joint]
         eq1_index: int = solid_to_eq[s1]
         eq2_index: int = solid_to_eq[s2]
-        step: JointStep = JointStep(JointType(_type), s1, s2, joint, eqs[eq1_index], eqs[eq2_index])
+        step: types.JointStep = types.JointStep(cfg.Joints.Type(_type), s1, s2, joint, eqs[eq1_index], eqs[eq2_index])
         strategy_output.append(step)
         joint_graph, eqs, solid_to_eq = merge(joint_graph, eqs, (eq1_index, eq2_index))
 
@@ -294,21 +298,21 @@ def register_input_joints(config: OldConfig, input_joints: np.ndarray[int], join
     return joint_graph, eqs, solid_to_eq
 
 
-def infer_pinion_rack(config: OldConfig, relation: int, solid: int, index: int) -> None:
-    if config.relation_config[relation, index] == -1:
-        config.relation_config[relation, index] = solid
-    elif config.relation_config[relation, index] != solid:
+def infer_pinion_rack(config: cfg.Config, relation: int, solid: int, array) -> None:
+    if array[relation] == -1:
+        array[relation] = solid
+    elif array[relation] != solid:
         raise ex.SystemConfigurationError("inferred pinion/rack does not match configuration")
 
 
-def check_gear_formation(config: OldConfig, solid_to_eq: EqMapping) -> list[int]:
+def check_gear_formation(config: cfg.Config, solid_to_eq: types.EqMapping) -> list[int]:
     # Pre-requisite: no gear is in the gear queue, i.e. (eq11 == eq12 xor eq21 == eq22) is false for every gear
     result: list[int] = []
 
-    for rel, (_type, j1, j2) in enumerate(config.relation_config[:, OldConfig.RELATION_TYPE_JOINTS]):
-        if graph_data.RelationType(_type) not in graph_data.GEAR_TYPES:
+    for rel, (_type, joints) in enumerate(zip(config.relations.type_, config.relations.joints)):
+        if not cfg.Relations.Type(_type).is_gear:
             continue
-        (s11, s12), (s21, s22) = config.joint_config[[j1, j2], OldConfig.JOINT_SOLIDS]
+        (s11, s12), (s21, s22) = config.joints.solids[joints]
         eq11, eq12, eq21, eq22 = solid_to_eq[s11], solid_to_eq[s12], solid_to_eq[s21], solid_to_eq[s22]
 
         if eq11 == eq12 == eq21 == eq22:
@@ -316,42 +320,44 @@ def check_gear_formation(config: OldConfig, solid_to_eq: EqMapping) -> list[int]
             continue
 
         if eq11 == eq21:
-            infer_pinion_rack(config, rel, s12, OldConfig.RELATION_G1)
-            infer_pinion_rack(config, rel, s22, OldConfig.RELATION_G2)
+            infer_pinion_rack(config, rel, s12, config.relations.g1)
+            infer_pinion_rack(config, rel, s22, config.relations.g2)
         elif eq12 == eq21:
-            infer_pinion_rack(config, rel, s11, OldConfig.RELATION_G1)
-            infer_pinion_rack(config, rel, s22, OldConfig.RELATION_G2)
+            infer_pinion_rack(config, rel, s11, config.relations.g1)
+            infer_pinion_rack(config, rel, s22, config.relations.g2)
         elif eq11 == eq22:
-            infer_pinion_rack(config, rel, s12, OldConfig.RELATION_G1)
-            infer_pinion_rack(config, rel, s21, OldConfig.RELATION_G2)
+            infer_pinion_rack(config, rel, s12, config.relations.g1)
+            infer_pinion_rack(config, rel, s21, config.relations.g2)
         elif eq12 == eq22:
-            infer_pinion_rack(config, rel, s11, OldConfig.RELATION_G1)
-            infer_pinion_rack(config, rel, s21, OldConfig.RELATION_G2)
+            infer_pinion_rack(config, rel, s11, config.relations.g1)
+            infer_pinion_rack(config, rel, s21, config.relations.g2)
         else:
             result.append(rel)
     return result
 
 
-def simple_gen(value: int) -> Generator[int, None, None]:
+def simple_gen(value: int) -> collections.abc.Iterable[int]:
     yield value
 
 
-def register_relation_step(config: OldConfig, relation_node: RelationGraphNode, eqs: Eq, solid_to_eq: EqMapping, joint_states: list[int], strategy_output: list[ResolutionStep], joint_queue: list[int], joint_graph: JointGraph) -> tuple[JointGraph, Eq, EqMapping]:
-    _type, j1, j2 = config.relation_config[relation_node.relation, OldConfig.RELATION_TYPE_JOINTS]
+def register_relation_step(config: cfg.Config, relation_node: types.RelationGraphNode, eqs: types.Eq, solid_to_eq: types.EqMapping, joint_states: list[int], strategy_output: list[types.ResolutionStep], joint_queue: list[int], joint_graph: types.JointGraph) -> types.StrategyJointState:
+    _type = config.relations.type_[relation_node.relation]
+    j1, j2 = config.relations.joints[relation_node.relation]
 
     source, target = (j1, j2) if relation_node.is_1_to_2 else (j2, j1)
     relation = relation_node.relation
-    (stype, s1, s2), (ttype, t1, t2) = config.joint_config[[source, target]]
 
-    if not joint_states[source] & JointFlags.COMPUTED_BIT or not joint_states[source] & JointFlags.CONTINUOUS_BIT:
-        strategy_output.append(JointValueComputationStep(source, stype, joint_states[source] & (JointFlags.CONTINUOUS_BIT | JointFlags.COMPUTED_BIT), s1, s2))
-        joint_states[source] |= JointFlags.COMPUTED_BIT | JointFlags.CONTINUOUS_BIT
+    stype, ttype = config.joints.type_[[source, target]]
+    (s1, s2), (t1, t2) = config.joints.solids[[source, target]]
+
+    if not types.JointFlags.relation_ready(joint_states[source]):
+        strategy_output.append(types.JointValueComputationStep(source, stype, joint_states[source] & types.JointFlags.RELATION_READY, s1, s2))
+        joint_states[source] |= types.JointFlags.RELATION_READY
 
     eq1, eq2 = solid_to_eq[t1], solid_to_eq[t2]
 
-    src_g, dst_g = (OldConfig.RELATION_G1, OldConfig.RELATION_G2) if relation_node.is_1_to_2 else (OldConfig.RELATION_G2, OldConfig.RELATION_G1)
-
-    if graph_data.RelationType(_type) in graph_data.GEAR_TYPES:
+    if cfg.Relations.Type(_type).is_gear:
+        src_g, dst_g = (config.relations.g1, config.relations.g2) if relation_node.is_1_to_2 else (config.relations.g2, config.relations.g1)
         src_eq = solid_to_eq[s1]
         if src_eq == eq1:
             infer_pinion_rack(config, relation, t2, dst_g)
@@ -359,9 +365,9 @@ def register_relation_step(config: OldConfig, relation_node: RelationGraphNode, 
             infer_pinion_rack(config, relation, t1, dst_g)
         else:
             raise ex.SystemConfigurationError(f"(internal error) no common eq on solved gear {relation}")
-        if config.relation_config[relation, src_g] == -1:
+        if src_g[relation] == -1:
             raise ex.SystemConfigurationError(f"Could not infer pinion/rack for {relation}")
-    strategy_output.append(RelationStep(relation_node.relation, _type, relation_node.is_1_to_2, source, target, ttype, eqs[eq1], eqs[eq2]))
+    strategy_output.append(types.RelationStep(relation_node.relation, _type, relation_node.is_1_to_2, source, target, ttype, eqs[eq1], eqs[eq2]))
     try:
         register_solved_joints(config, simple_gen(target), joint_states, joint_queue, value_is_computed=True, certain_continuity=True)
     except ex.SystemConfigurationError as e:
@@ -372,13 +378,13 @@ def register_relation_step(config: OldConfig, relation_node: RelationGraphNode, 
     return merge(joint_graph, eqs, (solid_to_eq[t1], solid_to_eq[t2]))
 
 
-def determine_computation_order(config: OldConfig, input_joints: np.ndarray[int], strategy_output: list[ResolutionStep]) -> None:
+def determine_computation_order(config: cfg.Config, input_joints: np.ndarray[int], strategy_output: list[types.ResolutionStep]) -> None:
     strategy_output.clear()
 
     joint_states = config.final_joint_states
-    joint_states[:] = [0] * config.joint_config.shape[0]
+    joint_states[:] = [0] * config.joints.count
     joint_queue: list[int] = []
-    gear_queue: list[RelationGraphNode] = []
+    gear_queue: list[types.RelationGraphNode] = []
 
     joint_graph, eqs, solid_to_eq = make_joint_graph(config)
     relation_graph = make_relation_graph(config)

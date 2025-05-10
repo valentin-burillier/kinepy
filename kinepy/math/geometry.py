@@ -8,10 +8,10 @@ type OrientedJoint = tuple[int, bool]
 
 class Joint:
     class Direction(enum.Enum):
-        TARGET, SOURCE = range(2)
+        SOURCE, TARGET = range(2)
 
     @staticmethod
-    def get_solid(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET) -> int:
+    def get_solid(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE) -> int:
         """
         Get s1 or s2 depending on joint orientation and the desired direction
         """
@@ -19,7 +19,7 @@ class Joint:
         return config.joints.solids[j_index, orientation ^ direction.value]
 
     @staticmethod
-    def get_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+    def get_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
         """
         Get p1 or p2 depending on joint orientation and the desired direction
         """
@@ -28,22 +28,22 @@ class Joint:
         return point_slice[orientation ^ direction.value][j_index]
 
     @staticmethod
-    def get_solid_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+    def get_solid_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
         _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Position.point(config, _s_index, Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
-    def get_solid_vector(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+    def get_solid_vector(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
         _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return Position.vector(config, _s_index, Joint.get_point(config, oriented_joint, direction))
 
     @staticmethod
-    def get_solid_orientation(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+    def get_solid_orientation(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
         _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return config.solids.orientation[_s_index]
 
     @staticmethod
-    def get_solid_position(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.TARGET):
+    def get_solid_position(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
         _s_index: int = Joint.get_solid(config, oriented_joint, direction)
         return config.solids.position[_s_index]
 

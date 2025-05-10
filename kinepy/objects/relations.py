@@ -14,7 +14,8 @@ class Relation(cfg.ConfigView):
             cfg.Relations.Type.DISTANT: Distant,
             cfg.Relations.Type.EFFORTLESS: Effortless
         }
-        return cfg.ConfigView.__new__(_dict[cfg.Relations.Type(config.relations.type_[index])])
+        final_type = _dict[cfg.Relations.Type(config.relations.type_[index])]
+        cls._create_subclass(final_type)
 
     v0 = cfg.Relations.v0()
 

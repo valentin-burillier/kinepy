@@ -1,84 +1,84 @@
-import numpy as np
+import kinepy.objects.config as cfg
+import kinepy.math.geometry as geo
 
-from kinepy.math.geometry import *
-from kinepy.objects.config import OldConfig
-from kinepy.strategy.graph_data import JointType
+import numpy as np
 
 
 class JointValueComputation:
     @staticmethod
-    def do_not_compute_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
+    def do_not_compute_value(config: cfg.Config, joint: int, s1: int, s2: int) -> None:
         pass
 
     @staticmethod
-    def compute_revolute_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
-        s1_orientation = Orientation.get(config, s1)
-        s2_orientation = Orientation.get(config, s2)
+    def compute_revolute_value(config: cfg.Config, joint: int, s1: int, s2: int) -> None:
+        s1_orientation = config.solids.orientation[s1]
+        s2_orientation = config.solids.orientation[s2]
 
-        diff = Orientation.sub(s2_orientation, s1_orientation)
-        config.results.joint_values[joint] = np.arctan2(diff[..., 1], diff[..., 0])
-
-    @staticmethod
-    def compute_prismatic_value(config: OldConfig, joint: int, s1: int, s2: int) -> None:
-        angle = config.joint_physics[joint, (OldConfig.JOINT_A1,)]
-        director = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle))
-        config.results.joint_values[joint] = Geometry.dot(director, Position.get(config, s2) - Position.get(config, s1))[..., 0]
+        diff = geo.Orientation.sub(s2_orientation, s1_orientation)
+        config.joints.value[joint] = np.arctan2(diff[..., 1], diff[..., 0])
 
     @staticmethod
-    def do_not_compute_continuity(config: OldConfig, joint: int):
+    def compute_prismatic_value(config: cfg.Config, joint: int, s1: int, s2: int) -> None:
+        angle = config.joints.prismatic_angle1[joint]
+        director = geo.Orientation.add(config.solids.orientation[s1], geo.Orientation.from_angle(angle))
+        config.joints.value[joint] = geo.Geometry.dot(director, config.solids.position[s2] - config.solids.position[s1])[..., 0]
+
+    @staticmethod
+    def do_not_compute_continuity(config: cfg.Config, joint: int):
         pass
 
     @staticmethod
-    def compute_revolute_continuity(config: OldConfig, joint: int):
-        Orientation.make_angle_continuous(config.results.joint_values[joint])
+    def compute_revolute_continuity(config: cfg.Config, joint: int):
+        geo.Orientation.make_angle_continuous(config.joints.value[joint])
 
 
 class JointInput:
     @staticmethod
-    def solve_revolute(config: OldConfig, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+    def solve_revolute(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
 
-        s1_point = Position.point(config, s1, config.joint_physics[joint, OldConfig.JOINT_P1])
-        s2_point = Position.point(config, s2, config.joint_physics[joint, OldConfig.JOINT_P2])
+        s1_point = geo.Position.point(config, s1, config.joints.revolute_p1[joint])
+        s2_point = geo.Position.point(config, s2, config.joints.revolute_p2[joint])
 
-        s1_ori = Orientation.get(config, s1)
-        s2_ori = Orientation.get(config, s2)
+        s1_ori = config.solids.orientation[s1]
+        s2_ori = config.solids.orientation[s2]
 
-        rotation = Orientation.sub(s1_ori, s2_ori)
-        total_rotation = Orientation.add(rotation, Orientation.from_angle(config.results.joint_values[joint]))
+        rotation = geo.Orientation.sub(s1_ori, s2_ori)
+        total_rotation = geo.Orientation.add(rotation, geo.Orientation.from_angle(config.joints.value[joint]))
 
-        Geometry.move_eq(eq2, config, -s2_point)
-        Geometry.rotate_eq(eq2, config, total_rotation)
-        Geometry.move_eq(eq2, config, s1_point)
+        geo.Geometry.rotate_eq(eq2, config, total_rotation)
+        geo.Geometry.move_eq(eq2, config, s1_point + geo.Orientation.add(-s2_point, total_rotation))
 
     @staticmethod
-    def solve_prismatic(config: OldConfig, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
-        angle1, distance1, angle2, distance2 = config.joint_physics[joint]
-        s1_point = Orientation.add(Orientation.get(config, s1), Orientation.from_angle(angle1))
-        s2_point = Orientation.add(Orientation.get(config, s2), Orientation.from_angle(angle2))
+    def solve_prismatic(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+        angle1, distance1, angle2, distance2 = config.joints.prismatic_angle1[joint], config.joints.prismatic_distance1[joint], config.joints.prismatic_angle2[joint], config.joints.prismatic_distance2[joint]
+        s1_point = geo.Position.vector(config, s1, geo.Orientation.from_angle(angle1))
+        s2_point = geo.Position.vector(config, s2, geo.Orientation.from_angle(angle2))
 
-        total_rotation = Orientation.sub(s1_point, s2_point)
+        total_rotation = geo.Orientation.sub(s1_point, s2_point)
 
-        Geometry.move_eq(eq2, config, -Geometry.det_z(s2_point) * distance2 - Position.get(config, s2))
-        Geometry.rotate_eq(eq2, config, total_rotation)
-        Geometry.move_eq(eq2, config, Position.get(config, s1) + Geometry.det_z(s1_point) * distance1 + s1_point * config.results.joint_values[joint, :, np.newaxis])
+        p1 = config.solids.position[s1] + geo.Geometry.det_z(s1_point) * distance1 + s1_point * config.joints.value[joint, ..., np.newaxis]
+        p2 = -geo.Geometry.det_z(s2_point) * distance2 - config.solids.position[s2]
+        geo.Geometry.rotate_eq(eq2, config, total_rotation)
+        geo.Geometry.move_eq(eq2, config, p1 + geo.Orientation.add(total_rotation, p2))
 
 
 class System:
     @staticmethod
-    def set_up(config: OldConfig):
-        config.results.solid_values[:] = 0.0, 0.0, 1.0, 0.0
+    def set_up(config: cfg.Config):
+        config.solids.position[...] = 0.0, 0.0
+        config.solids.orientation[...] = 1.0, 0.0
         config.joint_states[:] = config.final_joint_states
 
     @staticmethod
-    def clean_up(config: OldConfig):
-        eq = tuple(range(config.solid_physics.shape[0]))
-        Geometry.move_eq(eq, config, -Position.get(config, 0))
-        Geometry.rotate_eq(eq, config, Orientation.get(config, 0) * np.array([1, -1]))
+    def clean_up(config: cfg.Config):
+        eq = tuple(range(config.solids.count))
+        geo.Geometry.move_eq(eq, config, -config.solids.position[0])
+        geo.Geometry.rotate_eq(eq, config, config.solids.orientation[0] * (1, -1))
 
 
 class Graph:
     @staticmethod
-    def solve_rrr(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_rrr(config: cfg.Config, edges: tuple[geo.OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -90,30 +90,30 @@ class Graph:
         r0, r1, r2 = edges
 
         # vectors in each eq
-        v0 = Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r0)
-        v1 = Joint.get_solid_point(config, r2) - Joint.get_solid_point(config, r0, True)
-        v2 = Joint.get_solid_point(config, r2, True) - Joint.get_solid_point(config, r1, True)
+        v0 = geo.Joint.get_solid_point(config, r1) - geo.Joint.get_solid_point(config, r0)
+        v1 = geo.Joint.get_solid_point(config, r2) - geo.Joint.get_solid_point(config, r0, geo.Joint.Direction.TARGET)
+        v2 = geo.Joint.get_solid_point(config, r2, geo.Joint.Direction.TARGET) - geo.Joint.get_solid_point(config, r1, geo.Joint.Direction.TARGET)
 
-        sq_a = Geometry.sq_mag(v0)
-        sq_b = Geometry.sq_mag(v1)
-        sq_c = Geometry.sq_mag(v2)
+        sq_a = geo.Geometry.sq_mag(v0)
+        sq_b = geo.Geometry.sq_mag(v1)
+        sq_c = geo.Geometry.sq_mag(v2)
         inv_ab = (sq_a * sq_b) ** -0.5
 
-        sign = (1, -1)[not solution_index]
+        sign = (1, -1)[solution_index]
         cos_angle = 0.5 * (sq_a + sq_b - sq_c) * inv_ab
         sin_angle = sign * (1 - cos_angle * cos_angle) ** 0.5
 
-        total_rotation = Orientation.add(Orientation.sub(v0, v1) * inv_ab, np.r_['-1', cos_angle, sin_angle])
-        Geometry.rotate_eq(eq1, config, total_rotation)
-        Geometry.move_eq(eq1, config, Joint.get_solid_point(config, r0) - Joint.get_solid_point(config, r0, True))
+        total_rotation = geo.Orientation.add(geo.Orientation.sub(v0, v1) * inv_ab, np.r_['-1', cos_angle, sin_angle])
+        geo.Geometry.rotate_eq(eq1, config, total_rotation)
+        geo.Geometry.move_eq(eq1, config, geo.Joint.get_solid_point(config, r0) - geo.Joint.get_solid_point(config, r0, geo.Joint.Direction.TARGET))
 
-        _v1 = Joint.get_solid_point(config, r2) - Joint.get_solid_point(config, r1)
-        eq2_rotation = Orientation.sub(_v1, v2) / sq_c
-        Geometry.rotate_eq(eq2, config, eq2_rotation)
-        Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
+        _v1 = geo.Joint.get_solid_point(config, r2) - geo.Joint.get_solid_point(config, r1)
+        eq2_rotation = geo.Orientation.sub(_v1, v2) / sq_c
+        geo.Geometry.rotate_eq(eq2, config, eq2_rotation)
+        geo.Geometry.move_eq(eq2, config, geo.Joint.get_solid_point(config, r1) - geo.Joint.get_solid_point(config, r1, geo.Joint.Direction.TARGET))
 
     @staticmethod
-    def solve_rrp(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_rrp(config: cfg.Config, edges: tuple[geo.OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -124,32 +124,32 @@ class Graph:
         eq0, eq1, eq2 = eqs
         r0, r1, p2 = edges
 
-        v0 = Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r0)
+        v0 = geo.Joint.get_solid_point(config, r1) - geo.Joint.get_solid_point(config, r0)
 
-        _angle21, _distance21 = Joint.get_point(config, p2)
-        _angle22, _distance22 = Joint.get_point(config, p2, True)
-        v1 = Orientation.add(Joint.get_solid_orientation(config, p2), Orientation.from_angle(_angle21))
+        _angle21, _distance21 = geo.Joint.get_point(config, p2)
+        _angle22, _distance22 = geo.Joint.get_point(config, p2, geo.Joint.Direction.TARGET)
+        v1 = geo.Orientation.add(geo.Joint.get_solid_orientation(config, p2), geo.Orientation.from_angle(_angle21))
 
-        eq2_rotation = Orientation.sub(v1, Orientation.add(Joint.get_solid_orientation(config, p2, True), Orientation.from_angle(_angle22)))
-        Geometry.rotate_eq(eq2, config, eq2_rotation)
+        eq2_rotation = geo.Orientation.sub(v1, geo.Orientation.add(geo.Joint.get_solid_orientation(config, p2, geo.Joint.Direction.TARGET), geo.Orientation.from_angle(_angle22)))
+        geo.Geometry.rotate_eq(eq2, config, eq2_rotation)
 
-        sq_v0_v1 = Geometry.sq_mag(v0)  # * Geometry.sq_mag(v1) = 1
+        sq_v0_v1 = geo.Geometry.sq_mag(v0)  # * geo.Geometry.sq_mag(v1) = 1
 
         sign = (1, -1)[solution_index]
-        v0_v1_cos_angle = Geometry.det(
+        v0_v1_cos_angle = geo.Geometry.det(
             v1,
-            Joint.get_solid_position(config, p2) - Joint.get_solid_point(config, r0, True) +
-            Joint.get_solid_point(config, r1, True) - Joint.get_solid_position(config, p2, True)
+            geo.Joint.get_solid_position(config, p2) - geo.Joint.get_solid_point(config, r0, geo.Joint.Direction.TARGET) +
+            geo.Joint.get_solid_point(config, r1, geo.Joint.Direction.TARGET) - geo.Joint.get_solid_position(config, p2, geo.Joint.Direction.TARGET)
         ) + (_distance21 - _distance22)
         v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
-        total_rotation = Orientation.add(Orientation.sub(Geometry.z_det(v1), v0), np.r_['-1', v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
+        total_rotation = geo.Orientation.add(geo.Orientation.sub(geo.Geometry.z_det(v1), v0), np.r_['-1', v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
 
-        Geometry.rotate_eq(eq0, config, total_rotation)
-        Geometry.move_eq(eq0, config, Joint.get_solid_point(config, r0, True) - Joint.get_solid_point(config, r0))
-        Geometry.move_eq(eq2, config, Joint.get_solid_point(config, r1) - Joint.get_solid_point(config, r1, True))
+        geo.Geometry.rotate_eq(eq0, config, total_rotation)
+        geo.Geometry.move_eq(eq0, config, geo.Joint.get_solid_point(config, r0, geo.Joint.Direction.TARGET) - geo.Joint.get_solid_point(config, r0))
+        geo.Geometry.move_eq(eq2, config, geo.Joint.get_solid_point(config, r1) - geo.Joint.get_solid_point(config, r1, geo.Joint.Direction.TARGET))
 
     @staticmethod
-    def solve_ppr(config: OldConfig, edges: tuple[OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
+    def solve_ppr(config: cfg.Config, edges: tuple[geo.OrientedJoint, ...], eqs: tuple[tuple[int, ...], ...], solution_index: int):
         r"""
                 0
                / \
@@ -160,26 +160,26 @@ class Graph:
         eq0, eq1, eq2 = eqs
         p0, p1, r2 = edges
 
-        _angle10, _distance10 = Joint.get_point(config, p0)
-        _angle20, _distance20 = Joint.get_point(config, p0, True)
-        v1 = Orientation.add(Joint.get_solid_orientation(config, p0), Orientation.from_angle(_angle10))
+        _angle10, _distance10 = geo.Joint.get_point(config, p0)
+        _angle20, _distance20 = geo.Joint.get_point(config, p0, geo.Joint.Direction.TARGET)
+        v1 = geo.Orientation.add(geo.Joint.get_solid_orientation(config, p0), geo.Orientation.from_angle(_angle10))
 
-        _angle11, _distance11 = Joint.get_point(config, p1)
-        _angle21, _distance21 = Joint.get_point(config, p1, True)
-        v2 = Orientation.add(Joint.get_solid_orientation(config, p1), Orientation.from_angle(_angle11))
+        _angle11, _distance11 = geo.Joint.get_point(config, p1)
+        _angle21, _distance21 = geo.Joint.get_point(config, p1, geo.Joint.Direction.TARGET)
+        v2 = geo.Orientation.add(geo.Joint.get_solid_orientation(config, p1), geo.Orientation.from_angle(_angle11))
 
-        eq1_rotation = Orientation.sub(v1, Orientation.add(Joint.get_solid_orientation(config, p0, True), Orientation.from_angle(_angle20)))
-        Geometry.rotate_eq(eq1, config, eq1_rotation)
+        eq1_rotation = geo.Orientation.sub(v1, geo.Orientation.add(geo.Joint.get_solid_orientation(config, p0, geo.Joint.Direction.TARGET), geo.Orientation.from_angle(_angle20)))
+        geo.Geometry.rotate_eq(eq1, config, eq1_rotation)
 
-        eq2_rotation = Orientation.sub(v2, Orientation.add(Joint.get_solid_orientation(config, p1, True), Orientation.from_angle(_angle21)))
-        Geometry.rotate_eq(eq2, config, eq2_rotation)
+        eq2_rotation = geo.Orientation.sub(v2, geo.Orientation.add(geo.Joint.get_solid_orientation(config, p1, geo.Joint.Direction.TARGET), geo.Orientation.from_angle(_angle21)))
+        geo.Geometry.rotate_eq(eq2, config, eq2_rotation)
 
-        vec_1 = Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * Geometry.z_det(v1) + Joint.get_solid_point(config, r2) - Joint.get_solid_position(config, p0, True)
-        vec_2 = Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * Geometry.z_det(v2) + Joint.get_solid_point(config, r2, True) - Joint.get_solid_position(config, p1, True)
+        vec_1 = geo.Joint.get_solid_position(config, p0) + (_distance10 - _distance20) * geo.Geometry.z_det(v1) + geo.Joint.get_solid_point(config, r2) - geo.Joint.get_solid_position(config, p0, geo.Joint.Direction.TARGET)
+        vec_2 = geo.Joint.get_solid_position(config, p1) + (_distance11 - _distance21) * geo.Geometry.z_det(v2) + geo.Joint.get_solid_point(config, r2, geo.Joint.Direction.TARGET) - geo.Joint.get_solid_position(config, p1, geo.Joint.Direction.TARGET)
 
-        target_point = vec_1 + (Geometry.det(vec_2 - vec_1, v2) / Geometry.det(v1, v2)) * v1
-        Geometry.move_eq(eq1, config, target_point - Joint.get_solid_point(config, r2))
-        Geometry.move_eq(eq2, config, target_point - Joint.get_solid_point(config, r2, True))
+        target_point = vec_1 + (geo.Geometry.det(vec_2 - vec_1, v2) / geo.Geometry.det(v1, v2)) * v1
+        geo.Geometry.move_eq(eq1, config, target_point - geo.Joint.get_solid_point(config, r2))
+        geo.Geometry.move_eq(eq2, config, target_point - geo.Joint.get_solid_point(config, r2, geo.Joint.Direction.TARGET))
 
 
 class Relation:
@@ -193,20 +193,24 @@ class Relation:
 
     transformations = backward, forward
     joint_solvers = {
-        JointType.REVOLUTE.value: JointInput.solve_revolute,
-        JointType.PRISMATIC.value: JointInput.solve_prismatic
+        cfg.Joints.Type.REVOLUTE.value: JointInput.solve_revolute,
+        cfg.Joints.Type.PRISMATIC.value: JointInput.solve_prismatic
     }
 
     @staticmethod
-    def solve_standard_relation(config: OldConfig, relation: int, source: int, destination: int, destination_type: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
-        v0, r = config.relation_physics[relation, [OldConfig.RELATION_V0, OldConfig.RELATION_R]]
-        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r, v0)
-        s1, s2 = config.joint_config[destination, OldConfig.JOINT_SOLIDS]
+    def solve_standard_relation(config: cfg.Config, relation: int, source: int, destination: int, destination_type: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0 = config.relations.v0[relation]
+        r = config.relations.r[relation]
+        config.joints.value[destination] = Relation.transformations[direction](config.joints.value[source], r, v0)
+        s1, s2 = config.joints.solids[destination]
         Relation.joint_solvers[destination_type](config, s1, s2, destination, eq1, eq2)
 
     @staticmethod
-    def solve_belt(config: OldConfig, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
-        v0, r1, r2 = config.relation_physics[relation, [OldConfig.RELATION_V0, OldConfig.RELATION_R1, OldConfig.RELATION_R2]]
-        config.results.joint_values[destination, :] = Relation.transformations[direction](config.results.joint_values[source, :], r1 / r2, v0)
-        s1, s2 = config.joint_config[destination, OldConfig.JOINT_SOLIDS]
+    def solve_belt(config: cfg.Config, relation: int, source: int, destination: int, _: int, eq1: tuple[int, ...], eq2: tuple[int, ...], direction: bool):
+        v0 = config.relations.v0[relation]
+        r1 = config.relations.belt_r1[relation]
+        r2 = config.relations.belt_r2[relation]
+
+        config.joints.value[destination] = Relation.transformations[direction](config.joints.value[source], r1 / r2, v0)
+        s1, s2 = config.joints.solids[destination]
         JointInput.solve_revolute(config, s1, s2, destination, eq1, eq2)

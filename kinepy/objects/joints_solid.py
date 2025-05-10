@@ -8,9 +8,7 @@ class SolidBase(cfg.ConfigView):
         return self._config.solids
     
     def __new__(cls, config: cfg.Config, index: int):
-        if config.solids.is_ghost[index]:
-            return cfg.ConfigView.__new__(GhostSolid)
-        return cfg.ConfigView.__new__(Solid)
+        return cls._create_subclass(GhostSolid if config.solids.is_ghost[index] else Solid)
 
     _position = cfg.Solids.position()
     _orientation = cfg.Solids.orientation()
@@ -50,6 +48,7 @@ class Solid(SolidBase):
     def _get_3dof(self):
         if self._3dof < 0:
             self._config.invalidate_config()
+            self._config.assert_no_universal()
 
             # solids
             ghost_s_indices = self._config.solids.reserve(2)
@@ -102,7 +101,8 @@ class Joint(cfg.ConfigView):
             cfg.Joints.Type.Y: TranslationAxleY,
             cfg.Joints.Type.J_AXLE: J3DOFAxle
         }
-        return cfg.ConfigView.__new__(_dict.get(cfg.Joints.Type(config.joints.type_[index]), cls))
+        final_type: type[Joint] = _dict[cfg.Joints.Type(config.joints.type_[index])]
+        return cls._create_subclass(final_type)
 
     _type = cfg.Joints.type_()
     _s1 = cfg.Joints.s1()
@@ -164,9 +164,21 @@ class Prismatic(Joint):
 
 
 class CompositeJoint(cfg.ConfigView):
+    def _array(self) -> cfg.Composite:
+        return self._config.composite_joints
+
     _type = cfg.Composite.type_()
     _first_solid = cfg.Composite.first_ghost_solid()
     _first_joint = cfg.Composite.first_ghost_joint()
+
+    def __new__(cls, config: cfg.Config, index: int):
+        _dict: dict[cfg.Composite.Type, type[CompositeJoint]] = {
+            cfg.Composite.Type.PIN_SLOT: PinSlot,
+            cfg.Composite.Type.TRANSLATION: Translation,
+            cfg.Composite.Type.J3DOF: J3DOF
+        }
+        final_type: type[CompositeJoint] = _dict[cfg.Composite.Type(config.composite_joints.type_[index])]
+        return cls._create_subclass(final_type)
 
     @property
     def s1(self) -> SolidBase:

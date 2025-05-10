@@ -83,15 +83,6 @@ class ConfigArray(metaclass=MetaArray):
     def allocate_results(self, frame_count):
         self.result_array.resize((self.count, frame_count, self._result_count))
 
-    def add(self, names: list[str], config: np.ndarray, phy: np.ndarray):
-        assert config.shape[1] == self._config_count, "Wrong config attributes shape"
-        assert phy.shape[1] == self._physics_count, "Wrong physical attributes shape"
-        assert len(names) == phy.shape[0] == phy.shape[1]
-
-        self.names.extend(names)
-        self.config_array = np.r_[self.config_array, config]
-        self.physics_array = np.r_[self.physics_array, phy]
-
     def reserve(self, size) -> slice:
         result = slice(self.count, self.count + size)
         self.names.extend(('',) * size)
@@ -201,12 +192,11 @@ class Relations(ConfigArray):
 
 class Actions(ConfigArray):
     class Type(IntEnum):
-        USER, INTERNAL = range(2)
+        USER, INTERNAL_INTERACTION, INTERNAL_OUTPUT = range(3)
 
     # Config attributes
     type_ = KpProperty.Type.CONFIG(0)
-    object_reference = KpProperty.Type.CONFIG(1)  # object might have to move because of solids added after
-    user_solid = KpProperty.Type.CONFIG(2)
+    user_solid = KpProperty.Type.CONFIG(1)
 
     # Physics attributes
     user_point = KpProperty.Type.PHYSICS(slice(0, 2))
@@ -254,6 +244,7 @@ class Config:
         self.state = ConfigState.NO_READ_ALLOWED
         self.frame_time = 0.0
         self.frame_count = 0
+        self.has_universal_interaction = False
 
         # Data
         self.solids = Solids()
@@ -294,11 +285,14 @@ class Config:
         for arr in self.solids, self.joints, self.composite_joints, self.relations, self.actions:
             arr.allocate_results(frame_count)
 
+    def assert_no_universal(self):
+        assert not self.has_universal_interaction, "Please make sure to declare all your solids and joints before adding a UniversalInteraction (Gravity, Inertia), To be safe you should add them right before calling System.set_sim_parameters"
+
 
 class ConfigView:
     __slots__ = '_index', '_config'
 
-    def __init__(self, config: Config, index: int):
+    def __init__(self, config: Config, index: int | slice):
         self._index = index
         self._config = config
 
@@ -326,6 +320,11 @@ class ConfigView:
             assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, f'Call `System.set_sim_parameters` before messing with `{method.__qualname__}`'
             return method(self, *args, **kwargs)
         return n_method
+
+    @classmethod
+    def _create_subclass(cls, other: type) -> typing.Self:
+        assert issubclass(other, cls) or issubclass(other, cls), f"Creating from: {cls}; Result class: {other}; None is derived from the other"
+        return ConfigView.__new__(cls if issubclass(cls, other) else other)
 
     def _kp_array(self, array, axis=-1):
         return array.view(KpArray)._configure(self._config, axis)

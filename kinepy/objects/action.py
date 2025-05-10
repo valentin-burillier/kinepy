@@ -7,6 +7,15 @@ class Action(cfg.ConfigView):
     def _array(self) -> cfg.Actions:
         return self._config.actions
 
+    def __new__(cls, config: cfg.Config, index: int):
+        _dict: dict[cfg.Actions.Type, type[Action]] = {
+            cfg.Actions.Type.INTERNAL_INTERACTION: InternalAction,
+            cfg.Actions.Type.INTERNAL_OUTPUT: InternalAction,
+            cfg.Actions.Type.USER: UserAction
+        }
+        final_type: type[Action] = _dict[cfg.Composite.Type(config.composite_joints.type_[index])]
+        return cls._create_subclass(final_type)
+
     _ap = cfg.Actions.application_point()
     _force = cfg.Actions.force()
     _torque = cfg.Actions.torque()

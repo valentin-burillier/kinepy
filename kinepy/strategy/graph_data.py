@@ -1,28 +1,9 @@
+import kinepy.objects.config as cfg
 import enum
 
+E, R, P = cfg.Joints.Type.EMPTY, cfg.Joints.Type.REVOLUTE, cfg.Joints.Type.PRISMATIC
 
-class RelationType(enum.Enum):
-    GEAR, GEAR_RACK, BELT, DISTANT, EFFORTLESS = range(5)
-
-
-GEAR_TYPES = RelationType.GEAR_RACK, RelationType.GEAR, RelationType.BELT
-
-
-class JointType(enum.Enum):
-    EMPTY, REVOLUTE, PRISMATIC = range(3)
-    X, Y, J_AXLE = 6, 10, 14
-    GHOST_ANGLE = 5
-
-    def simple(self):
-        """
-        Removes extra information giving only the primitive type
-        """
-        return JointType(self.value & 3)
-
-
-E, R, P = JointType.EMPTY, JointType.REVOLUTE, JointType.PRISMATIC
-
-Adjacency = tuple[tuple[JointType, ...], ...]
+type Adjacency = tuple[tuple[cfg.Joints.Type, ...], ...]
 
 
 graph_rrr: Adjacency = (

@@ -1,12 +1,9 @@
-from typing import TypeAlias, Self
-from collections.abc import Generator, Callable
-from kinepy.strategy.graph_data import JointType, Graphs, RelationType
-import kinepy.math.kinematics as kin
-import kinepy.math.dynamics as dyn
-from kinepy.objects.config import OldConfig
-
+import kinepy.objects.config as cfg
+import kinepy.strategy.graph_data as gd
+import typing
 
 # region Strategy Internal types
+
 
 class JointFlags:
     SOLVED_BIT = 1 << 0
@@ -19,26 +16,35 @@ class JointFlags:
     # when driven by a revolute joint, relations may have to compute the continuous version of its angle if not already available
     CONTINUOUS_BIT = 1 << 2
 
+    RELATION_READY = CONTINUOUS_BIT | COMPUTED_BIT
     READY_FOR_USER = SOLVED_BIT | COMPUTED_BIT | CONTINUOUS_BIT
+
+    @classmethod
+    def relation_ready(cls, value: int) -> bool:
+        return bool(value & cls.COMPUTED_BIT and value & cls.CONTINUOUS_BIT)
+
+    @classmethod
+    def solved_joint(cls, type_: int, value_is_computed: bool, certain_continuity: bool):
+        return cls.SOLVED_BIT | (certain_continuity or cfg.Joints.Type(type_).primitive() == cfg.Joints.Type.PRISMATIC) * cls.CONTINUOUS_BIT | value_is_computed * cls.COMPUTED_BIT
 
 
 class JointGraphNode:
 
-    node_type: JointType
+    node_type: cfg.Joints.Type
     joint_index: int = -1
 
-    def __init__(self, joint_type: JointType, joint_index: int = -1):
+    def __init__(self, joint_type: cfg.Joints.Type, joint_index: int = -1):
         self.node_type = joint_type
         self.joint_index = joint_index
 
-    def set(self, joint_index: int, joint_type: JointType):
+    def set(self, joint_index: int, joint_type: cfg.Joints.Type):
         self.node_type = joint_type
         self.joint_index = joint_index
 
     def __repr__(self):
         return self.node_type.__repr__()
 
-    def __eq__(self, other: Self):
+    def __eq__(self, other: typing.Self):
         return self.node_type == other.node_type and self.joint_index == other.joint_index
 
 
@@ -46,33 +52,34 @@ class RelationGraphNode:
     is_1_to_2: bool
     relation: int
     solved = False
-    pair: None | Self = None
+    pair: None | typing.Self = None
     common_eq = -1
 
     def __init__(self, is_1_to_2: bool, relation: int):
         self.is_1_to_2, self.relation = is_1_to_2, relation
 
 
-JointGraph: TypeAlias = list[list[JointGraphNode]]
-RelationGraph: TypeAlias = list[list[RelationGraphNode]]
-Degrees: TypeAlias = tuple[tuple[int, int], ...]
-Eq: TypeAlias = tuple[tuple[int, ...], ...]
-EqMapping: TypeAlias = tuple[int, ...]
-Isomorphism: TypeAlias = tuple[int, ...]
+type JointGraph = list[list[JointGraphNode]]
+type RelationGraph = list[list[RelationGraphNode]]
+type Degrees = tuple[tuple[int, int], ...]
+type Eq = tuple[tuple[int, ...], ...]
+type EqMapping = tuple[int, ...]
+type Isomorphism = tuple[int, ...]
+type StrategyJointState = tuple[JointGraph, Eq, EqMapping]
 
 # endregion Strategy Internal types
 
 
 class ResolutionStep:
-    def solve_kinematics(self, config: OldConfig):
+    def solve_kinematics(self, config: cfg.Config):
         pass
 
-    def solve_dynamics(self, config: OldConfig):
+    def solve_dynamics(self, config: cfg.Config):
         pass
 
 
 class GraphStep(ResolutionStep):
-    def __init__(self, graph: Graphs, edges: tuple[tuple[int, bool], ...], eqs: Eq):
+    def __init__(self, graph: gd.Graphs, edges: tuple[tuple[int, bool], ...], eqs: Eq):
         ResolutionStep.__init__(self)
         self.solution_index = 0
         self._graph_index = graph
@@ -102,37 +109,37 @@ class GraphStep(ResolutionStep):
     def get_joints(self) -> Generator[int, None, None]:
         return (j for j, _ in self._edges)
 
-    def solve_kinematics(self, config: OldConfig):
+    def solve_kinematics(self, config: cfg.Config):
         self.kinematics[self._graph_index.value](config, self._edges, self._eqs, self.solution_index)
 
-    def solve_dynamics(self, config: OldConfig):
+    def solve_dynamics(self, config: cfg.Config):
         self.dynamics[self._graph_index.value](config, self._edges, self._eqs, self._zero_holder)
 
 
 class JointStep(ResolutionStep):
 
-    def __init__(self, joint_type: JointType, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
+    def __init__(self, joint_type: cfg.Joints.Type, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...]):
         ResolutionStep.__init__(self)
         self.joint = joint
         self.eq1, self.eq2 = eq1, eq2
-        self.joint_type = joint_type.simple()
+        self.joint_type = joint_type.primitive()
         self.s1, self.s2 = s1, s2
         self.zero_holder = 0 in eq2
 
     kinematics_chooser = {
-        JointType.REVOLUTE: kin.JointInput.solve_revolute,
-        JointType.PRISMATIC: kin.JointInput.solve_prismatic
+        cfg.Joints.Type.REVOLUTE: kin.JointInput.solve_revolute,
+        cfg.Joints.Type.PRISMATIC: kin.JointInput.solve_prismatic
     }
 
     dynamics_chooser = {
-        JointType.REVOLUTE: dyn.JointInput.solve_revolute,
-        JointType.PRISMATIC: dyn.JointInput.solve_prismatic
+        cfg.Joints.Type.REVOLUTE: dyn.JointInput.solve_revolute,
+        cfg.Joints.Type.PRISMATIC: dyn.JointInput.solve_prismatic
     }
 
-    def solve_kinematics(self, config: OldConfig):
+    def solve_kinematics(self, config: cfg.Config):
         self.kinematics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2)
 
-    def solve_dynamics(self, config: OldConfig):
+    def solve_dynamics(self, config: cfg.Config):
         self.dynamics_chooser[self.joint_type](config, self.s1, self.s2, self.joint, self.eq1, self.eq2, self.zero_holder)
 
 
@@ -154,33 +161,33 @@ class RelationStep(ResolutionStep):
         self.zero_holder = 0 in eq2
 
     kinematics_chooser = {
-        RelationType.GEAR_RACK: kin.Relation.solve_standard_relation,
-        RelationType.GEAR: kin.Relation.solve_standard_relation,
-        RelationType.DISTANT: kin.Relation.solve_standard_relation,
-        RelationType.EFFORTLESS: kin.Relation.solve_standard_relation,
-        RelationType.BELT: kin.Relation.solve_belt,
+        cfg.Relations.Type.GEAR_RACK: kin.Relation.solve_standard_relation,
+        cfg.Relations.Type.GEAR_PAIR: kin.Relation.solve_standard_relation,
+        cfg.Relations.Type.DISTANT: kin.Relation.solve_standard_relation,
+        cfg.Relations.Type.EFFORTLESS: kin.Relation.solve_standard_relation,
+        cfg.Relations.Type.BELT: kin.Relation.solve_belt,
     }
 
-    def solve_kinematics(self, config: OldConfig):
+    def solve_kinematics(self, config: cfg.Config):
         self.kinematics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2)
 
     dynamics_chooser = {
-        RelationType.EFFORTLESS: dyn.Relation.solve_effortless_relation,
-        RelationType.DISTANT: dyn.Relation.solve_distant_relation,
-        RelationType.GEAR: dyn.Relation.solve_gear_pair,
-        RelationType.GEAR_RACK: dyn.Relation.solve_gear_rack,
-        RelationType.BELT: dyn.Relation.solve_belt
+        cfg.Relations.Type.EFFORTLESS: dyn.Relation.solve_effortless_relation,
+        cfg.Relations.Type.DISTANT: dyn.Relation.solve_distant_relation,
+        cfg.Relations.Type.GEAR_PAIR: dyn.Relation.solve_gear_pair,
+        cfg.Relations.Type.GEAR_RACK: dyn.Relation.solve_gear_rack,
+        cfg.Relations.Type.BELT: dyn.Relation.solve_belt
     }
 
-    def solve_dynamics(self, config: OldConfig):
+    def solve_dynamics(self, config: cfg.Config):
         self.dynamics_chooser[self.relation_type](config, self.relation, self.source, self.target, self.target_type, self.eq1, self.eq2, self.is_1_to_2, self.zero_holder)
 
 
 class JointValueComputationStep(ResolutionStep):
     joint: int
     flags: int
-    value_function: Callable[[OldConfig, int, int, int], None]
-    continuity_function: Callable[[OldConfig, int], None]
+    value_function: Callable[[cfg.Config, int, int, int], None]
+    continuity_function: Callable[[cfg.Config, int], None]
 
     def __init__(self, joint: int, _type: JointType, flags: int, s1: int, s2: int):
         _type = _type.simple()
@@ -208,9 +215,9 @@ class JointValueComputationStep(ResolutionStep):
         JointType.PRISMATIC: kin.JointValueComputation.do_not_compute_continuity
     }
 
-    def solve_kinematics(self, config: OldConfig):
+    def solve_kinematics(self, config: cfg.Config):
         self.value_function(config, self.joint, self.s1, self.s2)
         self.continuity_function(config, self.joint)
 
-    def solve_dynamics(self, config: OldConfig):
+    def solve_dynamics(self, config: cfg.Config):
         """Nothing to do"""
