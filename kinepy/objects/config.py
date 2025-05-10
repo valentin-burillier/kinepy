@@ -3,6 +3,7 @@ import numpy as np
 import enum
 import functools
 import kinepy.math.calculus as cal
+import kinepy.exceptions as ex
 
 
 class IntEnum(enum.Enum):
@@ -338,7 +339,10 @@ class ConfigView:
         return self._config.kp_array(array, axis)
 
     def __eq__(self, other: typing.Self):
-        return self._config is other._config and self._array() is other._array() and self._index == other._index
+        if self._config is not other._config:
+            raise ex.UnrelatedObjectsError()
+        return self._array() is other._array() and self._index == other._index
+
 
 class KpArray(np.ndarray):
     """
