@@ -1,86 +1,57 @@
-from kinepy.objects.config import *
-from kinepy.strategy.graph_data import JointType
-from kinepy.math.geometry import Position
-import kinepy.units as u
+import kinepy.objects.config as cfg
+import kinepy.objects.joints_solid as jo_so
+import kinepy.math.geometry as geo
 
 
-class Action(ConfigView):
-    def __get_ap(self, indirection: int) -> u.point_type:
-        return self._config.action_physics[self._index]
+class Action(cfg.ConfigView):
+    def _array(self) -> cfg.Actions:
+        return self._config.actions
 
-    def __get_solid_g(self, indirection: int) -> u.point_type:
-        return self._config.solid_physics[indirection, OldConfig.SOLID_CFG_G]
+    _ap = cfg.Actions.application_point()
+    _force = cfg.Actions.force()
+    _torque = cfg.Actions.torque()
 
-    def __get_joint_point(self, indirection: int) -> u.point_type:
-        _solid = self._config.action_config[self._index, OldConfig.ACTION_SOLID]
-        _j_type, s1, s2 = self._config.joint_config[indirection]
+    @cfg.ConfigView.assert_resources
+    def get_application_point(self):
+        return self._kp_array(self._ap.swapaxes(0, 1))
 
-        if _solid == s1:
-            _slice = OldConfig.JOINT_P1
-        elif _solid == s2:
-            _slice = OldConfig.JOINT_P2
-        else:
-            raise ValueError("Action applies on a joint its solid is not constrained by")
-        if _j_type == JointType.REVOLUTE:
-            return self._config.joint_physics[indirection, _slice]
-        else:
-            angle, dist = self._config.joint_physics[indirection, _slice]
-            return np.array([-np.sin(angle) * dist, np.cos(angle) * dist])
+    @cfg.ConfigView.assert_resources
+    def get_force(self):
+        return self._kp_array(self._force.swapaxes(0, 1))
 
-    __getter = {
-        ActionMode.NO_INDIRECTION: __get_ap,
-        ActionMode.SOLID_G: __get_solid_g,
-        ActionMode.JOINT_POINT: __get_joint_point
-    }
-
-    @property
-    def ap(self) -> u.Length.point:
-        _type = ActionMode(self._config.action_config[self._index, OldConfig.ACTION_MODE])
-        _indirection = self._config.action_config[self._index, OldConfig.ACTION_INDIRECTION]
-        return self.__getter[_type](_indirection)
-
-    @ap.setter
-    def ap(self, value: u.Length.point):
-        _type = ActionMode(self._config.action_config[self._index, OldConfig.ACTION_MODE])
-        if _type != ActionMode.NO_INDIRECTION:
-            raise ValueError("You cannot modify this value from here")
-        self._config.invalidate_dynamics()
-        self._config.action_physics[self._index] = np.array(value)
-
-    def set_force(self, value: u.Force.point):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE] = value
-
-    def set_force_locally(self, value: u.Length.point):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        _solid = self._config.action_config[self._index, OldConfig.ACTION_SOLID]
-        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE] = Position.local_point(self._config, _solid, np.array(value))
-
-    def get_force(self) -> u.Force.point:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before getting values"
-        return self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_FORCE]
-
-    def set_torque(self, value: u.Torque.phy):
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before setting values"
-        self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_TORQUE] = value
-
-    def get_torque(self) -> u.Torque.phy:
-        assert self._config.state >= ConfigState.ALLOCATED_RESOURCES, "Call `System.set_sim_parameters` before getting values"
-        return self._config.results.action_values[self._index, :, OldConfig.ACTION_DYN_TORQUE]
+    @cfg.ConfigView.assert_resources
+    def get_torque(self):
+        return self._kp_array(self._torque)
 
 
 class InternalAction(Action):
-    ap = disable_set(Action.ap)
+    """
+    ReadOnly class
+    """
 
-    def __do_not_set(self, value):
-        raise AttributeError("You cannot manually set values of InternalAction")
 
-    set_force_locally = __do_not_set
-    set_force = __do_not_set
-    set_torque = __do_not_set
+class UserAction(Action):
+    ap = cfg.Actions.user_point()
+    _s = cfg.Actions.user_solid()
 
-    def get_force(self) -> u.Force.point:
-        return Action.get_force(self).copy()
+    @property
+    def solid(self) -> jo_so.SolidBase:
+        return jo_so.SolidBase(self._config, self._s)
 
-    def get_torque(self) -> u.Torque.phy:
-        return Action.get_torque(self).copy()
+    @cfg.ConfigView.assert_resources
+    def set_force(self, value):
+        """
+        Force value is described in the global frame of reference
+        """
+        self._force = value
+
+    @cfg.ConfigView.assert_resources
+    def set_force_locally(self, value):
+        """
+        Force value is described in action's solid's frame of reference
+        """
+        self._force = geo.Position.vector(self._config, self._s, value)
+
+    @cfg.ConfigView.assert_resources
+    def set_torque(self, value):
+        self._torque = value

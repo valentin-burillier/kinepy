@@ -340,7 +340,7 @@ class KpArray(np.ndarray):
 
     def __array_finalize__(self, obj, /):
         self._config = getattr(obj, '_config', None)
-        self._time_axis = getattr(obj, '_time_axis', 0)
+        self._time_axis = getattr(obj, '_time_axis', -1)
 
     def _configure(self, _config: Config, _time_axis: int):
         self._config = _config

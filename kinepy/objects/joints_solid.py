@@ -88,15 +88,6 @@ class Solid(SolidBase):
     def angle(self) -> "J3DOFAngle":
         return self._get_3dof().angle
 
-    # def add_action(self, ap=(0, 0)) -> Action:
-    #     self._config.invalidate_config()
-    #     _action_index = self._config.action_config.shape[0]
-    #     self._config.add_actions(
-    #         np.array([[self._index, ActionMode.NO_INDIRECTION.value, 0]]),
-    #         np.array([ap])
-    #     )
-    #     return Action(self._config, _action_index)
-
 
 class Joint(cfg.ConfigView):
     def _array(self) -> cfg.Joints:
