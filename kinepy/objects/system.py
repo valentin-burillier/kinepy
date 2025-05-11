@@ -7,6 +7,7 @@ import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 import kinepy.strategy as strategy
 import kinepy.exceptions as ex
+import kinepy.gui.gui as gui
 
 import numpy as np
 import functools
@@ -327,5 +328,5 @@ class System:
 
         self.__config.state = cfg.ConfigState.DYNAMICS_OK
 
-    # def kinematic_diagram(self) -> GUI:
-    #     return GUI(self.__config)
+    def kinematic_diagram(self) -> gui.GUI:
+        return gui.GUI(self.__config)

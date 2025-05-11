@@ -16,7 +16,8 @@ class Joint:
         Get s1 or s2 depending on joint orientation and the desired direction
         """
         j_index, orientation = oriented_joint
-        return config.joints.solids[j_index, orientation ^ direction.value]
+        solid_slice = config.joints.s2, config.joints.s1
+        return solid_slice[orientation ^ direction.value][j_index]
 
     @staticmethod
     def get_point(config: cfg.Config, oriented_joint: OrientedJoint, direction: Direction = Direction.SOURCE):
@@ -24,7 +25,7 @@ class Joint:
         Get p1 or p2 depending on joint orientation and the desired direction
         """
         j_index, orientation = oriented_joint
-        point_slice = config.joints.revolute_p1, config.joints.revolute_p2
+        point_slice = config.joints.revolute_p2, config.joints.revolute_p1
         return point_slice[orientation ^ direction.value][j_index]
 
     @staticmethod
@@ -49,7 +50,7 @@ class Joint:
 
     @staticmethod
     def get_revolute_application_point(config: cfg.Config, joint: OrientedJoint):
-        point = config.joints.p1[joint[0]]
+        point = config.joints.revolute_p1[joint[0]]
         return Position.point(config, config.joints.s1[joint[0]], point)
 
     @staticmethod

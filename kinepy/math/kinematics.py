@@ -141,6 +141,7 @@ class Graph:
             geo.Joint.get_solid_position(config, p2) - geo.Joint.get_solid_point(config, r0, geo.Joint.Direction.TARGET) +
             geo.Joint.get_solid_point(config, r1, geo.Joint.Direction.TARGET) - geo.Joint.get_solid_position(config, p2, geo.Joint.Direction.TARGET)
         ) + (_distance21 - _distance22)
+
         v1_v0_sin_angle = sign * (sq_v0_v1 - v0_v1_cos_angle * v0_v1_cos_angle) ** 0.5
         total_rotation = geo.Orientation.add(geo.Orientation.sub(geo.Geometry.z_det(v1), v0), np.r_['-1', v0_v1_cos_angle, v1_v0_sin_angle]) / sq_v0_v1
 

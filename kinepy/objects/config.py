@@ -10,6 +10,9 @@ class IntEnum(enum.Enum):
     def __int__(self) -> int:
         return self.value
 
+    def __gt__(self, other):
+        return int(self) > other
+
 
 class KpProperty(property):
     stop: int
@@ -116,6 +119,8 @@ class Solids(ConfigArray):
 class Joints(ConfigArray):
     class Type(IntEnum):
         EMPTY, REVOLUTE, PRISMATIC = range(3)
+
+        PRIMITIVE_SEPARATOR = 4
 
         GHOST_ANGLE = 5
         X, Y, J_AXLE = 6, 10, 14
@@ -289,6 +294,7 @@ class Config:
         self.state = ConfigState.ALLOCATED_RESOURCES
         for arr in self.solids, self.joints, self.composite_joints, self.relations, self.actions:
             arr.allocate_results(frame_count)
+        self.frame_count = frame_count
 
     def assert_no_universal(self):
         assert not self.has_universal_interaction, "Please make sure to declare all your solids and joints before adding a UniversalInteraction (Gravity, Inertia), To be safe you should add them right before calling System.set_sim_parameters"
