@@ -34,32 +34,32 @@ class Relation(cfg.ConfigView):
 class _Gear(Relation):
     _g1 = cfg.Relations.g1()
     _g2 = cfg.Relations.g2()
-    _g_name = 'g', 'g'
+    _g_names = 'g1', 'g2'
 
     @classmethod
     def g_property(cls, int_prop: property, joint_prop: property, index):
         def getter(self: cls):
             if (_g := int_prop.__get__(self)) < 0:
-                raise ValueError(f'{cls._g_name[index]}{index} was never set')
+                raise ValueError(f'{cls._g_names[index]} was never set')
             joint: int = joint_prop.__get__(self)
             if _g == (s1 := self._config.joints.s1[joint]):
                 return jo_so.SolidBase(self._config, s1)
             if _g == (s2 := self._config.joints.s2[joint]):
                 return jo_so.SolidBase(self._config, s2)
-            raise ValueError(f'{cls._g_name[index]}{index} is ill-formed')
+            raise ValueError(f'{cls._g_names[index]} is ill-formed')
 
         def setter(self: cls, value: jo_so.SolidBase):
             _g = value._index
             joint: int = joint_prop.__get__(self)
             if _g != self._config.joints.s1[joint] and _g != self._config.joints.s2[joint]:
-                raise ValueError(f'{cls._g_name[index]}{index} must be one of j{index}\'s solids, (j{index} is {self._config.joints.names[joint]})')
+                raise ValueError(f'{cls._g_names[index]} must be one of j{index+1}\'s solids, (j{index+1} is {self._config.joints.names[joint]})')
             int_prop.__set__(self, _g)
 
         return property(getter, setter)
 
 
 class GearPair(_Gear):
-    _g_name = 'gear', 'gear'
+    _g_name = 'gear1', 'gear2'
     r = cfg.Relations.r()
     pressure_angle = cfg.Relations.gear_pressure_angle()
 
@@ -68,7 +68,7 @@ class GearPair(_Gear):
 
 
 class GearRack(_Gear):
-    _g_name = 'gear', 'rack'
+    _g_name = 'gear1', 'rack2'
 
     r = cfg.Relations.r()
     pressure_angle = cfg.Relations.gear_pressure_angle()
@@ -78,7 +78,7 @@ class GearRack(_Gear):
 
 
 class Belt(_Gear):
-    _g_name = 'pulley', 'pulley'
+    _g_name = 'pulley1', 'pulley2'
     r1 = cfg.Relations.belt_r1()
     r2 = cfg.Relations.belt_r2()
     t0 = cfg.Relations.belt_t0()

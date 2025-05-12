@@ -7,6 +7,10 @@ import kinepy.exceptions as ex
 
 
 class IntEnum(enum.Enum):
+    """
+    Intermediate Enum that allows implicit int casts to use in numpy.ndarray
+    """
+
     def __int__(self) -> int:
         return self.value
 
@@ -15,6 +19,14 @@ class IntEnum(enum.Enum):
 
 
 class KpProperty(property):
+    """
+    Represents attributes of most kinepy objects as slices of bigger numpy arrays
+
+    Attributes:
+        stop(int):  upper bound of slice it occupies on the reference array
+        type_(KpProperty.Type):
+    """
+
     stop: int
 
     class Type(IntEnum):
@@ -22,10 +34,16 @@ class KpProperty(property):
 
         @property
         def array_name(self):
+            """
+            Instance array attribute to read values from
+            """
             return f'{self.name.lower()}_array'
 
         @property
         def count_name(self):
+            """
+            Class attribute to update when counting attributes
+            """
             return f'_{self.name.lower()}_count'
 
         def __call__(self, index: int | slice):
@@ -41,9 +59,15 @@ class KpProperty(property):
         property.__init__(self, getter)
 
     @staticmethod
-    def check(obj):
+    def check(obj: "ConfigArray"):
+        """
+        Helper to verify that an object owning KpProperties is properly initialized
+
+        :param obj: KpProperty owner
+        :type obj: ConfigArray
+        """ 
         for type_ in KpProperty.Type:
-            assert hasattr(obj, type_.array_name), f"[Internal] Wrong initialisation: {obj} has no attribute {type_.array_name}"
+            assert not getattr(obj, type_.count_name) or hasattr(obj, type_.array_name), f"[Internal] Wrong initialisation: {obj} has no attribute {type_.array_name}"
 
     def __call__(self) -> property:
         return ConfigView.__forward__(self)
@@ -51,19 +75,27 @@ class KpProperty(property):
 
 class MetaArray(type):
     """
-    Counts how many attributes are need per sub-array (config, physics, result)
+    Count how many attributes are needed per sub-array (config, physics, result) through the use of `KpProperty`
     """
 
     def __new__(mcs, name: str, bases: tuple[type, ...], dict_: dict[str, typing.Any]):
+        # setting counters for each attribute type
         _array_counts = {type_: 0 for type_ in KpProperty.Type}
 
         for obj in dict_.values():
             if not isinstance(obj, KpProperty):
                 continue
+            # updating counters
             _array_counts[obj.type_] = max(_array_counts[obj.type_], obj.stop)
 
         for type_, size in _array_counts.items():
+            # sharing counters
             dict_[type_.count_name] = size
+
+        # no result attributes -> no result allocation
+        def _allocate_results(self, frame_count):
+            self.result_array.resize((self.count, frame_count, self._result_count))
+        dict_['allocate_results'] = _allocate_results if _array_counts[KpProperty.Type.RESULT] else lambda self, frame_count: None
 
         return type.__new__(mcs, name, bases, dict_)
 
@@ -74,27 +106,51 @@ class ConfigArray(metaclass=MetaArray):
     _result_count: int
 
     def __init__(self):
+        # names of each object
         self.names = []
+        
+        # arrays that are actually used
+        self.__arrays = []
 
-        self.config_array = np.zeros((0, self._config_count), int)
-        self.physics_array = np.zeros((0, self._physics_count), float)
-        self.result_array = np.zeros((0, 0, self._result_count), float)
+        if self._config_count:
+            self.config_array = np.zeros((0, self._config_count), int)
+            self.__arrays.append(self.config_array)
+        if self._physics_count:
+            self.physics_array = np.zeros((0, self._physics_count), float)
+            self.__arrays.append(self.physics_array)
+        if self._result_count:
+            self.result_array = np.zeros((0, 0, self._result_count), float)
         KpProperty.check(self)
 
     @property
     def count(self) -> int:
+        """
+        Number of objects in the array
+        """
         return len(self.names)
 
-    def allocate_results(self, frame_count):
-        self.result_array.resize((self.count, frame_count, self._result_count))
+    def allocate_results(self, frame_count: int):
+        """
+        Allocate result_array, if neccessary, to support `frame_count` frames
+        
+        :param frame_count: number of frames in the simulation
+        :type frame_count: int
+        """
 
-    def reserve(self, size) -> slice:
-        result = slice(self.count, self.count + size)
-        self.names.extend(('',) * size)
+    def reserve(self, obj_cnt: int) -> slice:
+        """
+        Reserves `obj_cnt` places in the array gives back the slice occupied be the new objects
 
-        self.config_array.resize((self.count, self._config_count), refcheck=False)
-        self.physics_array.resize((self.count, self._physics_count), refcheck=False)
+        :param obj_cnt: number of objects to allocate for
+        :type obj_cnt: int
+        :return: region occupied by the new objects
+        :rtype: slice
+        """
 
+        result = slice(self.count, self.count + obj_cnt)
+        self.names.extend(('',) * obj_cnt)
+        for array in self.__arrays:
+            array.resize((self.count, *array.shape[1:]), refcheck=False)
         return result
 
 
@@ -128,6 +184,9 @@ class Joints(ConfigArray):
         def primitive(self):
             """
             Removes extra information giving only the primitive type
+
+            :return: `REVOLUTE` or `PRISMATIC`
+            :rtype: Type
             """
             return self.__class__(self.value & 3)
 
@@ -158,6 +217,9 @@ class Composite(ConfigArray):
 
         @property
         def ghost_count(self) -> int:
+            """
+            Number of ghost solids used by this `Type` of `CompositeJoint`
+            """ 
             return {
                 Composite.Type.PIN_SLOT: 1,
                 Composite.Type.TRANSLATION: 1,
@@ -231,6 +293,43 @@ class Interactions(ConfigArray):
     spring_equilibrium_position = KpProperty.Type.PHYSICS(2)
     linear_spring_p1 = KpProperty.Type.PHYSICS(slice(3, 5))
     linear_spring_p2 = KpProperty.Type.PHYSICS(slice(5, 7))
+
+
+class Eqs:
+    """
+    Serialised arrays of Equivalence classes decribing used in resolution steps
+    
+    Format:
+    ```
+    | GROUP_X_OFFSET               GroupX                              | GROUP_Y_OFFSET               GroupY
+    | |                                                                | |
+    |  offset0, offset1, ..., offsetn, ...eq1, ...eq2, ..., ...eqn     |  ...
+    | |                              |       |       |            |    | |
+    | 0                           offset0 offset1 offset2      offsetn | 0
+    ```
+    """
+
+    def __init__(self):
+        self.eqs = np.zeros((0,), int)
+
+    def add(self, eqs) -> int:
+        index = self.eqs.size
+        lengths = 0, *map(len, eqs)
+        offsets = np.cumsum(lengths) + len(lengths)
+        self.eqs.resize((self.eqs.size + offsets[-1]))
+        self.eqs[index:][:offsets[0]] = offsets
+        self.eqs[index+offsets[0]:] = sum(eqs, ())
+        return index
+
+    def _get(self, offset):
+        begin = offset+self.eqs[offset]
+        for i in range(offset+1, offset+self.eqs[offset]):
+            end = offset + self.eqs[i]
+            yield self.eqs[begin:end]
+            begin = end
+
+    def get(self, offset):
+        return tuple(self._get(offset))
 
 
 class ConfigState(enum.Enum):
