@@ -137,7 +137,7 @@ class Joint(cfg.ConfigView):
 
     @cfg.ConfigView.assert_resources
     def get_force(self):
-        return self._kp_array(self._force, axis=0)
+        return self._kp_array(self._force.swapaxes(0, 1))
 
     @cfg.ConfigView.assert_resources
     def get_torque(self):

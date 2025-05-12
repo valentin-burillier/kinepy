@@ -320,10 +320,17 @@ class ConfigView:
 
     @classmethod
     def __forward__(cls, prop: KpProperty) -> property:
+        invalidation_method = {
+            KpProperty.Type.CONFIG: Config.invalidate_config,
+            KpProperty.Type.PHYSICS: Config.invalidate_kinematics,
+            KpProperty.Type.RESULT: lambda x: None
+        }[prop.type_]
+
         def getter(self: cls) -> np.ndarray:
             return prop.__get__(self._array())[self._index]
 
         def setter(self: cls, value: np.ndarray):
+            invalidation_method(self._config)
             prop.__get__(self._array())[self._index] = value
 
         return property(getter, setter)
