@@ -48,7 +48,6 @@ class Solid(SolidBase):
 
     def _get_3dof(self):
         if self._3dof < 0:
-            self._config.invalidate_config()
             self._config.assert_no_universal()
 
             # solids

@@ -422,11 +422,15 @@ class ConfigView:
         invalidation_method = {
             KpProperty.Type.CONFIG: Config.invalidate_config,
             KpProperty.Type.PHYSICS: Config.invalidate_kinematics,
+            # TODO: distinguish kinematics results and dynamics results
             KpProperty.Type.RESULT: lambda x: None
         }[prop.type_]
 
         def getter(self: cls) -> np.ndarray:
-            return prop.__get__(self._array())[self._index]
+            arr: np.ndarray = prop.__get__(self._array())[self._index]
+            # user can't modify through getter().__setitem__(...), they have to go through setter(...) in order to invalidate config state properly
+            arr.flags.writeable = False
+            return arr
 
         def setter(self: cls, value: np.ndarray):
             invalidation_method(self._config)
