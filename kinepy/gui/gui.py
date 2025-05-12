@@ -348,6 +348,7 @@ class GUI:
         self._solid_objects.clear()
 
         _solid_visibility = np.array(self._config.solids.is_ghost == 0)
+        _solid_visibility[0] = True # Ground might be a ghost, it is "visible"
         _joint_visibility = np.array(self._config.joints.type_ < cfg.Joints.Type.PRIMITIVE_SEPARATOR)
         _composite_joint_visibility = [True] * self._config.composite_joints.count
         # TODO: add relation visibility
