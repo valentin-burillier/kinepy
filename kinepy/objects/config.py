@@ -30,21 +30,21 @@ class KpProperty(property):
     stop: int
 
     class Type(IntEnum):
-        CONFIG, PHYSICS, RESULT = range(3)
+        CONFIG, PHYSICS, RESULT_KINEMATICS, RESULT_DYNAMICS = range(4)
 
         @property
         def array_name(self):
             """
             Instance array attribute to read values from
             """
-            return f'{self.name.lower()}_array'
+            return f'{self.name.lower().split('_')[0]}_array'
 
         @property
         def count_name(self):
             """
             Class attribute to update when counting attributes
             """
-            return f'_{self.name.lower()}_count'
+            return f'_{self.name.lower().split('_')[0]}_count'
 
         def __call__(self, index: int | slice):
             return KpProperty(self, index)
@@ -80,22 +80,21 @@ class MetaArray(type):
 
     def __new__(mcs, name: str, bases: tuple[type, ...], dict_: dict[str, typing.Any]):
         # setting counters for each attribute type
-        _array_counts = {type_: 0 for type_ in KpProperty.Type}
+        _array_counts = {type_.count_name: 0 for type_ in KpProperty.Type}
 
         for obj in dict_.values():
             if not isinstance(obj, KpProperty):
                 continue
             # updating counters
-            _array_counts[obj.type_] = max(_array_counts[obj.type_], obj.stop)
-
-        for type_, size in _array_counts.items():
-            # sharing counters
-            dict_[type_.count_name] = size
+            _array_counts[obj.type_.count_name] = max(_array_counts[obj.type_.count_name], obj.stop)
+        
+        # sharing counters
+        dict_  |= _array_counts
 
         # no result attributes -> no result allocation
         def _allocate_results(self, frame_count):
             self.result_array.resize((self.count, frame_count, self._result_count))
-        dict_['allocate_results'] = _allocate_results if _array_counts[KpProperty.Type.RESULT] else lambda self, frame_count: None
+        dict_['allocate_results'] = _allocate_results if _array_counts[KpProperty.Type.RESULT_DYNAMICS.count_name] else lambda self, frame_count: None
 
         return type.__new__(mcs, name, bases, dict_)
 
@@ -151,6 +150,7 @@ class ConfigArray(metaclass=MetaArray):
         self.names.extend(('',) * obj_cnt)
         for array in self.__arrays:
             array.resize((self.count, *array.shape[1:]), refcheck=False)
+            array[result] = 0
         return result
 
 
@@ -165,11 +165,11 @@ class Solids(ConfigArray):
     g = KpProperty.Type.PHYSICS(slice(2, 4))
 
     # Result attributes
-    position = KpProperty.Type.RESULT(slice(0, 2))
-    orientation = KpProperty.Type.RESULT(slice(2, 4))
-    g_value = KpProperty.Type.RESULT(slice(4, 6))
-    newtons_2nd_law_force = KpProperty.Type.RESULT(slice(6, 8))
-    newtons_2nd_law_torque = KpProperty.Type.RESULT(8)
+    position = KpProperty.Type.RESULT_KINEMATICS(slice(0, 2))
+    orientation = KpProperty.Type.RESULT_KINEMATICS(slice(2, 4))
+    g_value = KpProperty.Type.RESULT_DYNAMICS(slice(4, 6))
+    newtons_2nd_law_force = KpProperty.Type.RESULT_DYNAMICS(slice(6, 8))
+    newtons_2nd_law_torque = KpProperty.Type.RESULT_DYNAMICS(8)
 
 
 class Joints(ConfigArray):
@@ -195,8 +195,9 @@ class Joints(ConfigArray):
     s1 = KpProperty.Type.CONFIG(1)
     s2 = KpProperty.Type.CONFIG(2)
     solids = KpProperty.Type.CONFIG(slice(1, 3))
+    state = KpProperty.Type.CONFIG(3)
 
-    # Physics attributes
+    # Physics attributes 
     revolute_p1 = KpProperty.Type.PHYSICS(slice(0, 2))
     revolute_p2 = KpProperty.Type.PHYSICS(slice(2, 4))
 
@@ -206,9 +207,9 @@ class Joints(ConfigArray):
     prismatic_distance2 = KpProperty.Type.PHYSICS(3)
 
     # Result attributes
-    value = KpProperty.Type.RESULT(0)
-    force = KpProperty.Type.RESULT(slice(1, 3))
-    torque = KpProperty.Type.RESULT(3)
+    value = KpProperty.Type.RESULT_KINEMATICS(0)
+    force = KpProperty.Type.RESULT_DYNAMICS(slice(1, 3))
+    torque = KpProperty.Type.RESULT_DYNAMICS(3)
 
 
 class Composite(ConfigArray):
@@ -271,9 +272,9 @@ class Actions(ConfigArray):
     user_point = KpProperty.Type.PHYSICS(slice(0, 2))
 
     # Result attributes
-    force = KpProperty.Type.RESULT(slice(0, 2))
-    torque = KpProperty.Type.RESULT(2)
-    application_point = KpProperty.Type.RESULT(slice(3, 5))
+    force = KpProperty.Type.RESULT_DYNAMICS(slice(0, 2))
+    torque = KpProperty.Type.RESULT_DYNAMICS(2)
+    application_point = KpProperty.Type.RESULT_DYNAMICS(slice(3, 5))
 
 
 class Interactions(ConfigArray):
@@ -402,6 +403,10 @@ class Config:
         return array.view(KpArray)._configure(self, axis)
 
 
+class ReadOnlyArray(np.ndarray):
+    def __array_finalize__(self, obj):
+        self.flags.writeable = False
+
 class ConfigView:
     __slots__ = '_index', '_config'
 
@@ -422,16 +427,14 @@ class ConfigView:
         invalidation_method = {
             KpProperty.Type.CONFIG: Config.invalidate_config,
             KpProperty.Type.PHYSICS: Config.invalidate_kinematics,
-            # TODO: distinguish kinematics results and dynamics results
-            KpProperty.Type.RESULT: lambda x: None
+            KpProperty.Type.RESULT_KINEMATICS: Config.invalidate_kinematics,
+            KpProperty.Type.RESULT_DYNAMICS: Config.invalidate_dynamics
         }[prop.type_]
 
         def getter(self: cls) -> np.ndarray:
-            arr: np.ndarray = prop.__get__(self._array())[self._index]
             # user can't modify through getter().__setitem__(...), they have to go through setter(...) in order to invalidate config state properly
-            arr.flags.writeable = False
-            return arr
-
+            return prop.__get__(self._array())[self._index].view(ReadOnlyArray)
+        
         def setter(self: cls, value: np.ndarray):
             invalidation_method(self._config)
             prop.__get__(self._array())[self._index] = value

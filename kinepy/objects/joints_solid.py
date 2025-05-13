@@ -29,7 +29,7 @@ class SolidBase(cfg.ConfigView):
     @cfg.ConfigView.assert_resources
     def get_angle(self):
         ori = self._orientation
-        _angle = np.arctan2(ori[..., 1], ori[..., 0])
+        _angle = np.array(np.arctan2(ori[..., 1], ori[..., 0]))
         geo.Orientation.make_angle_continuous(_angle)
         return self._kp_array(_angle)
 
@@ -107,18 +107,20 @@ class Joint(cfg.ConfigView):
     _type = cfg.Joints.type_()
     _s1 = cfg.Joints.s1()
     _s2 = cfg.Joints.s2()
+    _state = cfg.Joints.state()
 
     _force = cfg.Joints.force()
     _torque = cfg.Joints.torque()
     _value = cfg.Joints.value()
 
-    def pilot(self):
-        self._config.invalidate_config()
-        self._config.piloted_joints = np.r_[self._config.piloted_joints, self._index]
+    def _set_state_bit(self, bit, value):
+        self._state = (self._state ^ (self._state & (1 << bit))) | (value << bit)
 
-    def work(self):
-        self._config.invalidate_config()
-        self._config.working_joints = np.r_[self._config.working_joints, self._index]
+    def pilot(self, value=True):
+        self._set_state_bit(0, value)
+
+    def work(self, value=True):
+        self._set_state_bit(1, value)
 
     @cfg.ConfigView.assert_resources
     def set_input(self, value):

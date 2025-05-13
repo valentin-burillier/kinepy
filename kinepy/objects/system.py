@@ -282,8 +282,10 @@ class System:
 
     def determine_computation_order(self):
         if self.__config.working_joints.size:
-            self._determine_computation_order(self.__config.working_joints, self.__config.dynamics_strategy)
-        self._determine_computation_order(self.__config.piloted_joints, self.__config.kinematics_strategy)
+            working_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 2) == 2]
+            self._determine_computation_order(working_joints, self.__config.dynamics_strategy)
+        piloted_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 1) == 1]
+        self._determine_computation_order(piloted_joints, self.__config.kinematics_strategy)
         self.__config.state = cfg.ConfigState.STRATEGY_OK
 
     def _determine_computation_order(self, input_joints, strategy_output: list[strategy.ResolutionStep]):

@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 import warnings
 import kinepy as kp
+import kinepy.exceptions as ex
 import kinepy.objects.joints_solid as jo_so
 
 
@@ -42,6 +43,9 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(s1.get_point((0, 0)).shape, (2, n))
         self.assertEqual(s1.get_vector((0, 0)).shape, (2, n))
 
+        s1.x.pilot(False)
+        self.assertRaises(ex.UnderDeterminationError, system.determine_computation_order)
+
     def test_joint(self):
         system = kp.System()
         s0, s1 = system.ground, system.add_solid('BLOCK')
@@ -59,7 +63,7 @@ class InterfaceTests(unittest.TestCase):
 
         j.set_input(np.zeros((n,)))
         self.assertEqual(j.get_value().shape, (n,))
-        self.assertEqual(j.get_force().shape, (n, 2))
+        self.assertEqual(j.get_force().shape, (2, n))
         self.assertEqual(j.get_torque().shape, (n,))
 
     def test_prismatic(self):
