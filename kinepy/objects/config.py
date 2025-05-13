@@ -433,7 +433,7 @@ class ConfigView:
 
         def getter(self: cls) -> np.ndarray:
             # user can't modify through getter().__setitem__(...), they have to go through setter(...) in order to invalidate config state properly
-            return prop.__get__(self._array())[self._index].view(ReadOnlyArray)
+            return prop.__get__(self._array())[self._index].view(ReadOnlyArray).view(np.ndarray)
         
         def setter(self: cls, value: np.ndarray):
             invalidation_method(self._config)

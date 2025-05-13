@@ -29,7 +29,7 @@ class SolidBase(cfg.ConfigView):
     @cfg.ConfigView.assert_resources
     def get_angle(self):
         ori = self._orientation
-        _angle = np.array(np.arctan2(ori[..., 1], ori[..., 0]))
+        _angle = np.arctan2(ori[..., 1], ori[..., 0])
         geo.Orientation.make_angle_continuous(_angle)
         return self._kp_array(_angle)
 
