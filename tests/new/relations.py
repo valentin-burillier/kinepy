@@ -11,7 +11,7 @@ s1 = sys.add_solid()
 s2 = sys.add_solid(mass=3, g=(1, 0))
 
 r1 = sys.add_revolute(s0, s1)
-r2 = sys.add_revolute(s0, s2, p1=(1, 0))
+r2 = sys.add_revolute(s0, s2, p1=(0.1, 0))
 #p1 = sys.add_prismatic(s0, s2, alpha1=np.pi/2)
 
 #gp = sys.add_gear_pair(r1, r2, r=-1/2, pressure_angle=0)
@@ -59,7 +59,7 @@ plt.show()
 sys.solve_dynamics()
 
 #plt.plot(angle, r1.get_torque())
-plt.plot(angle, r1.get_force()) # résultat opposé attendu : -45 au début puis 0 et +45 à la fin
+plt.plot(angle, r1.get_force().swapaxes(0, 1)) # résultat opposé attendu : -45 au début puis 0 et +45 à la fin
 #plt.plot(angle, r2.get_force()) # résultat attendu : angle = 0 : +75, angle = pi, +30, angle = 2pi : -15
 
 plt.show()
@@ -70,7 +70,7 @@ plt.show()
 sys.solve_dynamics()
 
 #plt.plot(angle, r1.get_torque())
-plt.plot(angle, r1.get_force()) # signe inversé en x
+plt.plot(angle, r1.get_force().swapaxes(0, 1)) # signe inversé en x
 #plt.plot(angle, p1.get_force()) # signe inversé en x
 
 plt.show()

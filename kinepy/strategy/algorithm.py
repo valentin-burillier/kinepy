@@ -437,3 +437,12 @@ def determine_computation_order(config: cfg.Config, input_joints: np.ndarray[int
         s1, s2 = config.joints.solids[r]
         strategy_output.append(types.JointValueComputationStep(r, cfg.Joints.Type.REVOLUTE, joint_states[r] & types.JointFlags.RELATION_READY, s1, s2))
         joint_states[r] |= types.JointFlags.RELATION_READY
+
+
+def apply_declarations(config: cfg.Config):
+    for graph, *joints in config.declarations:
+        for step in config.kinematics_strategy:
+            if not isinstance(step, types.GraphStep) or not step.match(graph, joints):
+                continue
+            step.apply_declaration(joints)
+                

@@ -362,8 +362,7 @@ class Config:
         self.interactions = Interactions()
 
         # External configuration
-        self.piloted_joints = np.zeros((0,), int)
-        self.working_joints = np.zeros((0,), int)
+        self.declarations = []
 
         # Strategy states
         self.joint_states = []

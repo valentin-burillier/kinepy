@@ -85,14 +85,23 @@ class ResolutionStep:
 class GraphStep(ResolutionStep):
     def __init__(self, graph: gd.Graphs, edges: tuple[tuple[int, bool], ...], eqs: Eq):
         ResolutionStep.__init__(self)
+        self.graph_index = graph
+
         self.solution_index = 0
-        self._graph_index = graph
-        self._edges = edges
+
+        self.edges = edges
         self._eqs = eqs
         self._zero_holder = 0
         for i, eq in enumerate(eqs):
             if 0 in eq:
                 self._zero_holder = i
+            
+        self.__default_choice()
+
+    def __default_choice(self):
+        if self.graph_index == gd.Graphs.gRRP:
+            self.solution_index = self.edges[2][1]
+
 
     kinematics = (
         kin.Graph.solve_rrr,
@@ -108,16 +117,57 @@ class GraphStep(ResolutionStep):
 
     @property
     def solution_count(self) -> int:
-        return self._graph_index.solutions
+        return self.graph_index.solutions
 
     def get_joints(self) -> collections.abc.Iterable[int]:
-        return (j for j, _ in self._edges)
+        return (j for j, _ in self.edges)
 
     def solve_kinematics(self, config: cfg.Config):
-        self.kinematics[self._graph_index.value](config, self._edges, self._eqs, self.solution_index)
+        self.kinematics[self.graph_index.value](config, self.edges, self._eqs, self.solution_index)
 
     def solve_dynamics(self, config: cfg.Config):
-        self.dynamics[self._graph_index.value](config, self._edges, self._eqs, self._zero_holder)
+        self.dynamics[self.graph_index.value](config, self.edges, self._eqs, self._zero_holder)
+
+    def __match_rrr(self, joints: list[int, ...]):
+        return all(map(lambda x: x[0] in joints, self.edges))
+
+    def __match_rrp(self, joints: list[int, ...]):
+        return joints[0] == self.edges[2][0]
+
+    __matchers = {
+        gd.Graphs.gRRR: __match_rrr,
+        gd.Graphs.gRRP: __match_rrp
+    }
+
+    def match(self, graph: gd.Graphs, joints: list[int, ...]) -> bool:
+        if graph != self.graph_index:
+            return False
+        return self.__matchers[graph](self, joints)
+
+    def __apply_rrr(self, joints):
+        j0 = self.edges[0][0]
+
+        i = 0
+        while i < 3 and j0 != joints[i]:
+            i += 1
+        assert i < 3, "Declaration matched but j0 is not in joints"
+
+        _joints = joints[i:] + joints[:i]
+        _my_joints = list(map(lambda x: x[0], self.edges))
+
+        self.solution_index = _joints != _my_joints
+
+    def __apply_rrp(self, joints):
+        self.solution_index = not self.edges[2][1]
+
+    __apply_declaration = {
+        gd.Graphs.gRRR: __apply_rrr,
+        gd.Graphs.gRRP: __apply_rrp
+    }
+
+    def apply_declaration(self, joints: list[int, ...]):
+        return self.__apply_declaration[self.graph_index](self, joints)
+
 
 
 class JointStep(ResolutionStep):

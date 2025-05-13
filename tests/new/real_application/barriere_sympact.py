@@ -47,14 +47,15 @@ barriere.determine_computation_order()
 n = 1001
 barriere.set_sim_parameters(n, 5)
 
-a, = barriere.get_steps_with_multiple_solutions()
-a.solution_index = 1
-
+# a, = barriere.get_steps_with_multiple_solutions()
+# a.solution_index = 1
+# 
 angle = np.linspace(-0.55, np.pi + 0.55, n)
 r2.set_input(angle)
 
 #%%
 
+# barriere.declare_chose_lowest_value(ps.sliding)
 barriere.solve_kinematics()
 
 #%%

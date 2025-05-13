@@ -53,6 +53,9 @@ r2.set_input(angle)
 
 #%%
 
+window_regulator.declare_chose_lowest_value(ps1.sliding)
+window_regulator.declare_chose_lowest_value(ps2.sliding)
+
 window_regulator.solve_kinematics()
 
 #%%

@@ -163,7 +163,9 @@ class GraphOperationsTests(unittest.TestCase):
         )
 
         # not enough constraints after inputs
-        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
+        
+        piloted_joints = np.arange(conf.joints.count)[(conf.joints.state & 1) == 1]
+        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, piloted_joints, strategy)
 
         # input on solved joint
         joints = conf.joints.reserve(1)
@@ -175,7 +177,8 @@ class GraphOperationsTests(unittest.TestCase):
 
         # 1 solid too many
         conf.solids.reserve(1)
-        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, conf.piloted_joints, strategy)
+        piloted_joints = np.arange(conf.joints.count)[(conf.joints.state & 1) == 1]
+        self.assertRaises(ex.SystemConfigurationError, algo.determine_computation_order, conf, piloted_joints, strategy)
 
     def test_std_graphs(self) -> None:
         strategy = []
@@ -189,12 +192,15 @@ class GraphOperationsTests(unittest.TestCase):
             (0, 2),
             (1, 2)
         )
-        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
+        piloted_joints = np.arange(conf.joints.count)[(conf.joints.state & 1) == 1]
+        algo.determine_computation_order(conf, piloted_joints, strategy)
+        conf.declarations.append((gd.Graphs.gRRR, 1, 2, 0))
+        algo.apply_declarations(conf)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
         step: types.GraphStep = strategy[0]
-        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gRRR)
+        self.assertEqual(gd.Graphs(step.graph_index), gd.Graphs.gRRR)
 
         conf = cfg.Config()
         conf.solids.reserve(2)
@@ -205,12 +211,17 @@ class GraphOperationsTests(unittest.TestCase):
             (0, 2),
             (1, 2)
         )
-        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
+        
+        piloted_joints = np.arange(conf.joints.count)[(conf.joints.state & 1) == 1]
+        algo.determine_computation_order(conf, piloted_joints, strategy)
+        conf.declarations.append((gd.Graphs.gRRP, 2))
+        algo.apply_declarations(conf)
+
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
         step: types.GraphStep = strategy[0]
-        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gRRP)
+        self.assertEqual(gd.Graphs(step.graph_index), gd.Graphs.gRRP)
 
         conf = cfg.Config()
         conf.solids.reserve(2)
@@ -221,12 +232,13 @@ class GraphOperationsTests(unittest.TestCase):
             (0, 2),
             (1, 2)
         )
-        algo.determine_computation_order(conf, conf.piloted_joints, strategy)
+        piloted_joints = np.arange(conf.joints.count)[(conf.joints.state & 1) == 1]
+        algo.determine_computation_order(conf, piloted_joints, strategy)
         self.assertEqual(len(strategy), 1)
         self.assertTrue(isinstance(strategy[0], types.GraphStep))
 
         step: types.GraphStep = strategy[0]
-        self.assertEqual(gd.Graphs(step._graph_index), gd.Graphs.gPPR)
+        self.assertEqual(gd.Graphs(step.graph_index), gd.Graphs.gPPR)
 
 
 if __name__ == '__main__':

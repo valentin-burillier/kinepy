@@ -32,7 +32,11 @@ https://www.geogebra.org/calculator/h9pm9rs9
 angle = np.linspace(0, 2*np.pi, n)
 r1.set_input(angle)
 
+sys.declare_direct_triangle(r2, r3, r4)
 sys.solve_kinematics()
+
+kd = sys.kinematic_diagram()
+kd.show()
 
 #%%
 

@@ -6,6 +6,7 @@ import kinepy.objects.action as act
 import kinepy.math.kinematics as kin
 import kinepy.math.dynamics as dyn
 import kinepy.strategy as strategy
+import kinepy.strategy.graph_data as gd
 import kinepy.exceptions as ex
 import kinepy.gui.gui as gui
 
@@ -281,8 +282,8 @@ class System:
         return n_method
 
     def determine_computation_order(self):
-        if self.__config.working_joints.size:
-            working_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 2) == 2]
+        working_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 2) == 2]
+        if working_joints.size:
             self._determine_computation_order(working_joints, self.__config.dynamics_strategy)
         piloted_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 1) == 1]
         self._determine_computation_order(piloted_joints, self.__config.kinematics_strategy)
@@ -306,6 +307,7 @@ class System:
 
     @__assert_resource
     def solve_kinematics(self):
+        strategy.apply_declarations(self.__config)
         kin.System.set_up(self.__config)
 
         for step in self.__config.kinematics_strategy:
@@ -332,3 +334,9 @@ class System:
 
     def kinematic_diagram(self) -> gui.GUI:
         return gui.GUI(self.__config)
+
+    def declare_direct_triangle(self, r1: jo_so.Revolute, r2: jo_so.Revolute, r3: jo_so.Revolute):
+        self.__config.declarations.append([gd.Graphs.gRRR, r1._index, r2._index, r3._index])
+    
+    def declare_chose_lowest_value(self, p: jo_so.Prismatic):
+        self.__config.declarations.append([gd.Graphs.gRRP, p._index])
