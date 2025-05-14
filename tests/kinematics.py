@@ -67,8 +67,14 @@ class Kinematics(unittest.TestCase):
             prismatic direction vectors taken from s1 and s2 are aligned
             prismatic application points taken from s1 and s2 are on a line directed by the direction vector
             prismatic distances conditions
+            absolutely no NaN
+
+        This ensures correctness of closed loop systems
         """
         config: cfg.Config = system._System__config
+
+        self.assertFalse(np.any(np.isnan(config.solids.result_array)))
+        self.assertFalse(np.any(np.isnan(config.joints.result_array)))
 
         self._assert_ground_constraints(system.ground)
         for joint_index, type_ in enumerate(config.joints.type_):
@@ -244,13 +250,41 @@ class Kinematics(unittest.TestCase):
         p = self._rrp(system)
         system.solve_kinematics()
         v = np.array(p.get_value())
-        
+
         system.declare_chose_lowest_value(p)
         system.solve_kinematics()
         self.assertTrue(np.all(v >= p.get_value()))
 
 
     test_rrp = enhance_with_joint_orders(_rrp, 3)
+
+    def _ppr(self, system: kp.System, order=(1, 1, 1)):
+        _s0 = system.ground
+        _s1 = system.add_solid()
+        _s2 = system.add_solid()
+        _s3 = system.add_solid()
+
+        s1, s2 = (_s0, _s1)[::order[0]]
+        p1, p2 = ((1, 0), (0, -1))[::order[0]]
+        system.add_revolute(s1, s2, p1=p1, p2=p2)
+        s1, s2 = (_s1, _s2)[::order[1]]
+        (a1, d1), (a2, d2) = ((np.pi / 6, 1), (5 * np.pi / 8, -2))[::order[1]]
+        system.add_prismatic(s1, s2, alpha1=a1, distance1=d1, alpha2=a2, distance2=d2)
+        s1, s2 = (_s2, _s3)[::order[2]]
+        (a1, d1), (a2, d2) = ((-np.pi / 3, 0.5), (2 * np.pi / 7, 3))[::order[2]]
+        system.add_prismatic(s1, s2, alpha1=a1, distance1=d1, alpha2=a2, distance2=d2)
+
+        _s3.x.pilot()
+        _s3.y.pilot()
+        _s3.angle.pilot()
+
+        t = self.allocate_resources(system)
+        _s3.x.set_input(4 * np.sin(t))
+        _s3.y.set_input(2 * np.cos(t))
+        _s3.angle.set_input(4 * np.pi * t)
+
+    test_ppr = enhance_with_joint_orders(_ppr, 3)
+
 
 if __name__ == '__main__':
     unittest.main()
