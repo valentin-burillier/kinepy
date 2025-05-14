@@ -1,10 +1,10 @@
 import unittest
 import kinepy as kp
 import kinepy.objects.joints_solid as jo_so
+import kinepy.objects.relations as rel
 import kinepy.objects.config as cfg
 import kinepy.math.geometry as geo
 import numpy as np
-import functools
 
 """
 Correctness testing for kinepy kinematics:
@@ -55,6 +55,17 @@ class Kinematics(unittest.TestCase):
         cfg.Joints.Type.PRISMATIC: _assert_prismatic_constraints
     }
 
+    def _assert_belt_constraints(self, belt: rel.Belt):
+        self._assert_equal_f64(belt.j2.get_value(), belt.r1 / belt.r2 * belt.j1.get_value() + belt.v0)
+
+    def _assert_relation_constraints(self, rel: rel.Relation):
+        self._assert_equal_f64(rel.j2.get_value(), rel.r * rel.j1.get_value() + rel.v0)
+
+
+    _relation_assertions = {
+        cfg.Relations.Type.BELT: _assert_belt_constraints
+    }
+
     def _assert_ground_constraints(self, ground: jo_so.GhostSolid):
         self._assert_point_distance(ground.get_origin(), (0, 0), distance=0)
         self._assert_equal_f64(ground.get_angle(), 0)
@@ -81,29 +92,43 @@ class Kinematics(unittest.TestCase):
             jj = jo_so.Joint(config, joint_index)
             self._joint_assertions[cfg.Joints.Type(type_).primitive()](self, jj)
 
+        for rel_index, type_ in enumerate(config.relations.type_):
+            rr = rel.Relation(config, rel_index)
+            self._relation_assertions.get(cfg.Relations.Type(type_), Kinematics._assert_relation_constraints)(self, rr)
+
+
     def allocate_resources(self, system: kp.System, n=1001):
         system.determine_computation_order()
         system.set_sim_parameters(n)
         return np.linspace(0, 1, n)
 
     @staticmethod
-    def enhance_with_joint_orders(method, order_cnt=0):
+    def enhance_with_joint_orders(method, order_cnt=0, **variations):
         """
         Take a configuring method and exchange solids in joint creations or joints in relation creations everywhere that is declared
         """
 
         _orders = 1, -1
 
-        @functools.wraps(method)
-        def n_method(self):
-            for index in range(1 << order_cnt):
-                order = tuple(_orders[(index >> i) & 1] for i in range(order_cnt))
+        total_var = 1
+        for ll in variations.values():
+            total_var *= len(ll)
 
-                with self.subTest(order=order):
-                    system = kp.System()
-                    method(self, system, order)
-                    system.solve_kinematics()
-                    self.assert_system_validity(system)
+        def n_method(self):
+            for var_index in range(total_var):
+                dd = {}
+                for key, ll in variations.items():
+                    var_index, ll_index = divmod(var_index, len(ll))
+                    dd[key] = ll[ll_index]
+                
+                for index in range(1 << order_cnt):
+                    order = tuple(_orders[(index >> i) & 1] for i in range(order_cnt))
+
+                    with self.subTest(order=order, **dd):
+                        system = kp.System()
+                        method(self, system, order, **dd)
+                        system.solve_kinematics()
+                        self.assert_system_validity(system)
 
         return n_method
 
@@ -255,7 +280,6 @@ class Kinematics(unittest.TestCase):
         system.solve_kinematics()
         self.assertTrue(np.all(v >= p.get_value()))
 
-
     test_rrp = enhance_with_joint_orders(_rrp, 3)
 
     def _ppr(self, system: kp.System, order=(1, 1, 1)):
@@ -284,6 +308,64 @@ class Kinematics(unittest.TestCase):
         _s3.angle.set_input(4 * np.pi * t)
 
     test_ppr = enhance_with_joint_orders(_ppr, 3)
+
+    def _relation(self, system: kp.System, order=(1, 1, 1, 1), relation=kp.System.add_distant_relation, joint1=kp.System.add_revolute, joint2=kp.System.add_revolute):
+        _s0 = system.ground
+        _s1 = system.add_solid()
+        _s2 = system.add_solid()
+
+        s1, s2 = (_s0, _s1)[::order[0]]
+        _r1 = joint1(system, s1, s2)
+        s1, s2 = (_s0, _s2)[::order[1]]
+        _r2 = joint2(system, s1, s2)
+
+
+        j1, j2 = (_r1, _r2)[::order[2]]
+        rel = relation(system, j1, j2, v0=1.0, r=0.5)
+        _r1.pilot()
+
+        t = self.allocate_resources(system)
+
+        j1, j2 = (_r1, _r2)[::order[3]]
+        j1.set_input(2 * np.pi * t)
+        
+    test_relation = enhance_with_joint_orders(
+        _relation, 4, 
+        relation=[
+            kp.System.add_distant_relation,
+            kp.System.add_effortless_relation,
+        ],
+        joint1 = [
+            kp.System.add_revolute,
+            kp.System.add_prismatic
+        ],
+        joint2 = [
+            kp.System.add_revolute,
+            kp.System.add_prismatic
+        ]
+    )
+
+    def _belt(self, system: kp.System, order=(1, 1, 1, 1)):
+        _s0 = system.ground
+        _s1 = system.add_solid()
+        _s2 = system.add_solid()
+
+        s1, s2 = (_s0, _s1)[::order[0]]
+        _r1 = system.add_revolute(s1, s2)
+        s1, s2 = (_s0, _s2)[::order[1]]
+        _r2 = system.add_revolute(s1, s2)
+
+
+        j1, j2 = (_r1, _r2)[::order[2]]
+        rel = system.add_belt(j1, j2, v0=1.0, r1=0.5, r2=3)
+        _r1.pilot()
+
+        t = self.allocate_resources(system)
+
+        j1, j2 = (_r1, _r2)[::order[3]]
+        j1.set_input(2 * np.pi * t)
+
+    test_belt = enhance_with_joint_orders(_belt, 4)
 
 
 if __name__ == '__main__':
