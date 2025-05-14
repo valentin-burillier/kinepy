@@ -322,11 +322,11 @@ class Kinematics(unittest.TestCase):
 
         j1, j2 = (_r1, _r2)[::order[2]]
         rel = relation(system, j1, j2, v0=1.0, r=0.5)
-        _r1.pilot()
+        j1, j2 = (_r1, _r2)[::order[3]]
+        j1.pilot()
 
         t = self.allocate_resources(system)
 
-        j1, j2 = (_r1, _r2)[::order[3]]
         j1.set_input(2 * np.pi * t)
         
     test_relation = enhance_with_joint_orders(
@@ -358,11 +358,11 @@ class Kinematics(unittest.TestCase):
 
         j1, j2 = (_r1, _r2)[::order[2]]
         rel = system.add_belt(j1, j2, v0=1.0, r1=0.5, r2=3)
-        _r1.pilot()
+        j1, j2 = (_r1, _r2)[::order[3]]
+        j1.pilot()
 
         t = self.allocate_resources(system)
 
-        j1, j2 = (_r1, _r2)[::order[3]]
         j1.set_input(2 * np.pi * t)
 
     test_belt = enhance_with_joint_orders(_belt, 4)
