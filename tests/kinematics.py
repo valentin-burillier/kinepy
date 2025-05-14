@@ -367,6 +367,13 @@ class Kinematics(unittest.TestCase):
 
     test_belt = enhance_with_joint_orders(_belt, 4)
 
+    def test_rrr_with_relation(self):
+        system = kp.System()
+        r1, r2, r3 = self._rrr(system)
+        system.add_gear_pair(system.add_revolute(system.ground, system.add_solid()), r1)
+
+        self.allocate_resources(system)
+        system.solve_kinematics()
 
 if __name__ == '__main__':
     unittest.main()

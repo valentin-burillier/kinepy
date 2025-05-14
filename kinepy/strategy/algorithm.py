@@ -351,7 +351,7 @@ def register_relation_step(config: cfg.Config, relation_node: types.RelationGrap
     (s1, s2), (t1, t2) = config.joints.solids[[source, target]]
 
     if not types.JointFlags.relation_ready(joint_states[source]):
-        strategy_output.append(types.JointValueComputationStep(source, stype, joint_states[source] & types.JointFlags.RELATION_READY, s1, s2))
+        strategy_output.append(types.JointValueComputationStep(source, cfg.Joints.Type(stype), joint_states[source] & types.JointFlags.RELATION_READY, s1, s2))
         joint_states[source] |= types.JointFlags.RELATION_READY
 
     eq1, eq2 = solid_to_eq[t1], solid_to_eq[t2]
