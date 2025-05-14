@@ -39,9 +39,9 @@ class InterfaceTests(unittest.TestCase):
         system.solve_kinematics()
 
         self.assertEqual(s1.get_angle().shape, (n,))
-        self.assertEqual(s1.get_origin().shape, (2, n))
-        self.assertEqual(s1.get_point((0, 0)).shape, (2, n))
-        self.assertEqual(s1.get_vector((0, 0)).shape, (2, n))
+        self.assertEqual(s1.get_origin().shape, (n, 2))
+        self.assertEqual(s1.get_point((0, 0)).shape, (n, 2))
+        self.assertEqual(s1.get_vector((0, 0)).shape, (n, 2))
 
         s1.x.pilot(False)
         self.assertRaises(ex.UnderDeterminationError, system.determine_computation_order)
@@ -63,7 +63,7 @@ class InterfaceTests(unittest.TestCase):
 
         j.set_input(np.zeros((n,)))
         self.assertEqual(j.get_value().shape, (n,))
-        self.assertEqual(j.get_force().shape, (2, n))
+        self.assertEqual(j.get_force().shape, (n, 2))
         self.assertEqual(j.get_torque().shape, (n,))
 
     def test_prismatic(self):
