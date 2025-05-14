@@ -16,15 +16,15 @@ class SolidBase(cfg.ConfigView):
 
     @cfg.ConfigView.assert_resources
     def get_origin(self):
-        return self._kp_array(self._position.swapaxes(0, 1))
+        return self._kp_array(self._position)
 
     @cfg.ConfigView.assert_resources
     def get_point(self, p=(0.0, 0.0)):
-        return self._kp_array(geo.Position.point(self._config, self._index, np.array(p)).swapaxes(0, 1))
+        return self._kp_array(geo.Position.point(self._config, self._index, np.array(p)))
 
     @cfg.ConfigView.assert_resources
     def get_vector(self, v=(0.0, 0.0)):
-        return self._kp_array(geo.Position.vector(self._config, self._index, np.array(v)).swapaxes(0, 1))
+        return self._kp_array(geo.Position.vector(self._config, self._index, np.array(v)))
 
     @cfg.ConfigView.assert_resources
     def get_angle(self):
@@ -138,7 +138,7 @@ class Joint(cfg.ConfigView):
 
     @cfg.ConfigView.assert_resources
     def get_force(self):
-        return self._kp_array(self._force.swapaxes(0, 1))
+        return self._kp_array(self._force)
 
     @cfg.ConfigView.assert_resources
     def get_torque(self):

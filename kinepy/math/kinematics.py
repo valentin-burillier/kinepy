@@ -56,10 +56,10 @@ class JointInput:
 
         total_rotation = geo.Orientation.sub(s1_point, s2_point)
 
-        p1 = config.solids.position[s1] + geo.Geometry.det_z(s1_point) * distance1 + s1_point * config.joints.value[joint, ..., np.newaxis]
-        p2 = -geo.Geometry.det_z(s2_point) * distance2 - config.solids.position[s2]
+        p1 = config.solids.position[s1] + geo.Geometry.z_det(s1_point) * distance1 + s1_point * config.joints.value[joint, ..., np.newaxis]
+        p2 = geo.Geometry.z_det(s2_point) * distance2 + config.solids.position[s2]
         geo.Geometry.rotate_eq(eq2, config, total_rotation)
-        geo.Geometry.move_eq(eq2, config, p1 + geo.Orientation.add(total_rotation, p2))
+        geo.Geometry.move_eq(eq2, config, p1 + geo.Orientation.add(total_rotation, -p2))
 
 
 class System:

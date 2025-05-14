@@ -335,6 +335,9 @@ class System:
     def kinematic_diagram(self) -> gui.GUI:
         return gui.GUI(self.__config)
 
+    def clear_declarations(self):
+        self.__config.declarations.clear()
+
     def declare_direct_triangle(self, r1: jo_so.Revolute, r2: jo_so.Revolute, r3: jo_so.Revolute):
         self.__config.declarations.append([gd.Graphs.gRRR, r1._index, r2._index, r3._index])
     

@@ -24,11 +24,11 @@ class Action(cfg.ConfigView):
 
     @cfg.ConfigView.assert_resources
     def get_application_point(self):
-        return self._kp_array(self._ap.swapaxes(0, 1))
+        return self._kp_array(self._ap)
 
     @cfg.ConfigView.assert_resources
     def get_force(self):
-        return self._kp_array(self._force.swapaxes(0, 1))
+        return self._kp_array(self._force)
 
     @cfg.ConfigView.assert_resources
     def get_torque(self):
