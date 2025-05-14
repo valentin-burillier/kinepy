@@ -20,7 +20,7 @@ class Kinematics(unittest.TestCase):
         self.assertTrue(np.all(np.abs(v1 - v2) <= epsilon))
 
     def _assert_point_distance(self, p1, p2, *, distance, epsilon=1e-6):
-        dd = np.linalg.norm(p1 - p2, axis=0)
+        dd = np.linalg.norm(p1 - p2, axis=1)
         self.assertTrue(np.all(np.abs(dd - distance) < epsilon))
     
     def _assert_aligned(self, v1, v2, epsilon=1e-6):
@@ -29,7 +29,7 @@ class Kinematics(unittest.TestCase):
 
     def _assert_revolute_constraints(self, revolute: jo_so.Revolute):
         # Force-Cast the joint to Revolute to get all properties 
-        self.assertEqual(cfg.Joints.Type(revolute._type).primitive(), cfg.Joints.Type.REVOLUTE, "[Test]: You messed up the test")
+        self.assertEqual(cfg.Joints.Type(revolute._type).primitive(), cfg.Joints.Type.REVOLUTE, "[Test]: You can't even write tests properly")
         revolute.__class__ = jo_so.Revolute
 
         p1, p2 = revolute.s1.get_point(revolute.p1), revolute.s2.get_point(revolute.p2)
@@ -37,7 +37,7 @@ class Kinematics(unittest.TestCase):
 
     def _assert_prismatic_constraints(self, prismatic: jo_so.Prismatic):
         # Force-Cast the joint to Prismatic to get all properties 
-        self.assertEqual(cfg.Joints.Type(prismatic._type).primitive(), cfg.Joints.Type.PRISMATIC, "[Test]: You messed up the test")
+        self.assertEqual(cfg.Joints.Type(prismatic._type).primitive(), cfg.Joints.Type.PRISMATIC, "[Test]: You can't even write tests properly")
         prismatic.__class__ = jo_so.Prismatic
 
         _v1, _v2 = geo.Orientation.from_angle(prismatic.angle1), geo.Orientation.from_angle(prismatic.angle2)
@@ -47,6 +47,8 @@ class Kinematics(unittest.TestCase):
         p1, p2 = prismatic.s1.get_point(prismatic.distance1 * geo.Geometry.z_det(_v1)), prismatic.s2.get_point(prismatic.distance2 * geo.Geometry.z_det(_v2))
         self._assert_aligned(p2 - p1, v1)
 
+        y = geo.Geometry.det(v1, prismatic.s2.get_origin() - prismatic.s1.get_origin())
+        self._assert_equal_f64(y, prismatic.distance1 - prismatic.distance2)
 
     _joint_assertions = {
         cfg.Joints.Type.REVOLUTE: _assert_revolute_constraints,
@@ -55,7 +57,7 @@ class Kinematics(unittest.TestCase):
 
     def _assert_ground_constraints(self, ground: jo_so.GhostSolid):
         self._assert_point_distance(ground.get_origin(), (0, 0), distance=0)
-        self._assert_point_distance(ground.get_angle(), (0,), distance=0)
+        self._assert_equal_f64(ground.get_angle(), 0)
 
     def assert_system_validity(self, system: kp.System):
         """
@@ -64,6 +66,7 @@ class Kinematics(unittest.TestCase):
             revolute points taken from s1 and s2 match
             prismatic direction vectors taken from s1 and s2 are aligned
             prismatic application points taken from s1 and s2 are on a line directed by the direction vector
+            prismatic distances conditions
         """
         config: cfg.Config = system._System__config
 
@@ -72,7 +75,7 @@ class Kinematics(unittest.TestCase):
             jj = jo_so.Joint(config, joint_index)
             self._joint_assertions[cfg.Joints.Type(type_).primitive()](self, jj)
 
-    def allocate_resources(self, system: kp.System, n=11):
+    def allocate_resources(self, system: kp.System, n=1001):
         system.determine_computation_order()
         system.set_sim_parameters(n)
         return np.linspace(0, 1, n)
@@ -80,7 +83,7 @@ class Kinematics(unittest.TestCase):
     @staticmethod
     def enhance_with_joint_orders(method, order_cnt=0):
         """
-        Take a configuring method and exchange orders of solids or joints every time declared
+        Take a configuring method and exchange solids in joint creations or joints in relation creations everywhere that is declared
         """
 
         _orders = 1, -1
@@ -214,8 +217,40 @@ class Kinematics(unittest.TestCase):
     test_rrr = enhance_with_joint_orders(_rrr, 3)
 
     def _rrp(self, system: kp.System, order=(1, 1, 1)):
-        pass
+        _s0 = system.ground
+        _s1 = system.add_solid()
+        _s2 = system.add_solid()
+        _s3 = system.add_solid()
 
+        l1 = system.add_prismatic(_s1, _s2)
+        l1.pilot()
+        
+        s1, s2 = (_s0, _s1)[::order[0]]
+        p1, p2 = ((1, 0), (0, -1))[::order[0]]
+        system.add_revolute(s1, s2, p1=p1, p2=p2)
+        s1, s2 = (_s2, _s3)[::order[1]]
+        p1, p2 = ((1, 1), (1, -1))[::order[1]]
+        system.add_revolute(s1, s2, p1=p1, p2=p2)
+        s1, s2 = (_s0, _s3)[::order[2]]
+        (a1, d1), (a2, d2) = ((np.pi / 6, 1), (5 * np.pi / 8, -2))[::order[2]]
+        p = system.add_prismatic(s1, s2, alpha1=a1, distance1=d1, alpha2=a2, distance2=d2)
+
+        t = self.allocate_resources(system)
+        l1.set_input(4 + np.sin(np.pi * (t - 0.5)))
+        return p
+
+    def test_rrp_declaration(self):
+        system = kp.System()
+        p = self._rrp(system)
+        system.solve_kinematics()
+        v = np.array(p.get_value())
+        
+        system.declare_chose_lowest_value(p)
+        system.solve_kinematics()
+        self.assertTrue(np.all(v >= p.get_value()))
+
+
+    test_rrp = enhance_with_joint_orders(_rrp, 3)
 
 if __name__ == '__main__':
     unittest.main()
