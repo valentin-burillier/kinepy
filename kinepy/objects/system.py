@@ -336,10 +336,13 @@ class System:
         return gui.GUI(self.__config)
 
     def clear_declarations(self):
+        self.__config.invalidate_kinematics()
         self.__config.declarations.clear()
 
     def declare_direct_triangle(self, r1: jo_so.Revolute, r2: jo_so.Revolute, r3: jo_so.Revolute):
+        self.__config.invalidate_kinematics()
         self.__config.declarations.append([gd.Graphs.gRRR, r1._index, r2._index, r3._index])
     
     def declare_chose_lowest_value(self, p: jo_so.Prismatic):
+        self.__config.invalidate_kinematics()
         self.__config.declarations.append([gd.Graphs.gRRP, p._index])
