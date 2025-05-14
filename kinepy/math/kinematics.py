@@ -7,7 +7,7 @@ import numpy as np
 class JointValueComputation:
     @staticmethod
     def do_not_compute_value(config: cfg.Config, joint: int, s1: int, s2: int) -> None:
-        pass
+        """Nothing to do"""
 
     @staticmethod
     def compute_revolute_value(config: cfg.Config, joint: int, s1: int, s2: int) -> None:
