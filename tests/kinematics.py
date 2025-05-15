@@ -197,6 +197,18 @@ class Kinematics(unittest.TestCase):
     
     test_3dof = enhance_with_joint_orders(_3dof, 0)
 
+    def test_3dof_values(self):
+        system = kp.System()
+        s1 = self._3dof(system)
+
+        system.solve_kinematics()
+
+        point = s1.get_point(s1.angle.p2)
+        point_from_3dof = np.zeros_like(point)
+        point_from_3dof[..., 0] = s1.x.get_value()
+        point_from_3dof[..., 1] = s1.y.get_value()
+        self._assert_point_distance(point, point_from_3dof, distance=0)
+
     def _rrr(self, system: kp.System, order=(1, 1, 1)):
         _s0 = system.ground
         _s1 = system.add_solid()
