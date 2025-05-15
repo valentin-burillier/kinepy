@@ -360,6 +360,7 @@ class Config:
         self.relations = Relations()
         self.actions = Actions()
         self.interactions = Interactions()
+        self.arrays = self.solids, self.joints, self.composite_joints, self.relations, self.actions, self.interactions
 
         # External configuration
         self.declarations = []
@@ -391,7 +392,7 @@ class Config:
 
     def allocate_resources(self, frame_count):
         self.state = ConfigState.ALLOCATED_RESOURCES
-        for arr in self.solids, self.joints, self.composite_joints, self.relations, self.actions:
+        for arr in self.arrays:
             arr.allocate_results(frame_count)
         self.frame_count = frame_count
 
@@ -401,6 +402,8 @@ class Config:
     def kp_array(self, array, axis):
         return array.view(KpArray)._configure(self, axis)
 
+    def __contains__(self, obj: "ConfigView"):
+        return obj._config is self and any(obj._array() is arr for arr in self.arrays) and obj._index < obj._array().count
 
 class ReadOnlyArray(np.ndarray):
     def __array_finalize__(self, obj):
@@ -457,6 +460,8 @@ class ConfigView:
         return self._config.kp_array(array, axis)
 
     def __eq__(self, other: typing.Self):
+        if other is None:
+            return False
         if self._config is not other._config:
             raise ex.UnrelatedObjectsError()
         return self._array() is other._array() and self._index == other._index
