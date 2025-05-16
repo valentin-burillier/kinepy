@@ -296,6 +296,11 @@ class Interactions(ConfigArray):
     linear_spring_p2 = KpProperty.Type.PHYSICS(slice(5, 7))
 
 
+class ResolutionStep(ConfigArray):
+    class Type:
+        JOINT_INPUT, JOINT_COMPUTE, GRAPH, RELATION = range(4)
+
+
 class Eqs:
     """
     Serialised arrays of Equivalence classes decribing used in resolution steps
@@ -405,9 +410,11 @@ class Config:
     def __contains__(self, obj: "ConfigView"):
         return obj._config is self and any(obj._array() is arr for arr in self.arrays) and obj._index < obj._array().count
 
+
 class ReadOnlyArray(np.ndarray):
     def __array_finalize__(self, obj):
         self.flags.writeable = False
+
 
 class ConfigView:
     __slots__ = '_index', '_config'

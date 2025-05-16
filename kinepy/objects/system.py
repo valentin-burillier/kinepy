@@ -310,7 +310,6 @@ class System:
 
     # endregion UserAction
 
-
     @staticmethod
     def __assert_resource(method):
         @functools.wraps(method)
@@ -376,9 +375,14 @@ class System:
 
     @__assert_kin_ok
     def solve_dynamics(self):
+        working_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 2) == 2]
+        piloted_joints = np.arange(self.__config.joints.count)[(self.__config.joints.state & 1) == 1]
+        if not working_joints.size and piloted_joints.size:
+            raise ex.SystemConfigurationError("Please give proper dynamics configuration")
+        _strategy = self.__config.dynamics_strategy or self.__config.kinematics_strategy
+
         dyn.System.set_up(self.__config)
 
-        _strategy = self.__config.dynamics_strategy or self.__config.kinematics_strategy
         for step in _strategy[::-1]:
             step.solve_dynamics(self.__config)
 

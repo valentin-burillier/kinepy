@@ -210,7 +210,6 @@ class Graph:
         p0, p1, p2_ = Joint.get_revolute_application_point(config, r0), Joint.get_revolute_application_point(config, r1), Joint.get_prismatic_application_point(config, p2)
 
         eq0, sign0 = Newtons2ndLaw.select_group(eqs, (0, 2), zero_holder)
-        print(eqs, eq0, sign0)
         torque_1_2_p0 = sign0 * Newtons2ndLaw.torque(config, eq0, p0)
 
         eq1, sign1 = Newtons2ndLaw.select_group(eqs, (2,), zero_holder)
@@ -398,7 +397,7 @@ class Relation:
         Joint.set_force(config, target, force_1_2)
         if is_1_to_2:
             _ap = Joint.get_prismatic_application_point(config, (target, True))
-            torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, _ap)
+            torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, application_point)
             Joint.set_torque(config, target, torque_1_2)
 
     @staticmethod

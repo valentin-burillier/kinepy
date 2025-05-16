@@ -30,7 +30,7 @@ class Kinematics(unittest.TestCase):
     # region System validation
 
     def _assert_revolute_constraints(self, revolute: jo_so.Revolute):
-        # Force-Cast the joint to Revolute to get all properties 
+        # Force-Cast the joint to Revolute in order to get all properties
         self.assertEqual(cfg.Joints.Type(revolute._type).primitive(), cfg.Joints.Type.REVOLUTE, "[Test]: You can't even write tests properly")
         revolute.__class__ = jo_so.Revolute
 
@@ -38,7 +38,7 @@ class Kinematics(unittest.TestCase):
         self._assert_point_distance(p1, p2, distance=0)
 
     def _assert_prismatic_constraints(self, prismatic: jo_so.Prismatic):
-        # Force-Cast the joint to Prismatic to get all properties 
+        # Force-Cast the joint to Prismatic in order to get all properties
         self.assertEqual(cfg.Joints.Type(prismatic._type).primitive(), cfg.Joints.Type.PRISMATIC, "[Test]: You can't even write tests properly")
         prismatic.__class__ = jo_so.Prismatic
 
@@ -60,9 +60,10 @@ class Kinematics(unittest.TestCase):
     def _assert_belt_constraints(self, belt: rel.Belt):
         self._assert_equal_f64(belt.j2.get_value(), belt.r1 / belt.r2 * belt.j1.get_value() + belt.v0)
 
-    def _assert_relation_constraints(self, rel: rel.Relation):
-        self._assert_equal_f64(rel.j2.get_value(), rel.r * rel.j1.get_value() + rel.v0)
-
+    def _assert_relation_constraints(self, relation: rel.Distant):
+        # Force-Cast the relation to Distant in order to get all properties
+        relation.__class__ = rel.Distant
+        self._assert_equal_f64(relation.j2.get_value(), relation.r * relation.j1.get_value() + relation.v0)
 
     _relation_assertions = {
         cfg.Relations.Type.BELT: _assert_belt_constraints
@@ -100,7 +101,8 @@ class Kinematics(unittest.TestCase):
 
     # endregion System validation
 
-    def allocate_resources(self, system: kp.System, n=1001):
+    @staticmethod
+    def allocate_resources(system: kp.System, n=1001):
         system.determine_computation_order()
         system.set_sim_parameters(n)
         return np.linspace(0, 1, n)
@@ -116,8 +118,8 @@ class Kinematics(unittest.TestCase):
         _orders = 1, -1
 
         total_var = 1
-        for ll in variations.values():
-            total_var *= len(ll)
+        for _ll in variations.values():
+            total_var *= len(_ll)
 
         def n_method(self):
             for var_index in range(total_var):
@@ -136,7 +138,6 @@ class Kinematics(unittest.TestCase):
                         self.assert_system_validity(system)
 
         return n_method
-
 
     def _pilot_r(self, system: kp.System, order=(1,)):
         ground = system.ground
@@ -282,9 +283,8 @@ class Kinematics(unittest.TestCase):
         s1, s2 = (_s0, _s2)[::order[1]]
         _r2 = joint2(system, s1, s2)
 
-
         j1, j2 = (_r1, _r2)[::order[2]]
-        rel = relation(system, j1, j2, v0=1.0, r=0.5)
+        rr = relation(system, j1, j2, v0=1.0, r=0.5)
         j1, j2 = (_r1, _r2)[::order[3]]
         j1.pilot()
 
@@ -298,11 +298,11 @@ class Kinematics(unittest.TestCase):
             kp.System.add_distant_relation,
             kp.System.add_effortless_relation,
         ],
-        joint1 = [
+        joint1=[
             kp.System.add_revolute,
             kp.System.add_prismatic
         ],
-        joint2 = [
+        joint2=[
             kp.System.add_revolute,
             kp.System.add_prismatic
         ]
@@ -318,9 +318,8 @@ class Kinematics(unittest.TestCase):
         s1, s2 = (_s0, _s2)[::order[1]]
         _r2 = system.add_revolute(s1, s2)
 
-
         j1, j2 = (_r1, _r2)[::order[2]]
-        rel = system.add_belt(j1, j2, v0=1.0, r1=0.5, r2=3)
+        rr = system.add_belt(j1, j2, v0=1.0, r1=0.5, r2=3)
         j1, j2 = (_r1, _r2)[::order[3]]
         j1.pilot()
 
@@ -392,6 +391,7 @@ class Kinematics(unittest.TestCase):
         system.declare_chose_lowest_value(p)
         system.solve_kinematics()
         self.assertTrue(np.all(v >= p.get_value()))
+
 
 if __name__ == '__main__':
     unittest.main()

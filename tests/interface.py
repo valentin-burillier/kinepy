@@ -181,6 +181,7 @@ class InterfaceTests(unittest.TestCase):
         r4 = system.add_revolute(s0, s4)
         p5 = system.add_prismatic(s0, s5)
         r1.pilot()
+        r1.work()
 
         system.add_distant_relation(r1, r2)
         system.add_distant_relation(r1, p3)
@@ -211,6 +212,7 @@ class InterfaceTests(unittest.TestCase):
         gp.v0 = 5
 
         r1.pilot()
+        r1.work()
 
         sys.determine_computation_order()
         n = 5
@@ -237,6 +239,7 @@ class InterfaceTests(unittest.TestCase):
         b.v0 = 5
 
         r1.pilot()
+        r1.work()
 
         sys.determine_computation_order()
         n = 5
@@ -261,6 +264,7 @@ class InterfaceTests(unittest.TestCase):
         gr.v0 = 5
 
         r1.pilot()
+        r1.work()
 
         system.determine_computation_order()
         n = 5
@@ -281,6 +285,9 @@ class InterfaceTests(unittest.TestCase):
         s1.angle.pilot()
         s1.x.pilot()
         s1.y.pilot()
+        s1.angle.work()
+        s1.x.work()
+        s1.y.work()
 
         g = system.add_gravity()
         i = system.add_inertia()
