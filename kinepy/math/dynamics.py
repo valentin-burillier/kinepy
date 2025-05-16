@@ -386,7 +386,7 @@ class Relation:
         force = geo.Geometry.det_z(n) * effort_1_2
         rotation = np.zeros_like(force)
         rotation[:] = 1, np.tan(_pa)
-        rotation[..., 1, np.newaxis] *= np.sign(effort_1_2)
+        rotation[..., 1, np.newaxis] *= -np.sign(effort_1_2)
         force = geo.Orientation.add(force, rotation)
 
         Solid.add_force(config, gear2, force, application_point)
