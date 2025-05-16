@@ -378,7 +378,7 @@ class System:
     def solve_dynamics(self):
         dyn.System.set_up(self.__config)
 
-        _strategy = self.__config.dynamics_strategy or self.__config.dynamics_strategy
+        _strategy = self.__config.dynamics_strategy or self.__config.kinematics_strategy
         for step in _strategy[::-1]:
             step.solve_dynamics(self.__config)
 

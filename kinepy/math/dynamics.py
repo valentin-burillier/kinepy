@@ -178,7 +178,8 @@ class Graph:
         r0, r1, r2 = edges
         p0, p1, p2 = Joint.get_revolute_application_point(config, r0), Joint.get_revolute_application_point(config, r1), Joint.get_revolute_application_point(config, r2)
 
-        eq0, sign0 = Newtons2ndLaw.select_group(eqs, (2, 0), zero_holder)
+        eq0, sign0 = Newtons2ndLaw.select_group(eqs, (0, 2), zero_holder)
+        
         torque_1_2_p0 = sign0 * Newtons2ndLaw.torque(config, eq0, p0)
 
         eq1, sign1 = Newtons2ndLaw.select_group(eqs, (2,), zero_holder)
@@ -209,6 +210,7 @@ class Graph:
         p0, p1, p2_ = Joint.get_revolute_application_point(config, r0), Joint.get_revolute_application_point(config, r1), Joint.get_prismatic_application_point(config, p2)
 
         eq0, sign0 = Newtons2ndLaw.select_group(eqs, (0, 2), zero_holder)
+        print(eqs, eq0, sign0)
         torque_1_2_p0 = sign0 * Newtons2ndLaw.torque(config, eq0, p0)
 
         eq1, sign1 = Newtons2ndLaw.select_group(eqs, (2,), zero_holder)

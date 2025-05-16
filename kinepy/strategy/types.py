@@ -103,17 +103,17 @@ class GraphStep(ResolutionStep):
             self.solution_index = self.edges[2][1]
 
 
-    kinematics = (
-        kin.Graph.solve_rrr,
-        kin.Graph.solve_rrp,
-        kin.Graph.solve_ppr
-    )
+    kinematics = {
+        gd.Graphs.gRRR: kin.Graph.solve_rrr,
+        gd.Graphs.gRRP: kin.Graph.solve_rrp,
+        gd.Graphs.gPPR: kin.Graph.solve_ppr
+    }
 
-    dynamics = (
-        dyn.Graph.solve_rrr,
-        dyn.Graph.solve_rrp,
-        dyn.Graph.solve_ppr
-    )
+    dynamics = {
+        gd.Graphs.gRRR: dyn.Graph.solve_rrr,
+        gd.Graphs.gRRP: dyn.Graph.solve_rrp,
+        gd.Graphs.gPPR: dyn.Graph.solve_ppr
+    } 
 
     @property
     def solution_count(self) -> int:
@@ -123,10 +123,10 @@ class GraphStep(ResolutionStep):
         return (j for j, _ in self.edges)
 
     def solve_kinematics(self, config: cfg.Config):
-        self.kinematics[self.graph_index.value](config, self.edges, self._eqs, self.solution_index)
+        self.kinematics[self.graph_index](config, self.edges, self._eqs, self.solution_index)
 
     def solve_dynamics(self, config: cfg.Config):
-        self.dynamics[self.graph_index.value](config, self.edges, self._eqs, self._zero_holder)
+        self.dynamics[self.graph_index](config, self.edges, self._eqs, self._zero_holder)
 
     def __match_rrr(self, joints: list[int, ...]):
         return all(map(lambda x: x[0] in joints, self.edges))
