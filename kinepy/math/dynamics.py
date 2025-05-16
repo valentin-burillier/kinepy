@@ -425,8 +425,8 @@ class Relation:
         assert np.all((r1 - r2) ** 2 <= ll), "Definitely impossible pulley disposition: (r1 - r2) ^ 2 > d ^ 2"
 
         rot = np.array(((ll[0, 0] - (r2 - r1) ** 2) ** 0.5, r1 - r2))
-        f1 = geo.Orientation.sub(vec_2_1 * _f1, rot)
-        f2 = geo.Orientation.add(vec_2_1 * _f2, rot)
+        f1 = geo.Orientation.add(vec_2_1 * _f1, rot)
+        f2 = geo.Orientation.sub(vec_2_1 * _f2, rot)
 
         pa1 = p2 + geo.Orientation.add(r2 * geo.Geometry.z_det(vec_2_1), rot)
         pa2 = p2 + geo.Orientation.sub(r2 * geo.Geometry.det_z(vec_2_1), rot)
