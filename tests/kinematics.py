@@ -27,6 +27,8 @@ class Kinematics(unittest.TestCase):
         sin_angle = geo.Geometry.det(v1, v2)
         self.assertTrue(np.all(np.abs(sin_angle) <= epsilon))
 
+    # region System validation
+
     def _assert_revolute_constraints(self, revolute: jo_so.Revolute):
         # Force-Cast the joint to Revolute to get all properties 
         self.assertEqual(cfg.Joints.Type(revolute._type).primitive(), cfg.Joints.Type.REVOLUTE, "[Test]: You can't even write tests properly")
@@ -96,11 +98,14 @@ class Kinematics(unittest.TestCase):
             rr = rel.Relation(config, rel_index)
             self._relation_assertions.get(cfg.Relations.Type(type_), Kinematics._assert_relation_constraints)(self, rr)
 
+    # endregion System validation
 
     def allocate_resources(self, system: kp.System, n=1001):
         system.determine_computation_order()
         system.set_sim_parameters(n)
         return np.linspace(0, 1, n)
+
+    # region Augmented tests
 
     @staticmethod
     def enhance_with_joint_orders(method, order_cnt=0, **variations):
@@ -165,23 +170,6 @@ class Kinematics(unittest.TestCase):
     test_pilot_r = enhance_with_joint_orders(_pilot_r, 1)
     test_pilot_p = enhance_with_joint_orders(_pilot_p, 1)
 
-    def test_r(self):
-        system = kp.System()
-        r = self._pilot_r(system)
-        system.solve_kinematics()
-        self._assert_equal_f64(r.get_value(), r.s2.get_angle())
-
-    def test_p(self):
-        system = kp.System()
-        p = self._pilot_p(system)
-        system.solve_kinematics()
-        sliding = p.get_value()[..., np.newaxis]
-
-        _v1 = geo.Orientation.from_angle(p.angle1)
-        v1 = p.s1.get_vector(_v1)
-        self._assert_equal_f64(sliding, geo.Geometry.dot(v1, p.s2.get_origin() - p.s1.get_origin()))
-
-
     def _3dof(self, system: kp.System, order=()):
         s1 = system.add_solid()
         s1.x.pilot()
@@ -196,18 +184,6 @@ class Kinematics(unittest.TestCase):
         return s1
     
     test_3dof = enhance_with_joint_orders(_3dof, 0)
-
-    def test_3dof_values(self):
-        system = kp.System()
-        s1 = self._3dof(system)
-
-        system.solve_kinematics()
-
-        point = s1.get_point(s1.angle.p2)
-        point_from_3dof = np.zeros_like(point)
-        point_from_3dof[..., 0] = s1.x.get_value()
-        point_from_3dof[..., 1] = s1.y.get_value()
-        self._assert_point_distance(point, point_from_3dof, distance=0)
 
     def _rrr(self, system: kp.System, order=(1, 1, 1)):
         _s0 = system.ground
@@ -241,22 +217,7 @@ class Kinematics(unittest.TestCase):
         l3.set_input(np.sin(2 * t) + 1)
     
         return r1, r2, r3
-
-    def test_rrr_declaration(self):
-        system = kp.System()
-        r1, r2, r3 = self._rrr(system)
-        system.declare_direct_triangle(r1, r2, r3)
-        system.solve_kinematics()
-        p1, p2, p3 = r1.s1.get_point(r1.p1), r2.s1.get_point(r2.p1), r3.s1.get_point(r3.p1)
-        self.assertTrue(np.all(geo.Geometry.det(p2 - p1, p3) >= 0))
-
-        system = kp.System()
-        r1, r2, r3 = self._rrr(system)
-        system.declare_direct_triangle(r3, r2, r1)
-        system.solve_kinematics()
-        p1, p2, p3 = r1.s1.get_point(r1.p1), r2.s1.get_point(r2.p1), r3.s1.get_point(r3.p1)
-        self.assertTrue(np.all(geo.Geometry.det(p2 - p1, p3) <= 0))
-
+    
     test_rrr = enhance_with_joint_orders(_rrr, 3)
 
     def _rrp(self, system: kp.System, order=(1, 1, 1)):
@@ -281,16 +242,6 @@ class Kinematics(unittest.TestCase):
         t = self.allocate_resources(system)
         l1.set_input(4 + np.sin(np.pi * (t - 0.5)))
         return p
-
-    def test_rrp_declaration(self):
-        system = kp.System()
-        p = self._rrp(system)
-        system.solve_kinematics()
-        v = np.array(p.get_value())
-
-        system.declare_chose_lowest_value(p)
-        system.solve_kinematics()
-        self.assertTrue(np.all(v >= p.get_value()))
 
     test_rrp = enhance_with_joint_orders(_rrp, 3)
 
@@ -386,6 +337,61 @@ class Kinematics(unittest.TestCase):
 
         self.allocate_resources(system)
         system.solve_kinematics()
+
+    # endregion augmented tests
+
+    def test_r(self):
+        system = kp.System()
+        r = self._pilot_r(system)
+        system.solve_kinematics()
+        self._assert_equal_f64(r.get_value(), r.s2.get_angle())
+
+    def test_p(self):
+        system = kp.System()
+        p = self._pilot_p(system)
+        system.solve_kinematics()
+        sliding = p.get_value()[..., np.newaxis]
+
+        _v1 = geo.Orientation.from_angle(p.angle1)
+        v1 = p.s1.get_vector(_v1)
+        self._assert_equal_f64(sliding, geo.Geometry.dot(v1, p.s2.get_origin() - p.s1.get_origin()))
+
+    def test_3dof_values(self):
+        system = kp.System()
+        s1 = self._3dof(system)
+
+        system.solve_kinematics()
+
+        point = s1.get_point(s1.angle.p2)
+        point_from_3dof = np.zeros_like(point)
+        point_from_3dof[..., 0] = s1.x.get_value()
+        point_from_3dof[..., 1] = s1.y.get_value()
+        self._assert_point_distance(point, point_from_3dof, distance=0)
+
+    def test_rrr_declaration(self):
+        system = kp.System()
+        r1, r2, r3 = self._rrr(system)
+        system.declare_direct_triangle(r1, r2, r3)
+        system.solve_kinematics()
+        p1, p2, p3 = r1.s1.get_point(r1.p1), r2.s1.get_point(r2.p1), r3.s1.get_point(r3.p1)
+        self.assertTrue(np.all(geo.Geometry.det(p2 - p1, p3) >= 0))
+
+        system = kp.System()
+        r1, r2, r3 = self._rrr(system)
+        system.declare_direct_triangle(r3, r2, r1)
+        system.solve_kinematics()
+        p1, p2, p3 = r1.s1.get_point(r1.p1), r2.s1.get_point(r2.p1), r3.s1.get_point(r3.p1)
+        self.assertTrue(np.all(geo.Geometry.det(p2 - p1, p3) <= 0))
+
+    def test_rrp_declaration(self):
+        system = kp.System()
+        p = self._rrp(system)
+        system.solve_kinematics()
+        v = np.array(p.get_value())
+
+        system.declare_chose_lowest_value(p)
+        system.solve_kinematics()
+        self.assertTrue(np.all(v >= p.get_value()))
 
 if __name__ == '__main__':
     unittest.main()
