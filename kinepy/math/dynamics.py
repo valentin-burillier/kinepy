@@ -90,7 +90,6 @@ class System:
                 continue
             Solid.add_action(config, config.actions.solid[index], config.actions.force[index], config.actions.torque[index, :, np.newaxis], config.actions.application_point[index])
 
-
     @staticmethod
     def clean_up(config: cfg.Config):
         """Nothing to do"""

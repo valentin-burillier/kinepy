@@ -280,7 +280,7 @@ class System:
         return inter.LinearSpring(self.__config, index)
 
     def add_twisting_spring(self,  r: jo_so.Revolute, k=0.0, a0=0.0) -> inter.TwistingSpring:
-        if not r in self.__config:
+        if r not in self.__config:
             raise ex.UnrelatedObjectsError()
 
         self.__config.invalidate_config()
@@ -356,7 +356,7 @@ class System:
     @__assert_strategy
     def set_sim_parameters(self, frame_cnt: int, total_time: float = 0):
         self.__config.allocate_resources(frame_cnt)
-        self.__config.frame_time = total_time / (frame_cnt - 1)
+        self.__config.frame_time = total_time if frame_cnt == 1 else total_time / (frame_cnt - 1)
 
     @__assert_resource
     def solve_kinematics(self):
