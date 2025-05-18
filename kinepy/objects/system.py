@@ -89,7 +89,7 @@ class System:
     def add_pin_slot(self, s1: jo_so.SolidBase, s2: jo_so.SolidBase, alpha1=0.0, distance1=0.0, p2=(0.0, 0.0)) -> jo_so.PinSlot:
         if s1 == s2:
             raise ex.ConstraintOnSameObjectError()
-        if not s1 in self.__config or s2 not in self.__config:
+        if s1 not in self.__config or s2 not in self.__config:
             raise ex.UnrelatedObjectsError()
 
         s_ghost_index = self.__add_ghost_solid()
@@ -105,9 +105,9 @@ class System:
     def add_translation(self, s1: jo_so.SolidBase, s2: jo_so.SolidBase, alpha1=0.0, distance1=0, alpha2=0.0, distance2=0.0, diff_angle=0.0) -> jo_so.Translation:
         if s1 == s2:
             raise ex.ConstraintOnSameObjectError()
-        if not s1 in self.__config or s2 not in self.__config:
+        if s1 not in self.__config or s2 not in self.__config:
             raise ex.UnrelatedObjectsError()
-        
+
         s_ghost_index = self.__add_ghost_solid()
 
         j_ghost_indices = self.__config.joints.reserve(2)
@@ -125,9 +125,9 @@ class System:
     def add_gear_pair(self, j1: jo_so.Revolute, j2: jo_so.Revolute, v0=0.0, r=-1.0, pressure_angle=np.pi / 9, gear1: jo_so.SolidBase | None = None, gear2: jo_so.SolidBase | None = None) -> rel.GearPair:
         if j1 == j2:
             raise ex.ConstraintOnSameObjectError()
-        if not j1 in self.__config or j2 not in self.__config or gear1 not in (j1.s1, j1.s2, None) or gear2 not in (j2.s1, j2.s2, None):
+        if j1 not in self.__config or j2 not in self.__config or gear1 not in (j1.s1, j1.s2, None) or gear2 not in (j2.s1, j2.s2, None):
             raise ex.UnrelatedObjectsError()
-        
+
         self.__config.invalidate_config()
 
         index = self.__config.relations.reserve(1).start
@@ -146,9 +146,9 @@ class System:
     def add_gear_rack(self, j1: jo_so.Revolute, j2: jo_so.Prismatic, v0=0.0, r=1.0, pressure_angle=np.pi / 9, gear1: jo_so.SolidBase | None = None, rack2: jo_so.SolidBase | None = None) -> rel.GearRack:
         if j1 == j2:
             raise ex.ConstraintOnSameObjectError()
-        if not j1 in self.__config or j2 not in self.__config or gear1 not in (j1.s1, j1.s2, None) or rack2 not in (j2.s1, j2.s2, None):
+        if j1 not in self.__config or j2 not in self.__config or gear1 not in (j1.s1, j1.s2, None) or rack2 not in (j2.s1, j2.s2, None):
             raise ex.UnrelatedObjectsError()
-        
+
         self.__config.invalidate_config()
 
         index = self.__config.relations.reserve(1).start
@@ -167,9 +167,9 @@ class System:
     def add_belt(self, j1: jo_so.Revolute, j2: jo_so.Revolute, v0=0.0, r1=1.0, r2=1.0, t0=0.0, pulley1: jo_so.SolidBase | None = None, pulley2: jo_so.SolidBase | None = None) -> rel.Belt:
         if j1 == j2:
             raise ex.ConstraintOnSameObjectError()
-        if not j1 in self.__config or j2 not in self.__config or pulley1 not in (j1.s1, j1.s2, None) or pulley2 not in (j2.s1, j2.s2, None):
+        if j1 not in self.__config or j2 not in self.__config or pulley1 not in (j1.s1, j1.s2, None) or pulley2 not in (j2.s1, j2.s2, None):
             raise ex.UnrelatedObjectsError()
-        
+
         self.__config.invalidate_config()
 
         index = self.__config.relations.reserve(1).start
@@ -189,7 +189,7 @@ class System:
     def add_distant_relation(self, j1: jo_so.Joint, j2: jo_so.Joint, v0=0.0, r=1.0):
         if j1 == j2:
             raise ex.ConstraintOnSameObjectError()
-        if not j1 in self.__config or j2 not in self.__config:
+        if j1 not in self.__config or j2 not in self.__config:
             raise ex.UnrelatedObjectsError()
 
         self.__config.invalidate_config()
@@ -210,9 +210,9 @@ class System:
     def add_effortless_relation(self, j1: jo_so.Joint, j2: jo_so.Joint, v0=0.0, r=1.0) -> rel.Effortless:
         if j1 == j2:
             raise ex.ConstraintOnSameObjectError()
-        if not j1 in self.__config or j2 not in self.__config:
+        if j1 not in self.__config or j2 not in self.__config:
             raise ex.UnrelatedObjectsError()
-        
+
         self.__config.invalidate_config()
 
         index = self.__config.relations.reserve(1).start
@@ -279,7 +279,7 @@ class System:
 
         return inter.LinearSpring(self.__config, index)
 
-    def add_twisting_spring(self,  r: jo_so.Revolute, k=0.0, a0=0.0) -> inter.TwistingSpring:
+    def add_twisting_spring(self, r: jo_so.Revolute, k=0.0, a0=0.0) -> inter.TwistingSpring:
         if r not in self.__config:
             raise ex.UnrelatedObjectsError()
 
@@ -316,6 +316,7 @@ class System:
         def n_method(self, *args, **kwargs):
             assert self.__config.state >= cfg.ConfigState.ALLOCATED_RESOURCES, f"Call `System.set_sim_parameters` before messing with {method.__qualname__}"
             return method(self, *args, **kwargs)
+
         return n_method
 
     @staticmethod
@@ -324,6 +325,7 @@ class System:
         def n_method(self, *args, **kwargs):
             assert self.__config.state >= cfg.ConfigState.KINEMATICS_OK, f"Call `System.solve_kinematics` before messing with {method.__qualname__}"
             return method(self, *args, **kwargs)
+
         return n_method
 
     @staticmethod
@@ -332,6 +334,7 @@ class System:
         def n_method(self, *args, **kwargs):
             assert self.__config.state >= cfg.ConfigState.STRATEGY_OK, f"Call `System.determine_computation_order` before messing with {method.__qualname__}"
             return method(self, *args, **kwargs)
+
         return n_method
 
     def determine_computation_order(self):
@@ -403,10 +406,9 @@ class System:
 
         self.__config.invalidate_kinematics()
         self.__config.declarations.append([gd.Graphs.gRRR, r1._index, r2._index, r3._index])
-    
+
     def declare_chose_lowest_value(self, p: jo_so.Prismatic):
         if not p in self.__config:
             raise ex.UnrelatedObjectsError()
         self.__config.invalidate_kinematics()
         self.__config.declarations.append([gd.Graphs.gRRP, p._index])
-
