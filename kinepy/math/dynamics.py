@@ -260,14 +260,17 @@ class Graph:
 
 class JointInput:
     @staticmethod
-    def solve_joint(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int, _point):
+    def get_joint(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int, _point):
         eq, sign = Newtons2ndLaw.select_group((eq1, eq2), (1,), zero_holder)
         force_1_2 = sign * Newtons2ndLaw.force(config, eq)
         point = geo.Position.point(config, s1, _point)
         torque_1_2 = sign * Newtons2ndLaw.torque(config, eq, point)
+        return point, torque_1_2, force_1_2
 
+    @staticmethod
+    def solve_joint(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int, _point):
+        point, torque_1_2, force_1_2 = JointInput.get_joint(config, s1, s2, joint, eq1, eq2, zero_holder, _point)
         Joint.set_oriented_action(config, (joint, True), force_1_2, torque_1_2, point)
-        return force_1_2, torque_1_2
 
     @staticmethod
     def solve_revolute(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
@@ -280,15 +283,29 @@ class JointInput:
 
 
 class Relation:
+    _effortless_solver = {
+        cfg.Joints.Type.REVOLUTE: JointInput.solve_revolute,
+        cfg.Joints.Type.PRISMATIC: JointInput.solve_prismatic
+    }
+
+    @staticmethod
+    def solve_effortless_relation(config: cfg.Config, relation: int, source: int, target: int, target_type: cfg.Joints.Type, eq1, eq2, is_1_to_2, zero_holder):
+        t1, t2 = config.joints.solids[target]
+        return Relation._effortless_solver[target_type](config, t1, t2, target, eq1, eq2, zero_holder)
+
     @staticmethod
     def get_prismatic_effort(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        force_1_2, _ = JointInput.solve_prismatic(config, s1, s2, joint, eq1, eq2, zero_holder)
-        director = geo.Orientation.add(config.solids.orientation[s1], geo.Orientation.from_angle(config.joints.prismatic_angle1[joint]))
-        return geo.Geometry.dot(director, force_1_2)
+        angle, dist = config.joints.prismatic_angle1[joint], config.joints.prismatic_distance1[joint]
+        point, torque_1_2, force_1_2 = JointInput.get_joint(config, s1, s2, joint, eq1, eq2, zero_holder, dist * geo.Orientation.from_angle(angle + np.pi * 0.5))
+
+        effort = geo.Geometry.dot(geo.Orientation.from_angle(angle), force_1_2)
+        Joint.set_oriented_action(config, (joint, True), force_1_2 - geo.Orientation.from_angle(angle) * effort, torque_1_2, point)
+        return effort
 
     @staticmethod
     def get_revolute_effort(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
-        _, torque_1_2 = JointInput.solve_revolute(config, s1, s2, joint, eq1, eq2, zero_holder)
+        point, torque_1_2, force_1_2 = JointInput.get_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joints.revolute_p1[joint])
+        Joint.set_oriented_force(config, (joint, True), force_1_2, point)
         return torque_1_2
 
     _effort_getter = {
@@ -301,13 +318,13 @@ class Relation:
         angle, dist = config.joints.prismatic_angle1[joint], config.joints.prismatic_distance1[joint]
         point = geo.Position.point(config, s1, dist * geo.Orientation.from_angle(angle + np.pi * 0.5))
         force = geo.Position.vector(config, s1, geo.Orientation.from_angle(angle)) * value
-        Solid.add_force(config, s1, force, point)
-        Solid.add_force(config, s2, -force, point)
+        Solid.add_force(config, s1, -force, point)
+        Solid.add_force(config, s2, force, point)
 
     @staticmethod
     def add_revolute_effort(config: cfg.Config, joint, s1, s2, value):
-        Solid.add_torque(config, s1, value)
-        Solid.add_torque(config, s2, -value)
+        Solid.add_torque(config, s1, -value)
+        Solid.add_torque(config, s2, value)
 
     _effort_setter = {
         cfg.Joints.Type.PRISMATIC: add_prismatic_effort,
@@ -315,13 +332,9 @@ class Relation:
     }
 
     @staticmethod
-    def solve_effortless_relation(config: cfg.Config, relation: int, source: int, target: int, target_type: cfg.Joints.Type, eq1, eq2, is_1_to_2, zero_holder):
-        t1, t2 = config.joints.solids[target]
-        return Relation._effort_getter[target_type](config, t1, t2, target, eq1, eq2, zero_holder)
-
-    @staticmethod
     def solve_distant_relation(config: cfg.Config, relation: int, source: int, target: int, target_type: cfg.Joints.Type, eq1, eq2, is_1_to_2, zero_holder):
-        effort = Relation.solve_effortless_relation(config, relation, source, target, target_type, eq1, eq2, is_1_to_2, zero_holder)
+        t1, t2 = config.joints.solids[target]
+        effort = Relation._effort_getter[target_type](config, t1, t2, target, eq1, eq2, zero_holder)
         _r = config.relations.r[relation]
         if not is_1_to_2:
             _r = 1 / _r

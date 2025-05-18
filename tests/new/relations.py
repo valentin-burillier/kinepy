@@ -20,7 +20,7 @@ p2 = sys.add_prismatic(s0, s1, alpha1=0)
 #sys.add_gear_rack(r1, p1, r=2, pressure_angle=np.pi/8)
 hyd = sys.add_hydraulic_link(p1, p2, surface_ratio=2, v0=1)
 
-sys.add_gravity((-5, -10))
+sys.add_gravity((-2, -10))
 
 p1.pilot()
 p2.work()
@@ -40,7 +40,7 @@ p1.set_input(sliding)
 sys.solve_kinematics()
 
 #plt.plot(r1.get_value(), r2.get_value())
-plt.plot(p1.get_value(), p2.get_value())
+# plt.plot(p1.get_value(), p2.get_value())
 
 #%%
 
@@ -57,7 +57,10 @@ kd.show()
 # hydraulic
 sys.solve_dynamics()
 
-plt.plot(p1.get_force()) # devrait être 0 selon Y
+plt.plot(p1.get_force(), label="p1") # devrait être 0 selon Y
+plt.plot(p2.get_force(), label="p2")
+plt.legend()
+plt.show()
 #plt.plot(p2.get_force())
 
 
