@@ -300,7 +300,8 @@ class Relation:
 
         effort = geo.Geometry.dot(geo.Orientation.from_angle(angle), force_1_2)
         f = geo.Orientation.from_angle(angle) * effort
-        Solid.add_force(config, s2, f, point)
+        Solid.add_force(config, s1, f, point)
+        Solid.add_force(config, s2, -f, point)
 
         Joint.set_oriented_action(config, (joint, True), force_1_2 - f, torque_1_2, point)
         return effort
@@ -309,6 +310,7 @@ class Relation:
     def get_revolute_effort(config: cfg.Config, s1: int, s2: int, joint: int, eq1: tuple[int, ...], eq2: tuple[int, ...], zero_holder: int):
         point, torque_1_2, force_1_2 = JointInput.get_joint(config, s1, s2, joint, eq1, eq2, zero_holder, config.joints.revolute_p1[joint])
         Joint.set_oriented_force(config, (joint, True), force_1_2, point)
+        Solid.add_torque(config, s1, -torque_1_2)
         Solid.add_torque(config, s2, torque_1_2)
         return torque_1_2
 
@@ -322,6 +324,7 @@ class Relation:
         angle, dist = config.joints.prismatic_angle1[joint], config.joints.prismatic_distance1[joint]
         point = geo.Position.point(config, s1, dist * geo.Orientation.from_angle(angle + np.pi * 0.5))
         force = geo.Position.vector(config, s1, geo.Orientation.from_angle(angle)) * value
+        Solid.add_force(config, s1, -force, point)
         Solid.add_force(config, s2, force, point)
 
     @staticmethod
