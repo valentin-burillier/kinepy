@@ -47,6 +47,9 @@ class KpProperty(property):
             return f'_{self.name.lower().split('_')[0]}_count'
 
         def __call__(self, index: int | slice):
+            """
+            Create a property of this type occupying index in the target Array
+            """
             return KpProperty(self, index)
 
     def __init__(self, type_: Type, index: int | slice):
@@ -70,6 +73,9 @@ class KpProperty(property):
             assert not getattr(obj, type_.count_name) or hasattr(obj, type_.array_name), f"[Internal] Wrong initialisation: {obj} has no attribute {type_.array_name}"
 
     def __call__(self) -> property:
+        """
+        Create the corresponding property on ConfigView classes
+        """
         return ConfigView.__forward__(self)
 
 
@@ -472,6 +478,10 @@ class ConfigView:
 
     @classmethod
     def __forward__(cls, prop: KpProperty) -> property:
+        """
+        Create a property from KpProperty to acces object data from its index
+        """
+        
         invalidation_method = {
             KpProperty.Type.CONFIG: Config.invalidate_config,
             KpProperty.Type.PHYSICS: Config.invalidate_kinematics,
