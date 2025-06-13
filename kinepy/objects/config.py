@@ -297,9 +297,48 @@ class Interactions(ConfigArray):
 
 
 class ResolutionStep(ConfigArray):
-    class Type:
-        JOINT_INPUT, JOINT_COMPUTE, GRAPH, RELATION = range(4)
+    class Type(IntEnum):
+        JOINT_INPUT, JOINT_COMPUTE, RELATION = range(3)
+        __GRAPHS__ = gRRR, gRRP, gPPR, g3RR, g2RR_PP, g3PR, g2PR_RR, gPP_RR_PR, g2RR_PR, gPP_PR_RP, g2RP_PP, gRR_PR_RP, g2RP_PR = range(3, 16)
 
+        @classmethod
+        def graphs(cls):
+            yield from (cls(g) for g in cls.__GRAPHS__)
+
+    class ComputeFlags:
+        SOLVED_BIT = 1 << 0
+
+        # joint value is certified to be computed for joints that are solved: -by inputs; -by relations.
+        # relations may have to compute the joint values for those that are not available yet, otherwise these computations are not necessary and will depend on user queries
+        COMPUTED_BIT = 1 << 1
+
+        # joint value is certified to be continuous for all prismatic joints, and for revolute joints that are solved: -before inputs; -by inputs; -by relations.
+        # when driven by a revolute joint, relations may have to compute the continuous version of its angle if not already available
+        CONTINUOUS_BIT = 1 << 2
+
+        RELATION_READY = CONTINUOUS_BIT | COMPUTED_BIT
+        READY_FOR_USER = SOLVED_BIT | COMPUTED_BIT | CONTINUOUS_BIT
+
+        @classmethod
+        def relation_ready(cls, value: int) -> bool:
+            return bool(value & cls.COMPUTED_BIT and value & cls.CONTINUOUS_BIT)
+
+        @classmethod
+        def solved_joint(cls, type_: int, value_is_computed: bool, certain_continuity: bool):
+            return cls.SOLVED_BIT | (certain_continuity or Joints.Type(type_).primitive() == Joints.Type.PRISMATIC) * cls.CONTINUOUS_BIT | value_is_computed * cls.COMPUTED_BIT
+
+    # Soft Config attributes
+    type_ = KpProperty.Type.CONFIG(0)
+    eqs = KpProperty.Type.CONFIG(1)
+    
+    graph_edges = KpProperty.Type.CONFIG(2)
+    graph_solution_index = KpProperty.Type.CONFIG(3)
+    
+    joint = KpProperty.Type.CONFIG(2)
+    joint_state = KpProperty.Type.CONFIG(3)
+
+    relation = KpProperty.Type.CONFIG(2)
+    relation_direction = KpProperty.Type.CONFIG(3)
 
 class Eqs:
     """
